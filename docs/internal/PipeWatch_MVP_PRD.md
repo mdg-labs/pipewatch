@@ -1,6 +1,6 @@
 # PipeWatch — MVP Product Requirements Document
 
-**Status:** Draft | **Version:** 0.6 | **Author:** MDG Labs | **Date:** June 2026
+**Status:** Draft | **Version:** 0.7 | **Author:** MDG Labs | **Date:** June 2026
 
 ---
 
@@ -36,6 +36,7 @@ The product ships in two distribution modes:
 - SSO — post-MVP
 - Log storage — metadata + step results only, no raw log ingestion (both editions)
 - GitHub Enterprise Server support — out of scope for now
+- Additional CI platforms (GitLab CI, CircleCI, etc.) — post-MVP; core schema reserved for future providers (Decision #37)
 
 ---
 
@@ -100,6 +101,29 @@ Domain: `pipewatch.app` (secured)
 | **Redis** | — | — |
 | Fly.io app name | `pipewatch-staging-redis` | `pipewatch-prod-redis` |
 
+**Environment naming** — for CI/CD and hosted deploys, **GitHub Actions environments** are what workflows use.
+
+**Secret flow (one direction from Phase):**
+
+```
+Phase  ──(Phase Console sync)──►  GitHub Actions environments  ──(workflow code)──►  Fly.io / CF Workers
+         only external sync              staging | production | ci        sync-secrets.yml, deploy workflows
+```
+
+Phase never syncs directly to Fly.io or Cloudflare Workers. The operator configures Phase→GitHub Actions sync in Phase Console; deploy workflows push secrets from a GitHub Actions environment to Fly/CF at deploy time.
+
+Phase environment names use **title case** (`Development`, `Staging`, `Production`, `CI`) — as defined in Phase Console. GitHub Actions environment names are **lowercase slugs** (`staging`, `production`, `ci`). Infrastructure resource names use a short `prod` slug for production.
+
+| | Staging | Production | CI |
+|---|---|---|---|
+| **Phase environment** | Staging | Production | CI |
+| **GitHub Actions environment** | `staging` | `production` | `ci` |
+| **Infrastructure slug** (Fly.io, CF Workers) | `staging` | `prod` | — |
+
+**Development** (Phase only) — local dev via Phase CLI; no GitHub Actions environment, no sync.
+
+Deploy workflows set `environment: staging` or `environment: production`. CI test workflows that need secrets set `environment: ci`. Fly.io and Cloudflare Worker resource names use the `prod` slug for production (`pipewatch-prod-api`, not `pipewatch-production-api`).
+
 ### 4.4 GitHub Integration
 
 | Concern | Approach |
@@ -113,7 +137,20 @@ Domain: `pipewatch.app` (secured)
 | Self-hosted endpoint | Must be publicly reachable; Cloudflare Tunnel recommended in docs |
 | Polling fallback | Optional — user-configurable interval per repo (default 60s, min 30s); stored as `polling_interval_seconds` on `repositories` table |
 
-### 4.5 Tech Stack
+### 4.5 CI Provider Schema (MVP: GitHub only)
+
+MVP ships **GitHub Actions only** — no second CI platform, no provider picker, no adapter framework. The persistent schema and public API types use **vendor-neutral names** so a future provider (e.g. GitLab CI) can be added without renaming tables or columns (Decision #37).
+
+| Layer | MVP approach |
+|---|---|
+| Database (`packages/db`) | Neutral: `integrations`, `pipeline_runs`, `external_*` IDs, `integrations.provider` (MVP: only `github`) |
+| API types (`packages/types`) | Neutral: `Integration`, `PipelineRun`, `PipelineJob`, `PipelineStep` |
+| Ingestion (`apps/api`, `apps/worker`) | GitHub-specific: webhook verification, REST client, payload parsing, backfill |
+| Product / UI | GitHub Actions only: "Install GitHub App", `POST /webhooks/github`, link to GitHub for logs |
+
+GitHub webhook event names (`workflow_run`, `workflow_job`) and callback query params (`installation_id`) stay GitHub-specific at the integration boundary. Workers map GitHub payloads into the neutral `pipeline_*` tables at write time.
+
+### 4.6 Tech Stack
 
 | Layer | Technology | Rationale |
 |---|---|---|
@@ -125,11 +162,11 @@ Domain: `pipewatch.app` (secured)
 | Frontend | Next.js (App Router) via OpenNext | SSR for dashboard, deploys to Cloudflare Workers |
 | Auth | JWT-based (custom) + API Keys | See Section 7.1 — Better Auth evaluated but custom JWT fits API-key requirement better |
 | Self-hosted delivery | Docker Compose | Single file, bundles Postgres + Redis |
-| Secrets | Phase Cloud (EU/Frankfurt) | E2E encrypted, native CF Workers + GitHub Actions sync, SOC 2 Type II |
+| Secrets | Phase Cloud (EU/Frankfurt) | E2E encrypted; operator syncs to GitHub Actions environments via Phase Console; SOC 2 Type II |
 | Error Monitoring | Sentry (full) | Traces, source map upload, logs (GA), session replay |
 | Testing | Vitest (unit/integration) + Playwright (e2e) | See Section 11 |
 
-### 4.6 Open-Core Split
+### 4.7 Open-Core Split
 
 | Feature | PipeWatch CE | PipeWatch Cloud |
 |---|---|---|
@@ -157,9 +194,9 @@ Multi-tenancy is a first-class concern from day one. The top-level isolation uni
 
 ### Concepts
 
-- A **Workspace** maps to one or more GitHub App installations (orgs or user accounts)
+- A **Workspace** maps to one or more GitHub App integrations (orgs or user accounts; stored as `integrations` rows with `provider = 'github'`)
 - A **User** can be a member of multiple Workspaces with a role per Workspace
-- All resources (installations, repositories, runs, insights) are scoped to a Workspace
+- All resources (integrations, repositories, pipeline runs, insights) are scoped to a Workspace
 - All API endpoints are workspace-scoped: `/api/v1/workspaces/:workspaceId/...`
 
 ### Roles (MVP)
@@ -201,13 +238,15 @@ Multi-tenancy is a first-class concern from day one. The top-level isolation uni
 | invited_at | timestamptz | |
 | accepted_at | timestamptz | null until accepted |
 
-All existing entities (`installations`, `repositories`, `workflow_runs`, etc.) gain a `workspace_id` FK column.
+All existing entities (`integrations`, `repositories`, `pipeline_runs`, etc.) gain a `workspace_id` FK column.
 
 ---
 
 ## 6. Core Data Model
 
 All timestamps UTC. MVP schema — subject to change.
+
+**CI provider note (Decision #37):** Table and column names are vendor-neutral. MVP only accepts `provider = 'github'` on `integrations`. GitHub-specific IDs are stored in `external_*` columns (as text). Unique constraints are composite per repo/integration — not global `github_*` uniques.
 
 ### `users`
 
@@ -249,18 +288,21 @@ One row per active session. On logout-all-sessions: revoke all rows for user. On
 | accepted_at | timestamptz | null until accepted |
 | created_at | timestamptz | |
 
-### `installations`
+### `integrations`
 
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
 | workspace_id | uuid FK | → workspaces |
-| github_installation_id | bigint unique | From GitHub App install event |
+| provider | text | `github` (MVP — only value allowed) |
+| external_installation_id | text | Provider-native ID; GitHub App installation ID from install event |
 | account_login | text | Org or user slug |
 | account_type | text | Organization \| User |
 | access_token | text (encrypted) | Current installation token |
 | token_expires_at | timestamptz | Auto-refresh before expiry |
 | created_at | timestamptz | |
+
+**Unique:** `(provider, external_installation_id)`
 
 ### `repositories`
 
@@ -268,8 +310,8 @@ One row per active session. On logout-all-sessions: revoke all rows for user. On
 |---|---|---|
 | id | uuid PK | |
 | workspace_id | uuid FK | → workspaces |
-| installation_id | uuid FK | → installations |
-| github_repo_id | bigint unique | |
+| integration_id | uuid FK | → integrations |
+| external_repo_id | text | Provider-native repo ID |
 | full_name | text | e.g. mdg-labs/inboxops |
 | private | boolean | |
 | enabled | boolean | false = stored but not synced |
@@ -277,36 +319,41 @@ One row per active session. On logout-all-sessions: revoke all rows for user. On
 | retention_days | int | null = use plan default; must be within plan range (30–365 for paid, fixed 30 for free) |
 | last_synced_at | timestamptz | For backfill tracking |
 
-### `workflow_runs`
+**Unique:** `(integration_id, external_repo_id)`
+
+### `pipeline_runs`
 
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
 | workspace_id | uuid FK | → workspaces |
 | repo_id | uuid FK | → repositories |
-| github_run_id | bigint unique | |
-| workflow_name | text | |
-| workflow_path | text | .github/workflows/ci.yml |
+| external_run_id | text | Provider-native run ID |
+| pipeline_name | text | Workflow/pipeline display name |
+| pipeline_definition_ref | text | e.g. `.github/workflows/ci.yml` |
 | status | text | queued \| in_progress \| completed |
 | conclusion | text | success \| failure \| cancelled \| skipped \| null |
 | branch | text | |
 | commit_sha | text | |
 | commit_message | text | |
 | actor_login | text | Who triggered the run |
-| trigger_event | text | push \| pull_request \| schedule \| workflow_dispatch \| ... |
+| trigger_type | text | push \| pull_request \| schedule \| workflow_dispatch \| ... |
+| source_url | text | Link to run on provider (MVP: GitHub Actions URL) |
 | started_at | timestamptz | |
 | completed_at | timestamptz | null if still running |
 | duration_ms | int | Computed on completion |
 | created_at | timestamptz | |
 
-### `workflow_jobs`
+**Unique:** `(repo_id, external_run_id)`
+
+### `pipeline_jobs`
 
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
 | workspace_id | uuid FK | → workspaces |
-| run_id | uuid FK | → workflow_runs |
-| github_job_id | bigint unique | |
+| run_id | uuid FK | → pipeline_runs |
+| external_job_id | text | Provider-native job ID |
 | name | text | |
 | status | text | queued \| in_progress \| completed |
 | conclusion | text | success \| failure \| cancelled \| skipped \| null |
@@ -315,12 +362,14 @@ One row per active session. On logout-all-sessions: revoke all rows for user. On
 | completed_at | timestamptz | |
 | duration_ms | int | |
 
-### `workflow_steps`
+**Unique:** `(run_id, external_job_id)`
+
+### `pipeline_steps`
 
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
-| job_id | uuid FK | → workflow_jobs |
+| job_id | uuid FK | → pipeline_jobs |
 | number | int | Step number within job |
 | name | text | |
 | status | text | queued \| in_progress \| completed |
@@ -329,7 +378,7 @@ One row per active session. On logout-all-sessions: revoke all rows for user. On
 | completed_at | timestamptz | |
 | duration_ms | int | |
 
-**Note on `workspace_id` denormalization:** `installations`, `repositories`, `workflow_runs`, and `workflow_jobs` all carry a denormalized `workspace_id` for fast workspace-scoped queries without deep JOINs (Decision #31). `workflow_steps` does NOT — steps are only ever loaded in the context of a specific job (run detail page), so the JOIN through `workflow_jobs` is acceptable there.
+**Note on `workspace_id` denormalization:** `integrations`, `repositories`, `pipeline_runs`, and `pipeline_jobs` all carry a denormalized `workspace_id` for fast workspace-scoped queries without deep JOINs (Decision #31). `pipeline_steps` does NOT — steps are only ever loaded in the context of a specific job (run detail page), so the JOIN through `pipeline_jobs` is acceptable there.
 
 ---
 
@@ -383,16 +432,18 @@ Two auth modes, both produce a workspace-scoped identity:
 | Workspaces | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Workspace Members | ✓ | ✓ | ✓ (invite) | ✓ (role) | ✓ |
 | Workspace Invites | ✓ | ✓ | ✓ | — | ✓ (revoke) |
-| Installations | ✓ | ✓ | ✓ | — | ✓ |
+| Integrations | ✓ | ✓ | ✓ | — | ✓ |
 | Repositories | ✓ | ✓ | — (auto-synced) | ✓ (settings) | ✓ |
-| Workflow Runs | ✓ | ✓ | — (webhook-driven) | — | ✓ (manual purge) |
-| Workflow Jobs | ✓ | ✓ | — | — | — |
-| Workflow Steps | ✓ | ✓ | — | — | — |
+| Pipeline Runs | ✓ | ✓ | — (webhook-driven) | — | ✓ (manual purge) |
+| Pipeline Jobs | ✓ | ✓ | — | — | — |
+| Pipeline Steps | ✓ | ✓ | — | — | — |
 | API Keys | ✓ | ✓ | ✓ | — | ✓ (revoke) |
 | Insights | ✓ | — | — | — | — |
 | Billing (cloud) | ✓ (current) | — | ✓ (checkout) | ✓ (plan change) | ✓ (cancel) |
 
-Note: Workflow Jobs/Steps have no DELETE of their own — they cascade-delete with their parent run. API Keys and Invites use DELETE semantically for "revoke".
+Note: Pipeline Jobs/Steps have no DELETE of their own — they cascade-delete with their parent run. API Keys and Invites use DELETE semantically for "revoke".
+
+OpenAPI schemas use vendor-neutral type names (`PipelineRun`, `PipelineJob`, `Integration`). UI copy may say "workflow" where that matches GitHub Actions terminology.
 
 ### Example Route Shape
 
@@ -402,6 +453,11 @@ POST   /api/v1/workspaces
 GET    /api/v1/workspaces/:workspaceId
 PATCH  /api/v1/workspaces/:workspaceId
 DELETE /api/v1/workspaces/:workspaceId
+
+GET    /api/v1/workspaces/:workspaceId/integrations
+GET    /api/v1/workspaces/:workspaceId/integrations/:integrationId
+POST   /api/v1/workspaces/:workspaceId/integrations
+DELETE /api/v1/workspaces/:workspaceId/integrations/:integrationId
 
 GET    /api/v1/workspaces/:workspaceId/repositories
 GET    /api/v1/workspaces/:workspaceId/repositories/:repoId
@@ -516,36 +572,47 @@ Sentry DSN and org/project config managed via Phase. Source map upload token sto
 
 ## 10. Secrets Management — Phase
 
-All secrets managed via **Phase Cloud** (EU region, Frankfurt/AWS eu-central-1). E2E encrypted — Phase never sees plaintext secrets. SOC 2 Type II certified, GDPR-compatible (see Decision #32).
+All secrets are authored in **Phase Cloud** (EU region, Frankfurt/AWS eu-central-1). E2E encrypted — Phase never sees plaintext secrets. SOC 2 Type II certified, GDPR-compatible (see Decision #32).
 
-### Sync Architecture
+### Sync model
 
-Phase provides native syncs for two of our three targets. The third (Fly.io) goes via GitHub Actions.
+**Phase → GitHub Actions** is the only sync that originates from Phase. Configured by the operator in Phase Console (not in workflow code). No `phase-action` in pipelines.
 
-| Target | Method | Notes |
+**GitHub Actions → Fly.io / CF Workers** happens in workflow code — `sync-secrets.yml` reads `${{ secrets.* }}` from the active GitHub Actions environment and runs `flyctl secrets set` / `wrangler secret put`. There is no Phase→Fly or Phase→CF path.
+
+| Target | How secrets get there |
+|---|---|
+| **GitHub Actions** | Phase Console native sync → environment secrets/vars (`staging`, `production`, `ci`) |
+| **Fly.io** | `sync-secrets.yml` from `staging` or `production` GitHub Actions environment |
+| **Cloudflare Workers** | `sync-secrets.yml` from `staging` or `production` GitHub Actions environment |
+| **Local dev** | Phase CLI — `phase run --env=Development -- <command>` or `phase secrets export --env=Development > .env` |
+
+### Phase environments
+
+Phase app: **`pipewatch`**. Four environments in Phase Console — names are **title case**, not lowercase slugs. **Development** is local-only (no sync). **CI**, **Staging**, and **Production** sync to GitHub Actions.
+
+| Phase environment | Syncs to GitHub Actions | Status | Purpose |
+|---|---|---|---|
+| Development | — (no sync) | — | Local app dev via Phase CLI; integration tests use ephemeral containers, not Development secrets for DB |
+| CI | `ci` | **Provisioned** | CI/test credentials (ReportPortal, Sentry upload, etc.) — no database URLs |
+| Staging | `staging` | Pending | Staging deploy runtime secrets |
+| Production | `production` | Pending | Production deploy runtime secrets |
+
+Phase Console native sync is configured per pair (e.g. Phase **CI** → GitHub Actions `ci`). To run integration tests locally with ReportPortal: `phase run --env=CI -- pnpm test:integration` (DB/Redis still come from ephemeral containers, not Phase).
+
+### GitHub Actions environments
+
+Three environments. Workflows declare `environment: <name>` to access that environment's secrets and vars.
+
+| Environment | Purpose | Typical contents |
 |---|---|---|
-| **Cloudflare Workers** | Phase native sync | Direct push from Phase Console — Account ID + API token. Secrets stored as `Encrypted` type in CF, invisible in CF dashboard UI. Covers `pipewatch-{env}-web` and `pipewatch-{env}-marketing` workers. |
-| **GitHub Actions** | Phase native sync | Push to GitHub Actions environment secrets per environment (prod/staging/ci). Phase → GitHub Actions is the bridge for all CI and Fly.io deployments. |
-| **Fly.io** | Via GitHub Actions | No direct Phase→Fly sync. Phase syncs app secrets to GitHub Actions environments; deploy workflows then call `flyctl deploy` with `FLY_API_TOKEN` from GitHub secrets. Fly.io app secrets (`fly secrets set`) are set once manually or via `flyctl` in CI. |
-| **Local dev** | Phase CLI | `phase run -- <command>` injects secrets as env vars; or `phase secrets export > .env` |
+| `staging` | Staging deploys (`staging` branch) | All runtime secrets for staging Fly/CF apps (`DATABASE_URL`, `JWT_*`, `GITHUB_*`, etc.) |
+| `production` | Production deploys (release published) | All runtime secrets for production Fly/CF apps |
+| `ci` | PR/branch CI — lint gates don't need it; jobs that need credentials do | ReportPortal (`REPORTPORTAL_*`), `SENTRY_AUTH_TOKEN` / org / project for source maps on CI builds. **No `DATABASE_URL`** — Postgres, Redis, and other dependencies are ephemeral GHA service containers. **Provisioned** — Phase **CI** ↔ GitHub Actions `ci` sync configured. |
 
-### Environment Paths
+**`ci` environment — recommended over hardcoding:** Do not hardcode secrets or environment-specific URLs in workflow YAML. Put them in the `ci` GitHub Actions environment (synced from Phase): API keys as **secrets**, instance URLs and project names as **vars** (e.g. `REPORTPORTAL_URL`, `REPORTPORTAL_PROJECT`). Workflows reference `${{ secrets.REPORTPORTAL_API_KEY }}` and `${{ vars.REPORTPORTAL_URL }}`. Lint and pure unit jobs can run without `environment: ci`; integration, E2E, and any job touching external services must set `environment: ci`.
 
-| Environment | Phase App Path | Primary Sync Targets |
-|---|---|---|
-| Production | `pipewatch / prod` | CF Workers (prod), GitHub Actions (prod env) |
-| Staging | `pipewatch / staging` | CF Workers (staging), GitHub Actions (staging env) |
-| CI | `pipewatch / ci` | GitHub Actions (ci env) |
-| Local dev | `pipewatch / dev` | Local via Phase CLI |
-
-Full environment variable reference in Section 23. Key secret categories:
-
-- GitHub App: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`, `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`
-- Database / Queue: `DATABASE_URL` (Neon), `REDIS_URL`
-- Auth: `JWT_SECRET`, `JWT_REFRESH_SECRET`
-- Monitoring: `SENTRY_DSN`, `SENTRY_AUTH_TOKEN`
-- Email: `SMTP_*`, `POSTMARK_API_KEY` (cloud only)
-- Billing: `STRIPE_*` (cloud only)
+Deploy workflows (`staging` / `production`) and CI workflows (`ci`) consume `${{ secrets.* }}` and `${{ vars.* }}` only — never fetch from Phase at runtime. Full variable list in Section 23.
 
 ---
 
@@ -558,28 +625,59 @@ Testing is a first-class concern from day one. All test results reported to self
 | Layer | Framework | Scope | Reporter |
 |---|---|---|---|
 | Unit | Vitest | Pure functions, utils, data transforms | ReportPortal via `@reportportal/agent-js-vitest` |
-| Integration | Vitest | API routes, DB queries, BullMQ workers (against real Neon branch) | ReportPortal via `@reportportal/agent-js-vitest` |
+| Integration | Vitest | API routes, DB queries, BullMQ workers (ephemeral Postgres + Redis — CI and local) | ReportPortal via `@reportportal/agent-js-vitest` |
 | E2E | Playwright | Full user flows in browser (onboarding, dashboard, run detail) | ReportPortal via `@reportportal/agent-js-playwright` |
 
 ### CI Pipeline
 
-High-level overview — full workflow definitions in Section 22 (CI/CD Pipeline).
+High-level overview — full workflow definitions in Section 22 (CI/CD Pipeline). Jobs that need credentials use GitHub Actions environment **`ci`** (secrets/vars synced from Phase — see §10).
 
 ```
 on: push / pull_request
 
 jobs:
-  lint:         turbo lint
-  unit:         turbo test:unit
-  integration:  turbo test:integration  (spins up Neon CI branch, tears down after)
-  e2e:          playwright test  (against staging, main only)
+  lint:         turbo lint                    # no environment needed
+  unit:         turbo test:unit               # no environment needed
+  integration:  environment: ci → turbo test:integration  (ephemeral Postgres + Redis containers)
+  e2e:          environment: ci → playwright test       (staging, main only)
 ```
 
-All test jobs report to ReportPortal (`https://reportportal.mdg-labs.dev`). PR status checks gate on lint + unit + integration; E2E is advisory on PRs, required on `main`.
+All test jobs that report to ReportPortal read `REPORTPORTAL_URL`, `REPORTPORTAL_API_KEY`, and `REPORTPORTAL_PROJECT` from the `ci` environment — not hardcoded in workflow YAML.
 
-### Neon Branching for Integration Tests
+### Local test runs
 
-Production and staging are **separate Neon projects** (Decision #17). For CI integration tests, each run creates a short-lived branch off the **staging** Neon project's `main` branch, runs migrations, executes tests, then deletes the branch. Zero shared state between CI runs, and prod is never touched by CI.
+```bash
+pnpm test:unit              # no containers
+pnpm test:integration       # ephemeral Postgres + Redis, random ports, mandatory cleanup
+```
+
+Local integration tests use the **same ephemeral-container model as CI** — not a developer's running `docker compose up` stack, not Neon, and no `DATABASE_URL` in Phase **Development**. Optional ReportPortal reporting locally: `phase run --env=CI -- pnpm test:integration`.
+
+### Ephemeral dependencies for integration tests (CI + local)
+
+Integration tests never use Neon or a shared local database. No `DATABASE_URL` in the `ci` GitHub Actions environment, Phase **CI**, or Phase **Development**.
+
+| Service | Container image | Purpose |
+|---|---|---|
+| PostgreSQL | `postgres:16-alpine` | Drizzle migrations + DB integration tests |
+| Redis | `redis:7-alpine` | BullMQ / queue integration tests |
+
+**CI:** GitHub Actions `services:` containers; fixed internal hostnames (`postgres`, `redis`). `DATABASE_URL` / `REDIS_URL` set inline in the workflow.
+
+**Local:** Same images, **random host ports** published (`0` → container port) so parallel runs and other local services never collide. Connection URLs built at runtime from assigned ports.
+
+**Mandatory cleanup (non-negotiable):** Every integration test run — CI job end, local success, local failure, `Ctrl+C`, killed process, or runner timeout — must tear down all containers, volumes, and networks created for that run. Implementation requirements:
+
+- Register cleanup on `EXIT`, `SIGINT`, and `SIGTERM` (shell `trap` or Vitest `globalSetup` / `globalTeardown` with `finally`)
+- Stop and remove containers; remove named volumes created for the run
+- Use a unique run ID in container/network names (e.g. `pipewatch-test-<uuid>`) to avoid cross-run interference
+- After cleanup, prune dangling test resources (e.g. `docker container prune` / `docker volume prune` filtered by test label) so interrupted runs do not leave orphans on the developer machine or CI runner
+
+A failed or aborted test run must never leave Postgres/Redis containers running in the background.
+
+Hosted **staging** and **production** remain on separate Neon projects (Decision #17). Integration tests never touch them.
+
+PR status checks gate on lint + unit + integration; E2E is advisory on PRs, required on `main`.
 
 ---
 
@@ -591,7 +689,7 @@ Implemented as part of the Onboarding Wizard (see Section 13). Summary:
 
 - User creates workspace (wizard step 1) → installs GitHub App (wizard step 2)
 - GitHub redirects back with `installation_id` to `/onboarding/github-callback`
-- PipeWatch exchanges for installation token, discovers repos
+- PipeWatch exchanges for installation token, creates `integrations` row (`provider = 'github'`), discovers repos
 - User selects repos to track (wizard step 3) → backfill jobs enqueued
 - Backfill fetches run history per repo (default 30d, configurable per plan)
 - User lands on workspace dashboard — data populates as backfill completes
@@ -616,7 +714,7 @@ Implemented as part of the Onboarding Wizard (see Section 13). Summary:
 - Per-job: status, duration, runner
 - Per-step: status and duration within each job
 - Failed steps highlighted prominently
-- Link back to GitHub for full logs (no log storage in MVP)
+- "View on GitHub" link via `pipeline_runs.source_url` (no log storage in MVP)
 
 ### 12.5 Basic Insights
 
@@ -687,7 +785,7 @@ The onboarding wizard is the first-run experience for both editions. It guides t
 
 **Both editions.**
 
-- List of repos discovered from the installation (fetched from GitHub API)
+- List of repos discovered from the integration (fetched from GitHub API)
 - Multi-select: user picks which repos to track (all selected by default)
 - CE: no repo limit shown
 - Cloud Free: repo limit badge ("You can track up to 10 repos on the Free plan")
@@ -707,7 +805,7 @@ The onboarding wizard is the first-run experience for both editions. It guides t
 ### Wizard State Persistence
 
 - Step progress stored in URL only — no DB state needed
-- If user leaves mid-wizard and returns: resume from last completed step (infer from DB state: workspace exists? → skip step 1; installation exists? → skip step 2)
+- If user leaves mid-wizard and returns: resume from last completed step (infer from DB state: workspace exists? → skip step 1; integration exists? → skip step 2)
 - Wizard accessible again from dashboard via "Add another org" or "Connect new workspace"
 
 ### CE Bootstrap Variant
@@ -831,12 +929,13 @@ pipewatch/
 │   └── marketing/    # Next.js Marketing Site (CF Worker: pipewatch-{env}-marketing)
 ├── packages/
 │   ├── db/           # Drizzle schema, migrations, db client
-│   │   ├── schema/   # One file per entity (users.ts, workspaces.ts, etc.)
+│   │   ├── schema/   # One file per entity (users.ts, integrations.ts, pipeline_runs.ts, etc.)
 │   │   ├── migrations/
 │   │   └── index.ts  # Exported db client
 │   ├── types/        # Shared TypeScript types (API contracts, enums)
 │   ├── config/       # Shared ESLint, TypeScript, Tailwind configs
 │   └── utils/        # Shared utilities (crypto, date formatting, etc.)
+├── scripts/          # test-deps orchestration (ephemeral containers, cleanup traps)
 ├── turbo.json
 ├── pnpm-workspace.yaml
 └── package.json
@@ -862,18 +961,18 @@ Three queues, all in `apps/worker`.
 
 | Queue | Priority | Purpose |
 |---|---|---|
-| `webhook-events` | High | Process incoming GitHub webhook payloads |
-| `backfill` | Low | Initial history sync on installation |
+| `webhook-events` | High | Process incoming GitHub webhook payloads → upsert `pipeline_*` rows |
+| `backfill` | Low | Initial history sync on integration connect |
 | `polling` | Normal | Repeatable jobs for repos in polling mode |
 
 ### Job Types
 
 **`webhook-events` queue:**
-- `process-workflow-run` — upsert workflow_run row, trigger SSE broadcast
-- `process-workflow-job` — upsert workflow_job + steps rows, trigger SSE broadcast
+- `process-pipeline-run` — parse GitHub `workflow_run` payload, upsert `pipeline_runs` row, trigger SSE broadcast
+- `process-pipeline-job` — parse GitHub `workflow_job` payload, upsert `pipeline_jobs` + `pipeline_steps` rows, trigger SSE broadcast
 
 **`backfill` queue:**
-- `backfill-installation` — paginated fetch of all repos for an installation
+- `backfill-integration` — paginated fetch of all repos for an integration
 - `backfill-repo` — paginated fetch of run history for a single repo (child job)
 
 **`polling` queue:**
@@ -918,10 +1017,10 @@ One SSE connection per visible repo. Client opens connection when repo page is a
 
 ```typescript
 type SSEEvent =
-  | { type: 'run:created';    data: WorkflowRunSummary }
-  | { type: 'run:updated';    data: WorkflowRunSummary }
-  | { type: 'run:completed';  data: WorkflowRunSummary }
-  | { type: 'job:updated';    data: WorkflowJobSummary }
+  | { type: 'run:created';    data: PipelineRunSummary }
+  | { type: 'run:updated';    data: PipelineRunSummary }
+  | { type: 'run:completed';  data: PipelineRunSummary }
+  | { type: 'job:updated';    data: PipelineJobSummary }
   | { type: 'heartbeat';      data: { ts: number } }  // every 30s to keep connection alive
 ```
 
@@ -1007,14 +1106,16 @@ PipeWatch CE users set their own SMTP credentials. Any SMTP-compatible provider 
 
 ### Overview
 
-All deployments and secret syncs go through GitHub Actions. Phase is the source of truth for secrets but never pushes directly to Fly.io or Cloudflare — everything is CI-gated (Decision #33).
+All deployments go through GitHub Actions. Phase is the operator's secret store. The **only** Phase sync is Phase Console → GitHub Actions environments (`staging`, `production`, `ci`). Fly.io and CF Workers receive secrets from workflow code (`sync-secrets.yml`), reading from the `staging` or `production` GitHub Actions environment — never from Phase directly (Decision #33).
+
+Infrastructure resource names use the `prod` slug for production (see §4.3).
 
 **Workflow structure** (Decision #34):
 
 ```
 .github/workflows/
 ├── orchestrator.yml          # Main entry point — calls reusable workflows
-├── sync-secrets.yml          # Reusable: Phase → GitHub Actions → target service
+├── sync-secrets.yml          # Reusable: GitHub Actions env secrets → Fly.io + CF Workers
 ├── deploy-api.yml            # Reusable: build + deploy API to Fly.io
 ├── deploy-worker.yml         # Reusable: build + deploy Worker to Fly.io
 ├── deploy-web.yml            # Reusable: build + deploy dashboard to CF Workers
@@ -1036,7 +1137,7 @@ Push to `main` branch      → version check:
                                  → create git tag + draft GitHub release
                                else → no-op (CI only)
 Release published (draft→published)
-                           → orchestrator.yml (prod deploy + versioned CE image)
+                           → orchestrator.yml (production deploy + versioned CE image)
 Manual dispatch            → manual-sync-secrets.yml (secrets only, no deploy)
 ```
 
@@ -1059,15 +1160,17 @@ jobs:
   integration:
     needs: [lint, unit]
     uses: ./.github/workflows/_test-integration.yml
-    # Spins up Neon CI branch, runs migrations, tears down after
-    # Reports to ReportPortal (https://reportportal.mdg-labs.dev)
+    secrets: inherit
+    # environment: ci — set inside reusable workflow (ReportPortal, Sentry — not DATABASE_URL)
+    # Ephemeral Postgres + Redis service containers; migrations + tests; GHA tears down on job end
 
   e2e:
     needs: [integration]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
     uses: ./.github/workflows/_test-e2e.yml
+    secrets: inherit
+    # environment: ci — set inside reusable workflow
     # Runs Playwright against staging deployment
-    # Reports to ReportPortal
 ```
 
 PR gates: lint + unit + integration must pass. E2E advisory on PRs, required on staging/main.
@@ -1222,44 +1325,38 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
+    environment: ${{ inputs.environment }}  # GitHub environment: staging | production
     steps:
-      - uses: phase-dev/phase-action@v1
-        with:
-          phase-service-token: ${{ secrets.PHASE_SERVICE_TOKEN }}
-          phase-app-id: ${{ secrets.PHASE_APP_ID }}
-          environment: ${{ inputs.environment }}
-          export-to: github-actions  # writes to GITHUB_ENV / GitHub Actions secrets
+      # Secrets already in this GitHub Actions environment (synced from Phase Console).
+      # Push them to Fly.io and CF Workers — does NOT fetch from Phase at runtime.
 
-      # Fly.io secret sync (fly secrets set — does NOT trigger a deploy)
       - name: Sync secrets to Fly.io API app
         if: contains(inputs.services, 'all') || contains(inputs.services, 'api')
         run: |
-          flyctl secrets set             DATABASE_URL="${{ env.DATABASE_URL }}"             REDIS_URL="${{ env.REDIS_URL }}"             JWT_SECRET="${{ env.JWT_SECRET }}"             # ... other API secrets
+          flyctl secrets set             DATABASE_URL="${{ secrets.DATABASE_URL }}"             REDIS_URL="${{ secrets.REDIS_URL }}"             JWT_SECRET="${{ secrets.JWT_SECRET }}"             # ... other API secrets
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          FLY_APP: pipewatch-${{ inputs.environment }}-api
+          FLY_APP: pipewatch-${{ inputs.environment == 'production' && 'prod' || inputs.environment }}-api
 
       - name: Sync secrets to Fly.io Worker app
         if: contains(inputs.services, 'all') || contains(inputs.services, 'worker')
         run: |
-          flyctl secrets set             DATABASE_URL="${{ env.DATABASE_URL }}"             REDIS_URL="${{ env.REDIS_URL }}"             # ... other Worker secrets
+          flyctl secrets set             DATABASE_URL="${{ secrets.DATABASE_URL }}"             REDIS_URL="${{ secrets.REDIS_URL }}"             # ... other Worker secrets
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          FLY_APP: pipewatch-${{ inputs.environment }}-worker
+          FLY_APP: pipewatch-${{ inputs.environment == 'production' && 'prod' || inputs.environment }}-worker
 
-      # CF Workers secret sync via wrangler
       - name: Sync secrets to CF Worker (web)
         if: contains(inputs.services, 'all') || contains(inputs.services, 'web')
         run: |
-          echo "${{ env.NEXT_PUBLIC_API_URL }}" | wrangler secret put NEXT_PUBLIC_API_URL             --name pipewatch-${{ inputs.environment }}-web
+          echo "${{ secrets.NEXT_PUBLIC_API_URL }}" | wrangler secret put NEXT_PUBLIC_API_URL             --name pipewatch-${{ inputs.environment == 'production' && 'prod' || inputs.environment }}-web
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
       - name: Sync secrets to CF Worker (marketing)
         if: contains(inputs.services, 'all') || contains(inputs.services, 'marketing')
         run: |
-          echo "${{ env.UMAMI_WEBSITE_ID }}" | wrangler secret put UMAMI_WEBSITE_ID             --name pipewatch-${{ inputs.environment }}-marketing
+          echo "${{ secrets.UMAMI_WEBSITE_ID }}" | wrangler secret put UMAMI_WEBSITE_ID             --name pipewatch-${{ inputs.environment == 'production' && 'prod' || inputs.environment }}-marketing
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 ```
@@ -1293,7 +1390,7 @@ jobs:
     secrets: inherit
 ```
 
-Triggerable from the GitHub Actions UI. No code change, no deploy — purely syncs Phase → Fly.io + CF Workers for the selected environment and services.
+Triggerable from the GitHub Actions UI. No code change, no deploy — pushes secrets from the selected GitHub Actions environment to Fly.io + CF Workers for that environment.
 
 ---
 
@@ -1387,7 +1484,7 @@ Migrations run as a dedicated step in the deploy workflow **before** any `flyctl
           # ^ Neon unpooled URL — direct connection, required for DDL
 ```
 
-**`DATABASE_URL_UNPOOLED`** is a separate secret in Phase/GitHub Actions environments pointing to the Neon direct connection string (e.g. `postgresql://...@ep-xxx.eu-central-1.aws.neon.tech/pipewatch?sslmode=require` without the pooler subdomain). The regular `DATABASE_URL` uses the pooled endpoint for the running app.
+**`DATABASE_URL_UNPOOLED`** lives in `staging` and `production` GitHub Actions environments only — used by the pre-deploy migration step. Neon direct connection string (no pooler); required for Drizzle Kit DDL. The runtime `DATABASE_URL` uses the pooled endpoint.
 
 Migration job is a dependency of all deploy jobs — if migration fails, no service deploys.
 
@@ -1405,56 +1502,58 @@ Migration job is a dependency of all deploy jobs — if migration fails, no serv
 |---|---|---|---|
 | Push to `staging` | ✓ (staging) | staging all services | `dev`, `nightly` |
 | Push to `main` (version ≥1.0.0, no tag) | — | — (CI only + draft release created) | — |
-| Draft release published | ✓ (prod) | prod all services | `{version}`, `latest` |
+| Draft release published | ✓ (`production`) | production — all services | `{version}`, `latest` |
 | Manual dispatch | ✓ (chosen env + services) | none | — |
 | PR / any other branch | — (CI only) | — | — |
 
 ## 23. Environment Variables — Complete Reference
 
-All secrets managed via Phase Cloud (EU). Paths: `pipewatch / prod`, `pipewatch / staging`, `pipewatch / ci`, `pipewatch / dev`. See Section 10 for full sync architecture.
+All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, **Production**, and **CI** to matching GitHub Actions environments. **Development** is Phase-only (local CLI). Workflows push `staging` / `production` secrets to Fly/CF via `sync-secrets.yml`. See Section 10.
 
-| Variable | Services | Notes |
-|---|---|---|
-| `PIPEWATCH_EDITION` | all | `ce` \| `cloud` — drives all feature flags (see Section 25) |
-| `DATABASE_URL` | api, worker | Neon PostgreSQL pooled connection string (runtime) |
-| `DATABASE_URL_UNPOOLED` | CI only (migrations) | Neon direct connection string — required for Drizzle Kit DDL, not used at runtime |
-| `REDIS_URL` | api, worker | Redis on Fly.io |
-| `JWT_SECRET` | api | HS256 signing secret for access tokens |
-| `JWT_REFRESH_SECRET` | api | Separate secret for refresh tokens |
-| `GITHUB_APP_ID` | api, worker | GitHub App numeric ID |
-| `GITHUB_APP_PRIVATE_KEY` | api, worker | PEM key (base64 encoded in Phase) |
-| `GITHUB_WEBHOOK_SECRET` | api | For HMAC-SHA256 signature validation |
-| `GITHUB_CLIENT_ID` | api | For OAuth flow |
-| `GITHUB_CLIENT_SECRET` | api | For OAuth flow |
-| `GITHUB_APP_SLUG` | api | e.g. `pipewatch` — used to build install URL |
-| `SMTP_HOST` | api | Postmark SMTP (cloud) or user-configured (self-hosted) |
-| `SMTP_PORT` | api | 587 |
-| `SMTP_USER` | api | Postmark SMTP token |
-| `SMTP_PASS` | api | Postmark SMTP token |
-| `SMTP_FROM` | api | `noreply@pipewatch.app` |
-| `POSTMARK_API_KEY` | api | Broadcast stream only — bulk/newsletter sends |
-| `POSTMARK_BROADCAST_STREAM` | api | Postmark Message Stream ID for broadcast |
-| `STRIPE_SECRET_KEY` | api | Stripe secret key |
-| `STRIPE_WEBHOOK_SECRET` | api | For Stripe webhook signature validation |
-| `STRIPE_PRICE_PRO` | api | Stripe Price ID for Pro plan |
-| `STRIPE_PRICE_BUSINESS` | api | Stripe Price ID for Business plan |
-| `SENTRY_DSN` | api, worker, web, marketing | Per-service DSN from Sentry |
-| `SENTRY_AUTH_TOKEN` | CI only | Source map upload |
-| `SENTRY_ORG` | CI only | Sentry org slug |
-| `SENTRY_PROJECT` | CI only | Sentry project slug |
-| `PHASE_SERVICE_TOKEN` | CI only | Phase service token for GitHub Actions sync |
-| `PHASE_APP_ID` | CI only | Phase app ID for secret fetching in CI |
-| `REPORTPORTAL_URL` | CI only | `https://reportportal.mdg-labs.dev` |
-| `REPORTPORTAL_API_KEY` | CI only | ReportPortal API key |
-| `REPORTPORTAL_PROJECT` | CI only | ReportPortal project name |
-| `APP_URL` | api | `https://cloud.pipewatch.app` (staging: `https://staging-cloud.pipewatch.app`) |
-| `MARKETING_URL` | api | `https://pipewatch.app` |
-| `NODE_ENV` | all | `development` \| `staging` \| `production` |
-| `UMAMI_SCRIPT_URL` | marketing | Self-hosted Umami script URL |
-| `UMAMI_WEBSITE_ID` | marketing | PipeWatch-specific site ID in Umami |
-| `PIPEWATCH_MODE` | api, worker | `webhook` (default) \| `polling` — self-hosted override |
-| `RETENTION_DAYS` | worker | Self-hosted default retention override (default: 30) |
-| `LAUNCH_MODE` | marketing | `pre` \| `live` — controls CTA behaviour |
+**GitHub Actions environment column** — which environment holds each value after Phase sync:
+
+| Variable | GHA environment | Services | Notes |
+|---|---|---|---|
+| `PIPEWATCH_EDITION` | staging, production | all | `ce` \| `cloud` — drives all feature flags (see Section 25) |
+| `DATABASE_URL` | staging, production | api, worker | Neon PostgreSQL pooled connection string (runtime) |
+| `DATABASE_URL_UNPOOLED` | staging, production | deploy migrations | Neon direct connection — required for Drizzle Kit DDL at deploy time; not used in CI |
+| `REDIS_URL` | staging, production | api, worker | Redis on Fly.io |
+| `JWT_SECRET` | staging, production | api | HS256 signing secret for access tokens |
+| `JWT_REFRESH_SECRET` | staging, production | api | Separate secret for refresh tokens |
+| `GITHUB_APP_ID` | staging, production | api, worker | GitHub App numeric ID |
+| `GITHUB_APP_PRIVATE_KEY` | staging, production | api, worker | PEM key (base64 encoded in Phase) |
+| `GITHUB_WEBHOOK_SECRET` | staging, production | api | For HMAC-SHA256 signature validation |
+| `GITHUB_CLIENT_ID` | staging, production | api | For OAuth flow |
+| `GITHUB_CLIENT_SECRET` | staging, production | api | For OAuth flow |
+| `GITHUB_APP_SLUG` | staging, production | api | e.g. `pipewatch` — used to build install URL |
+| `SMTP_HOST` | staging, production | api | Postmark SMTP (cloud) or user-configured (self-hosted) |
+| `SMTP_PORT` | staging, production | api | 587 |
+| `SMTP_USER` | staging, production | api | Postmark SMTP token |
+| `SMTP_PASS` | staging, production | api | Postmark SMTP token |
+| `SMTP_FROM` | staging, production | api | `noreply@pipewatch.app` |
+| `POSTMARK_API_KEY` | staging, production | api | Broadcast stream only — bulk/newsletter sends |
+| `POSTMARK_BROADCAST_STREAM` | staging, production | api | Postmark Message Stream ID for broadcast |
+| `STRIPE_SECRET_KEY` | staging, production | api | Stripe secret key |
+| `STRIPE_WEBHOOK_SECRET` | staging, production | api | For Stripe webhook signature validation |
+| `STRIPE_PRICE_PRO` | staging, production | api | Stripe Price ID for Pro plan |
+| `STRIPE_PRICE_BUSINESS` | staging, production | api | Stripe Price ID for Business plan |
+| `SENTRY_DSN` | staging, production | api, worker, web, marketing | Per-service DSN from Sentry |
+| `SENTRY_AUTH_TOKEN` | ci | CI builds | Source map upload |
+| `SENTRY_ORG` | ci | CI builds | Sentry org slug |
+| `SENTRY_PROJECT` | ci | CI builds | Sentry project slug |
+| `REPORTPORTAL_URL` | ci (var) | CI test jobs | e.g. `https://reportportal.mdg-labs.dev` — use GHA **var**, not hardcoded |
+| `REPORTPORTAL_API_KEY` | ci (secret) | CI test jobs | ReportPortal API key |
+| `REPORTPORTAL_PROJECT` | ci (var) | CI test jobs | ReportPortal project name |
+| `FLY_API_TOKEN` | staging, production | deploy workflows | Fly.io deploy + `flyctl secrets set` |
+| `CF_API_TOKEN` | staging, production | deploy workflows | Cloudflare Workers deploy + `wrangler secret put` |
+| `APP_URL` | staging, production | api | `https://cloud.pipewatch.app` (staging: `https://staging-cloud.pipewatch.app`) |
+| `MARKETING_URL` | staging, production | api | `https://pipewatch.app` |
+| `NODE_ENV` | staging, production | all | `development` \| `staging` \| `production` |
+| `UMAMI_SCRIPT_URL` | staging, production | marketing | Self-hosted Umami script URL |
+| `UMAMI_WEBSITE_ID` | staging, production | marketing | PipeWatch-specific site ID in Umami |
+| `PIPEWATCH_MODE` | staging, production | api, worker | `webhook` (default) \| `polling` — self-hosted override |
+| `RETENTION_DAYS` | staging, production | worker | Self-hosted default retention override (default: 30) |
+| `LAUNCH_MODE` | staging, production | marketing | `pre` \| `live` — controls CTA behaviour |
 
 ---
 
@@ -1667,7 +1766,7 @@ Key architectural and product decisions, rationale, and date recorded.
 | 9 | **GitHub App private for MVP** | Prevents uncontrolled installs before the product is stable; switch to public post-MVP when ready for general availability | Public from day one (risky pre-launch) | Jun 2026 |
 | 10 | **Postmark + own `subscribers` table for waitlist/newsletter** | Postmark already in use; own table gives full control, no vendor lock-in, reusable across MDG Labs products; double opt-in + unsubscribe token pattern | Loops.so (extra dependency), plain Neon table without Postmark (no confirmation email) | Jun 2026 |
 | 11 | **Workspaces as top-level multi-tenancy unit from day one** | Retrofitting multi-tenancy is painful; all resources workspace-scoped from first migration; self-hosted runs in single-workspace mode | Single-tenant only for MVP, add later (rejected — too costly to retrofit) | Jun 2026 |
-| 12 | **Neon PostgreSQL for database** | Serverless, per-branch databases for CI integration tests (zero shared state between runs), consistent with existing MDG Labs stack | PlanetScale (MySQL, no Drizzle preference), Supabase (more opinionated) | Jun 2026 |
+| 12 | **Neon PostgreSQL for database** | Serverless Postgres for hosted staging/production; consistent with existing MDG Labs stack. CI integration tests use ephemeral GHA service containers instead (Decision #38) | PlanetScale (MySQL, no Drizzle preference), Supabase (more opinionated), Neon branches for CI (rejected — unnecessary cloud dependency in CI) | Jun 2026 |
 | 13 | **Redis on Fly.io for queue/cache** | Cheapest option for MVP; volume-backed Fly app, no managed Redis cost; co-located with API and worker on Fly.io | Upstash (higher cost at scale), Railway Redis | Jun 2026 |
 | 14 | **`pipewatch.app` domain** | Secured; `.app` is clean and product-appropriate | `.io`, `.dev` (not available or less preferred) | Jun 2026 |
 | 15 | **Umami analytics on marketing site only** | Privacy-friendly, self-hosted on existing MDG Labs instance, zero extra cost; not needed in the app itself | Plausible, Google Analytics (rejected — privacy), Fathom | Jun 2026 |
@@ -1686,12 +1785,14 @@ Key architectural and product decisions, rationale, and date recorded.
 | 28 | **`PIPEWATCH_EDITION` single flag drives all feature flags** | One var → all runtime behaviour derived automatically; no manual flag config; type-safe via `packages/config/edition.ts`; consistent with Ghost, Plausible, Gitea edition patterns | Per-feature env vars (rejected — error-prone, inconsistent) | Jun 2026 |
 | 29 | **Onboarding wizard with URL-tracked step state** | URL state enables deep-linking, back-button support, debuggability; step resumption inferred from DB state | DB-persisted wizard state (over-engineered), no wizard (poor UX) | Jun 2026 |
 | 30 | **CE bootstrap via GitHub OAuth** | PipeWatch is a developer tool — all CE users have GitHub; avoids password hashing, reset flows; OAuth already implemented | Email+password bootstrap (rejected — extra complexity, more attack surface) | Jun 2026 |
-| 33 | **All secret syncs and deploys via CI only (no Phase native push to CF/Fly)** | Single source of truth for deployments — every change is a Git event, auditable, reversible; per-job var scoping (deploy:web only gets web vars, not DB creds); consistent mental model across Fly.io and CF Workers; Phase Console stays as secret store, not deployment tool. Manual sync workflow available for out-of-band updates without triggering a deploy. | Phase native CF Workers sync (rejected — uncontrolled, not git-gated, no per-service scoping) | Jun 2026 |
+| 33 | **Phase syncs to GitHub Actions only; Fly/CF via workflow code** | Phase Console → GitHub Actions environments (`staging`, `production`, `ci`) is the only Phase sync. `sync-secrets.yml` pushes from GHA env to Fly/CF — no Phase→Fly/CF path, no `phase-action` in workflows. `ci` holds test-tool credentials only (ReportPortal, Sentry upload) — no database URLs. | Hardcoded secrets in YAML (rejected), Phase native push to CF/Fly (rejected), `phase-action` in CI (rejected) | Jun 2026 |
 | 34 | **Orchestrator CI workflow calling reusable sub-workflows** | Central `.github/workflows/orchestrator.yml` calls reusable workflows per service; secret sync as standalone reusable workflow callable both from orchestrator and manually; clean separation of concerns; easy to add/remove services without touching orchestrator logic | Monolithic single workflow file (rejected — unmanageable at scale), per-service independent workflows (rejected — no central coordination) | Jun 2026 |
 | 36 | **CE: auto-migrate at API startup; Cloud: explicit migrate step pre-deploy using unpooled Neon URL** | CE users need zero-friction upgrades — automatic migration on start is the right UX; Cloud needs explicit pre-deploy migration step to avoid deploying new code against old schema; unpooled URL required for Drizzle Kit DDL transactions (pooler breaks DDL) | CE: manual migration CLI (rejected — friction on upgrade), Cloud: migrate inside app startup (rejected — race condition with multiple instances) | Jun 2026 |
-| 35 | **Branch-based environment routing + release-gated production deploys** | `staging` branch → staging deploy + nightly CE image; `main` branch → version check → auto-tag + draft release if version >1.0.0 and no existing tag; published release → prod deploy + versioned CE image. Clean separation: staging is always live, prod is intentionally gated behind a release publish action. | Auto-deploy main to prod (rejected — too risky), manual prod deploy only (rejected — too much friction) | Jun 2026 |
-| 32 | **Phase over Infisical for secrets management** | Phase: E2E encrypted (server never sees plaintext), SOC 2 Type II, EU/Frankfurt data residency (AWS eu-central-1), native CF Workers + GitHub Actions sync; Infisical lacks E2E encryption and native CF Workers sync. GDPR-compatible: subprocessors verified (AWS DE, Cloudflare, Google Workspace US for internal comms only, Stripe for billing). DPA available via Trust Center. | Infisical (one existing project, lacks E2E encryption and native CF Workers sync), Doppler (US-only hosting) | Jun 2026 |
-| 31 | **Denormalize `workspace_id` onto runs/jobs (not steps)** | Workspace-scoped queries hit runs/jobs constantly (dashboard, lists) — avoiding deep JOINs matters; steps only load in single-run context so JOIN is fine there | Fully normalized (rejected — JOIN cost on hot paths), denormalize everywhere incl steps (rejected — unnecessary) | Jun 2026 | Self-hosted users should have full feature parity; API keys are a power-user feature that drives adoption | Pro+ only (rejected — penalises self-hosters, contradicts open-core philosophy) | Jun 2026 |
+| 35 | **Branch-based environment routing + release-gated production deploys** | `staging` branch → staging deploy + nightly CE image; `main` branch → version check → auto-tag + draft release if version >1.0.0 and no existing tag; published release → production deploy + versioned CE image. GitHub Actions environments: `staging` and `production`. Clean separation: staging is always live, production is intentionally gated behind a release publish action. | Auto-deploy main to production (rejected — too risky), manual production deploy only (rejected — too much friction) | Jun 2026 |
+| 32 | **Phase over Infisical for secrets management** | Phase: E2E encrypted (server never sees plaintext), SOC 2 Type II, EU/Frankfurt data residency (AWS eu-central-1), native GitHub Actions environment sync (configured in Phase Console); Infisical lacks E2E encryption. GDPR-compatible: subprocessors verified (AWS DE, Cloudflare, Google Workspace US for internal comms only, Stripe for billing). DPA available via Trust Center. | Infisical (one existing project, lacks E2E encryption), Doppler (US-only hosting) | Jun 2026 |
+| 31 | **Denormalize `workspace_id` onto runs/jobs (not steps)** | Workspace-scoped queries hit runs/jobs constantly (dashboard, lists) — avoiding deep JOINs matters; steps only load in single-run context so JOIN is fine there | Fully normalized (rejected — JOIN cost on hot paths), denormalize everywhere incl steps (rejected — unnecessary) | Jun 2026 |
+| 37 | **Vendor-neutral schema, GitHub-only MVP** | Core tables use neutral names (`integrations`, `pipeline_*`, `external_*`, `integrations.provider`) so additional CI platforms can be added post-MVP without schema migrations. MVP product, onboarding, webhooks, and ingestion remain GitHub Actions only — no provider abstraction layer or multi-provider UI | GitHub-specific schema names (rejected — costly to rename later), full multi-provider architecture pre-launch (rejected — YAGNI before product validation) | Jun 2026 |
+| 38 | **Ephemeral containers for integration tests (CI + local)** | Postgres + Redis per run; no Neon in tests; no `DATABASE_URL` in `ci`/Development Phase envs. **CI:** GHA `services:`. **Local:** same images, random host ports. **Cleanup mandatory** on success, failure, and interrupt (`EXIT`/`SIGINT`/`SIGTERM`) — stop containers, remove volumes, prune orphans. Hosted DB (Neon) only for staging/production | Neon CI branches (rejected), shared local `docker compose` for tests (rejected — port conflicts, stale state), skip cleanup on failure (rejected — leaks containers) | Jun 2026 |
 
 ---
 
@@ -1710,7 +1811,7 @@ Key architectural and product decisions, rationale, and date recorded.
 | 9 | Waitlist tool | Marketing | — | **Resolved:** Postmark + own `subscribers` table — Decision #10 ✓ |
 | 10 | Insights time range | Product | — | **Resolved:** fixed toggle (7d/30d) for MVP, date picker post-MVP — Decision #19 ✓ |
 | 11 | Repo limit enforcement | Product | — | **Resolved:** hard block (403) — Decision #18 ✓ |
-| 12 | ReportPortal instance URL | Testing | — | `https://reportportal.mdg-labs.dev` — resolved ✓ |
+| 12 | ReportPortal instance URL | Testing | — | **Resolved:** `REPORTPORTAL_URL` as GHA **var** in `ci` environment — not hardcoded in workflows ✓ |
 
 ---
 
@@ -1727,6 +1828,7 @@ Key architectural and product decisions, rationale, and date recorded.
 | SSO | SAML/OIDC for enterprise self-hosted | v1.3 |
 | Advanced analytics | P50/P95 duration, flaky test detection, cost estimation | v1.3 |
 | GitHub Enterprise Server | Support for on-prem GitHub | v2.0 |
+| Additional CI platforms | GitLab CI and other providers via `integrations.provider` | post-MVP |
 | Loops integration | Transactional email for invites, waitlist, notifications | v1.1 |
 
 ### 29.1 AI Recommendations (v1.3)
@@ -1773,4 +1875,4 @@ Bidirectional sync between pipeline state and external issue trackers. Opt-in pe
 
 ---
 
-*PipeWatch MVP PRD v0.6 — MDG Labs — June 2026*
+*PipeWatch MVP PRD v0.7 — MDG Labs — June 2026*

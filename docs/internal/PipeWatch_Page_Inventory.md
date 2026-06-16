@@ -1,6 +1,6 @@
 # PipeWatch — Page Inventory
 
-**Status:** Draft | **Version:** 0.2 | **Author:** MDG Labs | **Date:** June 2026
+**Status:** Draft | **Version:** 0.3 | **Author:** MDG Labs | **Date:** June 2026
 
 Three surfaces:
 - **Marketing Site** — `pipewatch.app` (public)
@@ -24,7 +24,7 @@ These apply to all authenticated app pages (B-series) unless stated otherwise.
 
 - **App shell:** persistent left sidebar (workspace switcher at top, nav items, user menu at bottom) + main content area. Top bar shows breadcrumbs + global actions.
 - **Workspace switcher:** dropdown at top of sidebar; lists all workspaces the user belongs to; "Create workspace" at the bottom. CE: hidden (single workspace).
-- **Sidebar nav (per workspace):** Dashboard, Insights, Settings (expandable: General, Members, Installations, API Keys, Billing). Billing hidden in CE.
+- **Sidebar nav (per workspace):** Dashboard, Insights, Settings (expandable: General, Members, Integrations, API Keys, Billing). Billing hidden in CE.
 - **Auth gating:** unauthenticated access to any B-page → redirect to `/sign-in?next=<path>`.
 - **Role gating:** write actions hidden/disabled for `member` role; settings mutation pages require `admin` or `owner`.
 - **Loading states:** skeleton loaders for data tables and cards; never a blank screen.
@@ -92,7 +92,7 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 **Content tree:**
 - Getting Started → Cloud quickstart, CE quickstart (Docker Compose)
 - GitHub App Setup → creating the app, permissions & events, webhook URL, Cloudflare Tunnel guide
-- Concepts → Workspaces, Installations, Run lifecycle, Webhook vs Polling mode, Editions
+- Concepts → Workspaces, Integrations, Run lifecycle, Webhook vs Polling mode, Editions
 - Self-Hosted (CE) Reference → environment variables, Docker Compose config, upgrading, backups
 - API Reference → link to `cloud.pipewatch.app/api/docs` (Scalar)
 
@@ -219,7 +219,7 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 - Quick tips; "Go to Dashboard" → `/workspaces/:slug/`
 
 **Functions:**
-- Step resumption from DB state (workspace exists → skip 1; installation exists → skip 2)
+- Step resumption from DB state (workspace exists → skip 1; integration exists → skip 2)
 - Each step validates before advancing; back navigation preserved in URL
 - Re-entrant: reachable later via "Add workspace" / "Connect another org"
 
@@ -231,14 +231,14 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 
 **Layout:**
 - **Top:** global health bar — segmented summary (healthy / running / failing) + total repo count as a horizontal stat strip.
-- **Controls row:** sort dropdown, status filter chips (All / Failing / Running / Healthy), installation filter (if multiple orgs), view toggle (cards / table).
+- **Controls row:** sort dropdown, status filter chips (All / Failing / Running / Healthy), integration filter (if multiple orgs), view toggle (cards / table).
 - **Main:** responsive grid of repo cards (default) or dense table.
   - **Repo card:** repo name (+ GitHub link), last-run status badge, last workflow + branch, relative time, duration, 7-day failure-rate sparkline, live "running" pulse if active.
 - **Empty state:** "No repos connected yet" → "Connect GitHub" → onboarding step 2.
 
 **Functions:**
 - Sort: last run / name / failure rate
-- Filter: status, installation
+- Filter: status, integration
 - View toggle: cards ↔ table (persisted in UI state)
 - Click repo → B4
 - "Connect another org" → onboarding
@@ -295,7 +295,7 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 **Purpose:** Full drill-down into a single workflow run.
 
 **Layout:**
-- **Header:** workflow name, status badge, total duration, started/completed timestamps. Sub-line: branch, commit SHA (GitHub link) + message, actor, trigger. "View on GitHub" button.
+- **Header:** pipeline name, status badge, total duration, started/completed timestamps. Sub-line: branch, commit SHA (GitHub link) + message, actor, trigger. "View on GitHub" button (uses `source_url` from API).
 - **Job graph:** visual DAG of jobs (sequential + parallel lanes). Node: job name, status badge, duration, runner name; running jobs show live elapsed time.
 - **Job panels:** expandable list below the graph. Each job → its steps.
   - **Step row:** number, name, status badge, duration. Failed steps highlighted (red), auto-expanded.
@@ -304,7 +304,7 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 **Functions:**
 - Expand/collapse job panels (failed auto-expanded)
 - Job graph node click → scroll to / expand that job's panel
-- "View on GitHub" → Actions run page (full logs; no log storage in MVP)
+- "View on GitHub" → `pipeline_runs.source_url` (full logs on GitHub; no log storage in MVP)
 - Live updates via SSE while in progress (status, durations, step transitions)
 - Live elapsed-time ticker on running jobs
 
@@ -367,18 +367,18 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 
 ---
 
-## B10. Installations `/workspaces/:slug/settings/installations`
+## B10. Integrations `/workspaces/:slug/settings/integrations`
 
-**Purpose:** Manage connected GitHub App installations. Requires admin/owner.
+**Purpose:** Manage connected GitHub App integrations. Requires admin/owner. MVP: GitHub only (`integrations.provider = 'github'`).
 
-**Layout:** list of installation cards. Each: account name + type (Org/User) badge, connected-repos count, connected-at, expand for per-repo enable/disable toggles. "Add installation" button top.
+**Layout:** list of integration cards. Each: account name + type (Org/User) badge, connected-repos count, connected-at, expand for per-repo enable/disable toggles. "Add integration" button top.
 
 **Functions:**
-- Add installation → GitHub App install page → callback
-- Remove installation → disconnects all its repos (confirm modal)
+- Add integration → GitHub App install page → callback
+- Remove integration → disconnects all its repos (confirm modal)
 - Per-repo enable/disable toggle (disabled = stored, not synced)
-- Manual "Re-sync" per installation
-- Installation token health/last-refresh (read-only)
+- Manual "Re-sync" per integration
+- Integration token health/last-refresh (read-only)
 
 ---
 
@@ -465,7 +465,7 @@ Redirects to GitHub OAuth with signed state cookie (CSRF).
 Validates state, exchanges code, upserts user, issues JWT + refresh token, redirects (onboarding / dashboard / `?next=`).
 
 ### B17. GitHub App Install Callback `GET /onboarding/github-callback`
-Receives `installation_id`, persists installation, kicks off repo discovery, returns to wizard step 3.
+Receives GitHub `installation_id`, persists `integrations` row (`provider = 'github'`), kicks off repo discovery, returns to wizard step 3.
 
 ### B18. Invite Accept `/invite/:token`
 Public landing from invite email. Logged out → `/sign-in?next=/invite/:token`. Logged in → shows workspace + role, "Accept" → `POST /invite/:token/accept` → joins → dashboard. Expired/invalid → error state.
@@ -505,7 +505,7 @@ Live run/job updates. Auth via one-time query token (`GET /api/v1/sse-token`). H
 | B7 | `/workspaces/:slug/insights` | App | Yes | | ✓ |
 | B8 | `/workspaces/:slug/settings` | App | Yes | admin/owner | ✓ |
 | B9 | `/workspaces/:slug/settings/members` | App | Yes | admin/owner to mutate | ✓ |
-| B10 | `/workspaces/:slug/settings/installations` | App | Yes | admin/owner | ✓ |
+| B10 | `/workspaces/:slug/settings/integrations` | App | Yes | admin/owner | ✓ |
 | B11 | `/workspaces/:slug/settings/api-keys` | App | Yes | admin/owner, all editions | ✓ |
 | B12 | `/workspaces/:slug/settings/billing` | App | Yes | owner, Cloud only | ✓ |
 | B13 | `/account` | App | Yes | | ✓ |
@@ -521,4 +521,4 @@ Live run/job updates. Auth via one-time query token (`GET /api/v1/sse-token`). H
 
 ---
 
-*PipeWatch Page Inventory v0.2 — MDG Labs — June 2026*
+*PipeWatch Page Inventory v0.3 — MDG Labs — June 2026*
