@@ -1,0 +1,119 @@
+---
+description: Every new env var must be registered via Infisical, added to .env.example, validated in the app config schema, and documented before commit
+alwaysApply: true
+---
+
+# New environment variables — Infisical-first workflow
+
+When introducing **any** new env var, complete all four steps below in the **same task commit**. The verifier (Layer 3c) checks all four. Grounded in spec §15 (configuration model).
+
+## Infisical project (this repo)
+
+| Field | Value |
+|---|---|
+| Instance URL | `https://eu.infisical.com` (Infisical Cloud, EU) |
+| Project slug | `slugbase-cloud` |
+| Environments | `dev` · `staging` · `prod` |
+
+All keys for an environment live at the **project root** in Infisical (no subfolders). CI (`Infisical/secrets-action`) and local `infisical run --env=<slug>` inject the full environment. **Never put true secrets in `VITE_*` or `PUBLIC_*` keys** — those values are inlined into client bundles at build time.
+
+Point the local CLI at Infisical Cloud (EU) once (`infisical login --domain https://eu.infisical.com`; CLI defaults to US `app.infisical.com` without this). Optionally `export INFISICAL_API_URL=https://eu.infisical.com`. Select the project via the committed `.infisical.json` (or `--projectId`). **Phase CLI is not used — Infisical only** (decision #34). CI fetches secrets via OIDC (`Infisical/secrets-action`); GitHub secret `INFISICAL_DOMAIN` must be `https://eu.infisical.com`. Only `INFISICAL_DOMAIN` and `INFISICAL_OIDC_IDENTITY_ID` live in GitHub Actions secrets (spec §22.9).
+
+## This rule fires when you
+
+- Reference a new env var in application code
+- Add a field to an app config / env schema
+- Add a row to `.env.example`
+- Reference a new secret or config value in any package
+
+## Required steps (in order)
+
+### 1. Set the value in Infisical `dev` via CLI
+
+```bash
+# instance domain is set once via `infisical login --domain https://eu.infisical.com`
+infisical secrets set <KEY>=<value> --env=dev --projectId=<slugbase-cloud projectId from .infisical.json>
+```
+
+For security-critical values (secrets, keys) that you shouldn't invent: **stop and ask the user** rather than generating a placeholder and committing code that references it.
+
+| Pattern | Example |
+|---|---|
+| DB connection | `DATABASE_URL=postgresql://slugbase:slugbase@localhost:5432/slugbase` |
+| Boolean toggle | `PUBLIC_REGISTRATION=false` |
+| Optional / empty | `SENTRY_DSN=` |
+| Generated secret | `SESSION_SECRET=$(openssl rand -hex 32)` (run once, reuse) |
+
+### 2. Add the key to `.env.example`
+
+Key name only — **no value**:
+
+```diff
+# .env.example
++ SESSION_SECRET=
+```
+
+### 3. Add to the app config schema (startup validation)
+
+The app validates required secrets at startup and refuses to run insecurely in production (spec §15). Use strict validation — **no silent defaults for security-critical values**:
+
+```typescript
+// ✅ strict — fails fast with clear error if missing
+SESSION_SECRET: z.string().min(32),
+ENCRYPTION_KEY: z.string().min(32),
+
+// ✅ optional with documented default
+PUBLIC_REGISTRATION: envBoolean(false),
+
+// ❌ silent fallback for security config — forbidden
+SESSION_SECRET: z.string().default('dev-secret'),
+```
+
+### 4. Document in the configuration reference
+
+Add a row to **[`docs/internal/environment-variables.md`](../../docs/internal/environment-variables.md)** using the standard table columns (key, purpose, hosted/self-host, required, secret, when set, example value).
+
+Spec §15 lists the full set of required configuration categories:
+- Required secrets: `SESSION_SECRET`, `ENCRYPTION_KEY`
+- DB: engine choice + connection
+- Public base URL + frontend origin
+- Deployment flags: public registration, email verification required
+- Per-interface credentials: SMTP, AI, Stripe (hosted), Turnstile (hosted), analytics, error reporting
+
+## Verifier checks (Layer 3c)
+
+For any task that adds env-var references, verify:
+
+```bash
+# Key exists in Infisical dev (env root — do not print values)
+infisical secrets get <KEY> --env=dev
+
+# Key is in .env.example
+rg -n "^<KEY>=" .env.example
+
+# Key appears in at least one config schema
+rg -n "\b<KEY>\b" "packages/*/src/**/config*"
+
+# Key appears in environment-variables.md
+rg -n "\b<KEY>\b" docs/internal/environment-variables.md
+```
+
+All four must pass. Missing any one fails the task.
+
+## Forbidden
+
+- **Hardcoded fallbacks for security-critical config** (`SESSION_SECRET || 'hardcoded'`) — use schema validation to enforce presence instead.
+- **Committing `.env` / `.env.local` with real values** — only `.env.example` is allowed.
+- **Partial registration** — code references the var but Infisical + `.env.example` + schema + docs are not all updated.
+- **Inventing values for unknown secrets** — stop and ask the user.
+- **Setting `staging` or `prod` secrets from a developer machine** — those flow via the operator's Infisical UI / OIDC sync.
+
+## Required spec §15 secrets (never omit or soft-default)
+
+| Key | Purpose |
+|---|---|
+| `SESSION_SECRET` | Sign/verify server-side sessions |
+| `ENCRYPTION_KEY` | Encrypt at-rest sensitive values (spec §11.11) |
+| `DATABASE_URL` | DB connection (engine-specific) |
+| `APP_BASE_URL` | Externally reachable HTTPS base URL |
+| `FRONTEND_ORIGIN` | Front-end origin for CORS |

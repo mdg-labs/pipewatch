@@ -1,0 +1,94 @@
+---
+description: All UI strings must live in the repo JSON message catalog; hard-coded strings in UI code are forbidden. Spec §17.
+alwaysApply: true
+---
+
+# SlugBase i18n — repo-JSON Rule (spec §17)
+
+## Policy
+
+SlugBase ships **English (en) and German (de)** at v1. Every string surfaced in the UI — labels, errors, toasts, tooltips, empty-state copy, confirmation dialogs, accessible `aria-label`s — **must be in the message catalog**. Hard-coded strings in component/template code are a commit-blocker.
+
+## Authority model
+
+| Concern | Who leads | Mechanism |
+|---------|-----------|-----------|
+| **Key inventory** (new/changed keys, English when shipping features) | **Repo** | Edit `locales/*.json` → `i18n:codegen` (when en key set changes) |
+| **Translation values** (German) | **Repo** | Edit `locales/de.json` in the same PR or follow-up with Jira `i18n` label |
+| **Invariant before merge / CI / release** | **CI** | `i18n:validate` + `i18n:check:hardcoded` |
+
+Committed catalogs: `packages/web/app/i18n/locales/{en,de}.json` and `packages/marketing/src/i18n/locales/{en,de}.json`. Central locale list: `i18n/supported-locales.json`. Thin `messages.ts` wrappers import JSON at build/runtime.
+
+The **web** app uses **react-i18next** with static JSON resources (`createI18n` in `packages/web/app/i18n/i18n.ts`). Marketing uses native `t(locale, key)` from `packages/marketing/src/i18n/translate.ts` at build time.
+
+## Developer workflow
+
+```bash
+# New or changed keys/values in repo JSON
+edit locales/*.json
+pnpm i18n:codegen                    # if en.json key set changed
+pnpm i18n:validate
+pnpm i18n:check:hardcoded
+
+# CI / release gate
+pnpm i18n:validate
+pnpm i18n:check:hardcoded
+pnpm test:unit
+```
+
+| Command | When |
+|---------|------|
+| `i18n:codegen` | After `en.json` key set changes |
+| `i18n:validate` | After locale JSON edits; CI gate |
+| `i18n:check:hardcoded` | CI gate — no inline English in UI sources |
+| `i18n:merge` | Dev sanity — print merged key counts |
+
+## Agent obligation — locale JSON edits
+
+Any agent task that creates or modifies:
+
+- `packages/web/app/i18n/locales/*.json`
+- `packages/marketing/src/i18n/locales/*.json`
+- `i18n/supported-locales.json`
+
+**must**, before marking the task complete:
+
+1. If **`en.json` key set changed** → `pnpm i18n:codegen`
+2. Confirm: `pnpm i18n:validate`
+3. Report validation outcome in the task summary
+
+## Authoring rule — new UI code
+
+1. **Author against the catalog**: write `t('key.name')` (web) or `t(locale, 'key.name')` (marketing) — never inline English strings.
+2. **Add the key to both `locales/en.json` and `locales/de.json`**, run **`pnpm i18n:codegen`** if keys changed.
+3. **German translation required before merge**: missing German is a Fast-Follow blocker — add translation or create SB Jira task with label `i18n`.
+4. **Key naming**: `<scope>.<context>.<descriptor>` — lowercase, dot-separated.
+5. **No JSX-only translation workarounds**.
+
+## Language resolution order (spec §17)
+
+```
+signed-in user preference → Accept-Language → fallback: en
+```
+
+## AI suggestion output language (spec §17)
+
+Pass the user's resolved locale as `outputLanguage`. Do not default to English when preference is German.
+
+## Verifier checks (Layer 3c)
+
+For any task that adds or changes UI strings:
+
+```bash
+rg -n '"[A-Z][a-z]' packages/web/app
+rg -n 't\("[a-z][a-zA-Z]' packages/web/app
+pnpm i18n:validate                                   # when locale JSON touched
+pnpm test:scripts                                    # i18n catalog utils
+```
+
+## Forbidden
+
+- **Inline English strings in UI code**
+- **Skipping German on merge** without Jira `i18n` task
+- **Skipping `i18n:codegen` after `en.json` key-set changes**
+- **Silently falling back to key name** — warn in dev; throw in CI for missing default-locale keys
