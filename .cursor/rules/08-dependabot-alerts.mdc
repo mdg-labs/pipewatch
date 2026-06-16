@@ -1,0 +1,43 @@
+---
+description: Never dismiss Dependabot security alerts manually — fix and commit instead
+alwaysApply: true
+---
+
+# Dependabot alert resolution policy
+
+## Rule
+
+**Never dismiss a Dependabot alert via the GitHub UI or API** (`PATCH state=dismissed`).
+
+The correct resolution is to **upgrade the vulnerable dependency** and land the fix on **`staging`**. GitHub auto-closes the alert when the vulnerability is no longer present. Promote to `main` only via the release workflow.
+
+## Correct workflow
+
+1. Read the alert: package, vulnerable range, patched version.
+2. Upgrade (`pnpm update <pkg>@<patched>` or edit `package.json` + `pnpm install`).
+3. Confirm `pnpm-lock.yaml` no longer pins the vulnerable version.
+4. Run the full CI gate (`06-local-ci-before-commit.mdc`).
+5. Commit: `fix(deps)[#N]: bump <pkg> to <version> (CVE-XXXX-XXXX)` — link the GitHub Bug issue if one exists.
+
+Use `.cursor/skills/dependabot-triage/SKILL.md` to create a Bug issue when none exists.
+
+## Dismissal is only acceptable when
+
+- The vulnerability **does not affect this project's usage** **AND**
+- The user has explicitly reviewed the CVE **AND**
+- The reason is documented in the alert comment before dismissing.
+
+Even then, prefer a version bump if available.
+
+## Anti-patterns
+
+```bash
+# ❌ NEVER
+gh api repos/mdg-labs/pipewatch/dependabot/alerts/<N> \
+  -X PATCH -f state=dismissed
+
+# ✅ CORRECT
+pnpm update hono@<patched> --filter @pipewatch/api
+git add apps/api/package.json pnpm-lock.yaml
+git commit -m "fix(deps)[#42]: bump hono to <version> (CVE-2024-XXXX)"
+```

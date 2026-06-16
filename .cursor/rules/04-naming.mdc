@@ -1,0 +1,67 @@
+---
+description: File, directory, env variable, database, and product vocabulary naming conventions
+alwaysApply: true
+---
+
+# Naming conventions
+
+## Files & directories
+
+| Item | Convention | Example |
+|---|---|---|
+| Directories | `kebab-case` | `apps/api/`, `packages/db/` |
+| TypeScript source files | `kebab-case.ts` | `github-webhook.ts`, `pipeline-run.service.ts` |
+| React component files | `PascalCase.tsx` | `RunDetailPage.tsx`, `WorkspaceSwitcher.tsx` |
+| Test files (unit) | colocated `*.test.ts` or `*.spec.ts` | `github-webhook.test.ts` |
+| Test files (integration) | `*.integration.test.ts` | `runs.integration.test.ts` |
+| Markdown docs | `PascalCase` or `kebab-case` per existing | `PipeWatch_MVP_PRD.md` |
+| Env variable names | `SCREAMING_SNAKE_CASE` | `JWT_SECRET`, `PIPEWATCH_EDITION` |
+| Public client env | `NEXT_PUBLIC_` prefix | `NEXT_PUBLIC_API_URL` |
+
+## Code identifiers
+
+| Item | Convention | Example |
+|---|---|---|
+| TypeScript types & interfaces | `PascalCase` | `PipelineRun`, `WorkspaceRole`, `Integration` |
+| TypeScript variables & functions | `camelCase` | `verifyWebhookSignature`, `getActiveWorkspace` |
+| Constants | `SCREAMING_SNAKE_CASE` | `DEFAULT_RETENTION_DAYS`, `JWT_EXPIRY_SECONDS` |
+| React components | `PascalCase` | `<RunCard />`, `<PipelineStatusBadge />` |
+| Hooks | `useCamelCase` | `useWorkspace`, `useSseStream` |
+
+## Database (Decision #37 — vendor-neutral)
+
+- Model names: `PascalCase` (`Workspace`, `Integration`, `PipelineRun`, `PipelineJob`)
+- Table names: `snake_case` (`workspaces`, `integrations`, `pipeline_runs`, `pipeline_jobs`, `pipeline_steps`)
+- Column names: `snake_case` (`workspace_id`, `external_run_id`, `created_at`)
+- Provider IDs: `external_*` prefix (`external_installation_id`, `external_run_id`, `external_job_id`)
+- Enum values: lowercase or `SCREAMING_SNAKE_CASE` per column — match Drizzle schema
+- Migration names: Drizzle Kit generates timestamps — **never create migration directories by hand**
+
+## Product vocabulary
+
+| ✅ Correct | ❌ Forbidden (in schema/API) |
+|---|---|
+| `workspace` | `organization`, `org`, `tenant` |
+| `integration` | `github_app` (as table/type name) |
+| `pipeline_run` / `PipelineRun` | `workflow_run` (in DB/API types) |
+| `pipeline_job` / `PipelineJob` | `workflow_job` (in DB/API types) |
+| `repository` / `repositories` | `repo` (in API resource names) |
+| `PipeWatch CE` / `PipeWatch Cloud` | inconsistent edition naming |
+| `member` (workspace role) | `user` (when referring to workspace membership) |
+
+UI copy may say **"workflow"** when referring to GitHub Actions terminology (PRD §4.5).
+
+## Domain areas (issue summaries, commit scopes, bug prefixes)
+
+`Workspaces` · `Integrations` · `Repositories` · `Pipelines` · `Runs` · `Webhooks` · `Auth` · `Billing` · `SSE` · `Insights` · `Onboarding` · `Dashboard` · `API` · `Marketing` · `CE` · `CI` · `Infra` · `Worker`
+
+## Anti-patterns
+
+```typescript
+// ❌ GitHub-specific table name
+interface WorkflowRun { ... }     → ✅ interface PipelineRun { ... }
+
+// ❌ file naming
+GithubWebhook.ts                  → ✅ github-webhook.ts
+run_card.tsx                      → ✅ RunCard.tsx
+```

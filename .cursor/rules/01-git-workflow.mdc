@@ -1,0 +1,70 @@
+---
+description: Git branch policy — staging for development, main protected; commit format; never-push default
+alwaysApply: true
+---
+
+# Git workflow
+
+## Branches
+
+| Branch | Role |
+|---|---|
+| `staging` | **Development integration branch** — all feature work and orchestrator-verified commits land here |
+| `main` | **Protected production branch** — release line only; not for day-to-day development |
+
+- Feature work happens on **`staging`** (Lane S serial) or isolated `orchestrator/<TASK-ID>` branches (Lane P), merged into `staging` after verify.
+- **`main` is protected on GitHub.** Agents and orchestrator runs must **never push to `main`** until an explicit release promotion workflow exists.
+- Promoting `staging` → `main` is operator-only (release); not part of routine task orchestration.
+
+## Commit messages (Conventional Commits)
+
+Subject ≤72 chars, imperative mood, **scoped**. **Task commits must link a work item** in square brackets — see `07-issue-commit-linking.mdc`.
+
+```
+feat(<scope>)[#123]: <imperative summary>
+fix(<scope>)[#123]: <summary>
+chore(<scope>)[#123]: <summary>
+refactor(<scope>)[#123]: <summary>
+docs(<scope>)[#123]: <summary>
+test(<scope>)[#123]: <summary>
+ci(<scope>)[#123]: <summary>
+build(<scope>)[#123]: <summary>
+perf(<scope>)[#123]: <summary>
+```
+
+Use `[#N]` when the task is on GitHub Issues. The commit body must include `fixes #N` to auto-close the issue on merge to `main`. Subtasks under an epic also close parent Features via `fixes #<parent>` on the **final in-scope child** only — see `07-issue-commit-linking.mdc`.
+
+**Allowed scopes**: `repo`, `ci`, `api`, `worker`, `web`, `marketing`, `db`, `types`, `utils`, `config`, `docs`, `workspaces`, `integrations`, `repositories`, `pipelines`, `runs`, `webhooks`, `auth`, `billing`, `sse`, `insights`, `onboarding`, `ce`, `infra`, `deps`
+
+(`db` = Drizzle schema/migrations · `types` = `packages/types` · `config` = `packages/config` edition/flags)
+
+Session memory (`.cursor/skills/agent-memory/`) is **gitignored** — local working notes only. Verifiers post outcomes to GitHub issues; never commit session files.
+
+## Commit rules
+
+- **Never** `git add .` or `git add -A`. Always stage explicit paths.
+- One task = **one implementation commit**. No session memory commits.
+- Never amend commits that have been pushed.
+
+## Push policy
+
+**Never push** unless the user explicitly asks. Local commits only.
+
+**Never push to `main` on GitHub** — not even when the user asks for a push during development. The only valid remote target for task work is **`staging`** (or a Lane P task branch).
+
+## Examples
+
+```bash
+# GOOD — GitHub issue work
+git add apps/api/src/routes/webhooks/github.ts \
+        apps/api/src/routes/webhooks/github.test.ts
+git commit -m "feat(webhooks)[#12]: verify GitHub HMAC signature on ingest
+
+fixes #12"
+
+# BAD — blanket staging
+git add .
+
+# BAD — no scope / no task key
+git commit -m "added webhooks"
+```

@@ -1,0 +1,71 @@
+---
+description: Link every task commit to a GitHub issue — use [#N] in subject + fixes #N in body
+alwaysApply: true
+---
+
+# Issue commit linking
+
+Every **task-related** commit must reference a GitHub issue so the **Development** panel links correctly and the issue auto-closes on merge to `main`.
+
+## Required subject format
+
+```
+<type>(<scope>)[#N]: <imperative summary>
+```
+
+| Part | Rule |
+|---|---|
+| `<type>` | Conventional Commits: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`, `ci`, `build`, `perf` |
+| `<scope>` | Allowed scopes from `01-git-workflow.mdc` |
+| `[#N]` | **Mandatory** on task commits |
+| Summary | Imperative mood; whole subject ≤72 chars |
+
+## Required body format
+
+```
+fixes #N
+```
+
+Place on its own line in the commit body. Multiple issues: one per line.
+
+## Epic (parent Feature) issues
+
+| Commit | Subject | Body |
+|---|---|---|
+| Any subtask | `[#<leaf>]` | `fixes #<leaf>` |
+| **Final** child of parent P | `[#<leaf>]` | `fixes #<leaf>` + `fixes #<P>` per parent in `CLOSE_PARENTS` |
+| Atomic leaf | `[#<leaf>]` | `fixes #<leaf>` |
+
+**Do not** put `fixes #<epic>` on intermediate subtasks.
+
+Orchestrator passes `CLOSE_PARENTS: [#P, …]` or `none` in execution prompts. Execution agents **must not guess**.
+
+## Examples
+
+```bash
+# GOOD — intermediate subtask under epic #8
+feat(auth)[#11]: add GitHub OAuth callback handler
+
+fixes #11
+
+# GOOD — last in-scope child of epic #8
+feat(auth)[#12]: add refresh token rotation
+
+fixes #12
+fixes #8
+
+# BAD — premature epic close
+feat(auth)[#11]: add OAuth callback
+
+fixes #11
+fixes #8
+```
+
+## Auto-close on merge
+
+GitHub auto-closes issues with `fixes #N` in commit body when merged to `main` (default branch).
+
+## Exceptions (no issue key required)
+
+- Pure repo hygiene: `chore(repo): init pnpm workspace` (rare)
+- Integration merge commits: `chore(repo)[#N]: integrate orchestrator batch (<BATCH_ID>)`

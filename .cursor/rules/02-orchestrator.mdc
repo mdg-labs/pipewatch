@@ -1,0 +1,67 @@
+---
+description: When and how to use the orchestrator skill and GitHub project board
+alwaysApply: true
+---
+
+# Orchestrator & task board
+
+PipeWatch is built **task-by-task** from GitHub Issues on the **PipeWatch Roadmap** project (org `mdg-labs`, project **#5**). Sub-agents implement tasks; a verifier checks them.
+
+## Use the orchestrator skill when
+
+- The user asks to "orchestrate", "delegate", "run the roadmap", "implement phase X", or "execute tasks autonomously"
+- Multi-step work spans several tasks or an epic
+
+In that case, follow `.cursor/skills/orchestrator/SKILL.md`. Do not improvise.
+
+## Use GitHub issues directly when
+
+- You're implementing a single task and the user already pointed at an issue (e.g. `#12`)
+- You're checking dependencies or what's next
+
+Load the issue via MCP `issue_read` or `gh`; read acceptance criteria from the issue body and PRD `§` refs cited there.
+
+## Task lifecycle
+
+| Board Status | Meaning |
+|---|---|
+| Backlog | Unrefined / deferred |
+| Ready | Fully specified — orchestrator picks from here |
+| In Progress | Execution agent working |
+| In Review | Execution done — awaiting verifier |
+| Done | Verifier PASS — merged to `staging`, issue may still be open |
+| Closed | Auto when commit with `fixes #N` lands on `main` |
+
+**Blocking dependencies:** A task blocked by `#N` is **unblocked** when `#N`'s board Status is **Done** or **Closed** — not when the GitHub issue state is `closed` (issues stay open until release to `main`).
+
+## GitHub board status (when orchestrating)
+
+PipeWatch project on GitHub (`mdg-labs/pipewatch`, project **#5**). Commit subjects use issue number: `[#12]`.
+
+- **Execution agents** → set project Status **In Progress** on leaf issue(s) and parent when dispatching a child (first action, before code); set **In Review** before verifier handoff
+- **Verification agents** → set **Done** only after all layers PASS; FAIL → **Ready** + comment
+- Execution prompts must **not** set Done — see `.cursor/skills/orchestrator/github-board.md`
+
+## Universal acceptance criteria (every task)
+
+Even when not listed in an issue, the verifier applies:
+
+- File / directory naming (`04-naming.mdc`)
+- Conventional commits with `[#N]` (`01-git-workflow.mdc`, `07-issue-commit-linking.mdc`)
+- TypeScript strict, no `any`, no `console.log` (when TypeScript is in scope)
+- Security defaults — JWT/refresh/API-key rules, webhook HMAC, workspace scoping (`03-security-baseline.mdc`)
+- Edition flags via `packages/config/edition.ts` — no scattered edition checks (`00-project.mdc`)
+- Vendor-neutral schema names in DB/API (`04-naming.mdc`)
+
+## Explicit non-goals (MVP out of scope — PRD §2)
+
+If a request targets any item below, **flag it** and ask whether to defer:
+
+- Webhook Gateway / relay for private CE instances
+- Alerts & notification channels (Slack, email)
+- Re-running workflows from PipeWatch
+- SSO
+- Raw log storage / ingestion
+- GitHub Enterprise Server
+- Additional CI platforms (GitLab, CircleCI, etc.)
+- AI-powered failure resolution

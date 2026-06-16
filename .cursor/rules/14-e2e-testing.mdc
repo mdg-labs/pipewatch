@@ -1,0 +1,35 @@
+---
+description: E2E tests must use pnpm test:e2e — never invoke Playwright directly
+alwaysApply: true
+---
+
+# E2E testing
+
+## E2E tests must always use `pnpm test:e2e`
+
+All Playwright tests run through the single entrypoint:
+
+```bash
+pnpm test:e2e
+```
+
+The wrapper script handles ephemeral dependencies, service startup, Playwright config, and teardown.
+
+**Never run Playwright directly** (`npx playwright test`, `pnpx playwright test`, etc.).
+
+### Allowed invocations
+
+```bash
+pnpm test:e2e
+pnpm test:e2e --project=cloud
+pnpm test:e2e --project=ce
+pnpm test:e2e specs/onboarding/
+pnpm test:e2e --debug
+```
+
+Arguments are forwarded to the underlying Playwright runner.
+
+## Non-goals
+
+- Playwright **e2e is not part of the local CI gate** (PRD §11). It runs on `staging`/`main` in CI, or on-demand via `pnpm test:e2e`.
+- Unit and integration: `pnpm test:unit` / `pnpm test:integration` — do not confuse with e2e.

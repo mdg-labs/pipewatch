@@ -1,0 +1,51 @@
+---
+description: UI work must follow the Page Inventory and PRD; PRD wins on product conflicts
+alwaysApply: true
+---
+
+# PipeWatch UI — Page Inventory reference
+
+## Two sources, clear precedence
+
+| Source | Authority |
+|---|---|
+| `docs/internal/PipeWatch_Page_Inventory.md` | **UI/page source of truth** — screens, layout, nav, states, edition differences |
+| `docs/internal/PipeWatch_MVP_PRD.md` | **Product source of truth** — scope, data model, API, billing, edition flags |
+
+**On any conflict, the PRD wins.**
+
+## Global app conventions (Page Inventory)
+
+- **App shell:** persistent left sidebar (workspace switcher, nav, user menu) + main content + top bar breadcrumbs.
+- **Auth gating:** unauthenticated B-pages → redirect to `/sign-in?next=<path>`.
+- **Role gating:** `member` = read-only; settings mutations require `admin` or `owner`.
+- **Loading:** skeleton loaders — never blank screens.
+- **Empty states:** every list/table has a designed empty state with CTA.
+- **Errors:** inline retry for loads; toast for mutations.
+- **Live data:** dashboard, run list, run detail use SSE with connection indicator.
+- **Toasts:** all mutations produce success/error toast.
+
+## Edition differences
+
+Use `flags` from `packages/config/edition.ts` — never duplicate edition logic in components.
+
+| Concern | CE | Cloud |
+|---|---|---|
+| Workspace switcher | Hidden (single workspace) | Visible |
+| Billing nav/settings | Hidden | Visible |
+| Bootstrap `/setup` | Active when user count = 0 | Redirect to sign-in |
+
+## Before building any UI task
+
+1. Find the matching page section in Page Inventory (A-series marketing, B-series app).
+2. Check PRD for API/data requirements cited in the issue.
+3. Verify edition-specific behaviour against PRD §26 and Page Inventory callouts.
+
+## Marketing site
+
+- Umami analytics on marketing pages only — never in the app (Decision #15).
+- `LAUNCH_MODE` drives CTA behaviour (`pre` → waitlist, `live` → signup).
+
+## Status colours and pipeline states
+
+Map `pipeline_runs.status` / `conclusion` to consistent UI badges across dashboard, list, and detail views. Success/failure/cancelled/skipped/in-progress must be visually distinct and accessible.

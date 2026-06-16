@@ -1,0 +1,75 @@
+---
+description: Security defaults that apply to every change — auth, secrets, logging, webhooks, workspace isolation
+alwaysApply: true
+---
+
+# Security baseline
+
+These rules apply to **every** change. Grounded in PRD §7.1 (auth), §4.4 (webhooks), §15 (NFRs), Decision #4/#22/#23.
+
+## Secrets
+
+- **Never commit `.env`, `.env.local`, or any file containing real secrets.** Only `.env.example` (key names, no values) is allowed.
+- **Never paste secret values** into code, comments, docs, or chat output.
+- Secrets management uses **Phase Cloud** — see `05-env-vars.mdc` and `09-phase-secrets-handling.mdc`.
+- Required secrets (`JWT_SECRET`, `JWT_REFRESH_SECRET`, `GITHUB_WEBHOOK_SECRET`, etc.) must be validated at startup — app refuses to run insecurely in production.
+- Adding a new env var? Follow `05-env-vars.mdc`.
+
+## Logging
+
+Never log any of:
+
+- `password`, `passwordHash`
+- JWT access tokens, refresh tokens, API keys (`pw_*`), full `Authorization` headers, full cookies
+- `*_SECRET`, `*_KEY`, `GITHUB_APP_PRIVATE_KEY`, raw database connection strings
+- Stripe webhook payloads with PII, GitHub installation tokens
+
+## Auth — JWT + refresh tokens (PRD §7.1, Decision #22/#23)
+
+- **Access JWT:** short-lived (~15min), sent as `Authorization: Bearer <token>`; contains `userId`, `workspaceId`, `role`.
+- **Refresh token:** httpOnly cookie, 30d, stored as hash in `refresh_tokens` table; rotate on refresh; revoke on logout.
+- **API keys:** `pw_` prefix, stored as `sha256` hash; shown once on creation; workspace-scoped.
+- **Forbidden:** storing plain tokens/keys in DB; long-lived JWTs; API keys in `localStorage`.
+
+## Webhook security (Decision #4)
+
+All GitHub webhook requests must verify `X-Hub-Signature-256` via HMAC-SHA256 + `timingSafeEqual` **before** any payload processing. Invalid signatures → 401, no side effects. **No bypass flag.**
+
+## Input handling
+
+- All request bodies validated server-side (Zod via `@hono/zod-openapi`); reject unknown/extra fields.
+- All DB queries via Drizzle — no raw SQL interpolation.
+- Every mutation verifies workspace membership and resource ownership before acting.
+- Stripe webhooks: verify signature before processing.
+
+## Workspace isolation (PRD §5, §15)
+
+- All API routes workspace-scoped: `/api/v1/workspaces/:workspaceId/...`
+- No cross-workspace data leakage — queries must filter by `workspace_id`.
+- Denormalized `workspace_id` on hot tables (`pipeline_runs`, `pipeline_jobs`) for query performance (Decision #31).
+
+## Transport and cookies
+
+- HTTPS everywhere; refresh cookie `HttpOnly`, `Secure`, `SameSite` set appropriately.
+- CORS allowlist per environment — never `*`.
+
+## Anti-patterns
+
+```typescript
+// ❌ plain-text API key storage
+await db.apiKeys.insert({ key: plainKey });
+
+// ❌ webhook processing without signature check
+app.post('/webhooks/github', async (c) => {
+  const payload = await c.req.json(); // must verify HMAC first
+});
+
+// ❌ cross-workspace query
+db.select().from(pipelineRuns).where(eq(pipelineRuns.id, runId)); // missing workspace_id
+
+// ❌ scattered edition check
+if (process.env.PIPEWATCH_EDITION === 'cloud') { ... }
+// ✅
+import { flags } from '@pipewatch/config/edition';
+if (flags.BILLING_ENABLED) { ... }
+```

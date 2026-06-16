@@ -1,0 +1,68 @@
+---
+description: PipeWatch project identity, doc precedence, and current-phase awareness
+alwaysApply: true
+---
+
+# PipeWatch
+
+Open-core GitHub Actions dashboard — aggregates workflow runs across multiple repositories into a single real-time interface. **PipeWatch CE** (self-hosted, Docker Compose) and **PipeWatch Cloud** (managed, `cloud.pipewatch.app`) ship from one codebase.
+
+## Tech stack (PRD §4.6, §17)
+
+- **Single repo:** pnpm workspace monorepo with **Turborepo** (`mdg-labs/pipewatch`)
+- **Language:** **TypeScript** (strict, no `any`) everywhere
+- **Backend API:** **Hono** + `@hono/zod-openapi` — API + webhook receiver on Fly.io
+- **Worker:** **BullMQ** consumer on Fly.io Machines
+- **Web client:** **Next.js** (App Router) via **OpenNext** on Cloudflare Workers
+- **Marketing:** **Next.js** via OpenNext on Cloudflare Workers (separate project)
+- **Persistence:** **Drizzle ORM** + **Drizzle Kit**; **Neon PostgreSQL** (hosted staging/prod); embedded Postgres in CE Docker Compose
+- **Queue/cache:** **Redis** on Fly.io (hosted); Redis in CE Compose
+- **Contracts/validation:** **Zod** in `packages/types`
+- **Tests:** **Vitest** (unit/integration) + **Playwright** (e2e); ReportPortal reporters
+- **Packages:** `apps/api` · `apps/worker` · `apps/web` · `apps/marketing` · `packages/db` · `packages/types` · `packages/config` · `packages/utils`
+- **Auth:** Custom **JWT** (15min) + DB-backed **refresh tokens** (httpOnly cookie, 30d) + workspace-scoped **API keys** (`pw_` prefix) — PRD §7.1, Decision #22
+- **Billing:** Stripe (cloud only); CE has no billing — PRD §24
+- **Secrets:** **Phase Cloud** (EU/Frankfurt); Phase → GitHub Actions environments only; deploy workflows push to Fly/CF — PRD §10, Decision #32/#33
+- **Edition:** `PIPEWATCH_EDITION=ce|cloud` drives all feature flags via `packages/config/edition.ts` — Decision #28
+
+### Hosted infrastructure (PRD §4.2–§4.3)
+
+| Layer | Platform | Notes |
+|---|---|---|
+| API + webhooks | **Fly.io** | `pipewatch-{staging\|prod}-api` |
+| Worker | **Fly.io** | `pipewatch-{staging\|prod}-worker` |
+| Redis | **Fly.io** | `pipewatch-{staging\|prod}-redis` |
+| Database | **Neon PostgreSQL** | Separate projects per env (Decision #17) |
+| Dashboard | **Cloudflare Workers** | `pipewatch-{staging\|prod}-web` |
+| Marketing | **Cloudflare Workers** | `pipewatch-{staging\|prod}-marketing` |
+
+**Domains:** `pipewatch.app` (marketing) · `cloud.pipewatch.app` (app) · `api.pipewatch.app` (API). Staging uses `staging-*` prefixes.
+
+CE: **Docker Compose** — single command setup, auto-migrate at API startup (Decision #36).
+
+### CI/CD (PRD §22, Decision #34–#35)
+
+Reusable workflows under `.github/workflows/`. **GitHub-hosted runners** (`ubuntu-latest`). Branches: `staging` (integration + deploy) and `main` (release line).
+Secrets from GitHub Actions environments (`staging`, `production`, `ci`) — synced from Phase Console, never fetched at runtime from Phase.
+
+## Repository state
+
+This repo currently contains **docs only**. Application code is built task-by-task from the GitHub project board (PipeWatch Roadmap, project **#5**) and `docs/internal/PipeWatch_MVP_PRD.md`. A phased development roadmap file may be added later; until then, PRD sections and GitHub issues are the execution source of truth.
+
+## Spec doc precedence (when docs conflict)
+
+1. `docs/internal/PipeWatch_MVP_PRD.md` — **product source of truth**: architecture, data model, API, billing, security, edition split, resolved decisions
+2. `docs/internal/PipeWatch_Page_Inventory.md` — **UI/page source of truth**: screens, layout, navigation, empty/loading/error states, edition differences
+
+## Hard rules
+
+- If behaviour is not defined in a spec doc, **ask before guessing**.
+- Never invent fields, endpoints, flows, or plans not present in the PRD.
+- **"Workspace"** is the only tenant term — not "organization" or "tenant" in code/schema.
+- **Vendor-neutral schema** — `integrations`, `pipeline_runs`, `pipeline_jobs`, `pipeline_steps`, `external_*` IDs; MVP provider is `github` only (Decision #37). GitHub-specific names stay at the integration boundary.
+- UI may say "workflow" for GitHub Actions; API types use `PipelineRun` / `PipelineJob`.
+- **Edition differences** use `flags` from `packages/config/edition.ts` — never ad-hoc `process.env.PIPEWATCH_EDITION` checks scattered in app code.
+- **No raw log storage** in MVP — link to GitHub for logs (Decision #6).
+- **Webhook signature validation** is always enforced — no bypass (Decision #4).
+- Single repo, no submodules, pnpm throughout — no npm or yarn lockfiles.
+- CE and Cloud are the **same code path** — edition flags, not duplicate implementations.

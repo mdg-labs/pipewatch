@@ -1,0 +1,73 @@
+---
+description: GitHub Project Board #5 — never verify membership, never re-add issues
+alwaysApply: true
+---
+
+# GitHub Project Board — never verify membership, never re-add
+
+## Context
+
+PipeWatch uses **two separate status systems**:
+- **GitHub issue state** (`open`/`closed`) — driven by commit messages (`fixes #N` on `main`). Agents never modify this directly.
+- **Project board Status** (Backlog / Ready / In Progress / In Review / Done / Closed / Declined) — managed via GraphQL `updateProjectV2ItemFieldValue`.
+
+**Board Status is what matters.** Verifiers set Done on the board; the issue stays open until the commit lands on `main`.
+
+| Board | Value |
+|---|---|
+| Org | `mdg-labs` |
+| Repo | `pipewatch` |
+| Project | **PipeWatch Roadmap** (Projects v2, project number: **5**) |
+| Project node ID | `PVT_kwDODv-LLc4Ba3QP` |
+
+## Blocking dependencies
+
+A task depending on `#N` is **unblocked** when `#N`'s board Status is **Done** or **Closed** — regardless of GitHub issue state.
+
+| Board Status | GitHub issue state | Meaning |
+|---|---|---|
+| Done | `open` | Verified on `staging` — **unblocks dependents** |
+| Closed | `closed` | Commit landed on `main` via release |
+
+**Never** check GitHub issue `open`/`closed` to resolve dependencies — check **board Status**.
+
+## Rule
+
+**NEVER check whether an issue is already in the GitHub project.** Every issue created in this repo is automatically on project **#5**. Do not query, verify, or re-add.
+
+## Forbidden
+
+- **`gh project item-list`** — paginates unnecessarily; membership is guaranteed.
+- **GraphQL membership checks** — `projectItems` is only valid for getting the **project item ID** to set Status.
+- **`addProjectV2ItemById`** after issue creation — creates duplicates.
+- **Any "verify issue is in project" step** in prompts or skills.
+
+## Correct workflow for setting Status
+
+1. **Get project item ID** via GraphQL (filter `project.number == 5`):
+   ```bash
+   gh api graphql -f 'query=query {
+     repository(owner:"mdg-labs",name:"pipewatch") {
+       issue(number:N) {
+         projectItems(first:10) {
+           nodes { id project { number } }
+         }
+       }
+     }
+   }'
+   ```
+
+2. **Set Status** via GraphQL mutation — see `.cursor/skills/orchestrator/github-board.md` for hardcoded IDs.
+
+## Anti-patterns
+
+```bash
+# NEVER — checking membership
+gh project item-list 5 --owner mdg-labs --format json | jq '...'
+
+# NEVER — re-adding after creation
+addProjectV2ItemById(...)
+
+# CORRECT — get item ID and set Status
+gh api graphql -f '...'  # updateProjectV2ItemFieldValue
+```

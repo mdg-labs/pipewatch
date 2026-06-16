@@ -1,0 +1,65 @@
+---
+description: Require local CI checks for code-impacting commits
+alwaysApply: true
+---
+
+# Local CI gate before commit
+
+Before creating a commit, run the checks below and confirm success.
+
+## Gate trigger: code-impacting changes only
+
+Run the **full CI gate** when staged changes are in:
+
+- `apps/**`
+- `packages/**`
+- `scripts/**`
+- `e2e/**`
+- `.github/scripts/**`
+
+Also require the full gate for root files: `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `turbo.json`.
+
+## Non-code changes (full gate not required)
+
+Skip the full gate when staged changes are only in:
+
+- `docs/**`, `*.md`
+- `.cursor/**` (rules, skills, memory files)
+- `.github/workflows/**` (targeted YAML validation only)
+
+## Full gate
+
+When code-impacting files are staged, run from repo root:
+
+```bash
+pnpm lint && \
+pnpm typecheck && \
+pnpm test:unit && \
+pnpm build && \
+pnpm test:integration && \
+pnpm audit --audit-level=high
+```
+
+**Stack note (PRD §11, §17):** Turborepo fans out to `api` (Hono), `worker`, `web` (Next.js), `marketing`, `db`, `types`, `utils`. Unit/integration use **Vitest**. **Playwright e2e is not part of the local gate** — runs on `staging`/`main` in CI (PRD §11). Mark `n/a` only when a package legitimately has no such task yet.
+
+## Integration tests — ephemeral containers only
+
+Integration tests use **ephemeral Postgres + Redis containers** — not Neon, not a running `docker compose up` stack (PRD §11, Decision #38).
+
+```bash
+# ✅ CORRECT
+pnpm test:integration
+
+# ❌ WRONG — do not point integration tests at Neon or local compose
+DATABASE_URL=postgresql://neon... pnpm test:integration
+```
+
+Optional ReportPortal locally: `phase run --env=CI -- pnpm test:integration` (DB/Redis still from ephemeral containers).
+
+**Mandatory cleanup:** integration test scripts must tear down containers on success, failure, and interrupt.
+
+## Enforcement
+
+- If any full-gate command fails, **do not commit**. Fix failures first, then rerun from the start.
+- After a full-gate commit, explicitly report that the full gate passed.
+- Do not skip the full gate for code-impacting changes because failures are "likely unrelated".

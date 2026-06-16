@@ -1,0 +1,100 @@
+---
+description: Every new env var must be registered in Phase, added to .env.example, validated in config schema, and documented
+alwaysApply: true
+---
+
+# New environment variables — Phase-first workflow
+
+When introducing **any** new env var, complete all four steps below in the **same task commit**. PRD §10, §23.
+
+## Phase project (this repo)
+
+| Field | Value |
+|---|---|
+| Region | EU / Frankfurt (AWS eu-central-1) |
+| Phase app | `pipewatch` |
+| Phase environments | `Development` · `CI` · `Staging` · `Production` |
+
+**Development** — local only via Phase CLI (`phase run --env=Development -- <command>`). No GitHub Actions sync.
+
+**CI / Staging / Production** — sync to GitHub Actions environments (`ci`, `staging`, `production`) via Phase Console (operator-configured). Deploy workflows read from GHA environments — never from Phase at runtime.
+
+**Never put true secrets in `NEXT_PUBLIC_*` keys** — those are inlined into client bundles.
+
+## This rule fires when you
+
+- Reference a new env var in application code
+- Add a field to an app config / env schema
+- Add a row to `.env.example`
+- Reference a new secret in any package
+
+## Required steps (in order)
+
+### 1. Set the value in Phase `Development` via CLI
+
+```bash
+phase secrets set <KEY>=<value> --env=Development
+```
+
+For security-critical values you shouldn't invent: **stop and ask the user**.
+
+### 2. Add the key to `.env.example`
+
+Key name only — **no value**:
+
+```diff
+# .env.example
++ JWT_SECRET=
+```
+
+### 3. Add to the app config schema (startup validation)
+
+```typescript
+// ✅ strict — fails fast
+JWT_SECRET: z.string().min(32),
+
+// ✅ optional with documented default
+RETENTION_DAYS: z.coerce.number().default(30),
+
+// ❌ silent fallback for security config
+JWT_SECRET: z.string().default('dev-secret'),
+```
+
+### 4. Document in PRD §23 or a dedicated env reference
+
+Add a row to the environment variables table in `docs/internal/PipeWatch_MVP_PRD.md` §23 (or `docs/internal/environment-variables.md` when created).
+
+## Verifier checks (Layer 3c)
+
+For any task that adds env-var references:
+
+```bash
+# Key in .env.example
+rg -n "^<KEY>=" .env.example
+
+# Key in config schema
+rg -n "\b<KEY>\b" "apps/*/src/**/env*" "packages/*/src/**/env*"
+
+# Key documented
+rg -n "\b<KEY>\b" docs/internal/
+```
+
+Phase `Development` registration is operator-verified — agent confirms key name is set, never prints value.
+
+## Forbidden
+
+- **Hardcoded fallbacks for security-critical config**
+- **Committing `.env` / `.env.local` with real values**
+- **Partial registration** — code references var but `.env.example` + schema + docs not updated
+- **Inventing values for unknown secrets** — stop and ask
+- **Setting Staging/Production secrets from agent** — operator uses Phase Console sync
+
+## Required secrets (PRD §23 — never soft-default in production)
+
+| Key | Purpose |
+|---|---|
+| `JWT_SECRET` | HS256 access token signing |
+| `JWT_REFRESH_SECRET` | Refresh token signing |
+| `DATABASE_URL` | Postgres connection (runtime) |
+| `GITHUB_WEBHOOK_SECRET` | Webhook HMAC validation |
+| `PIPEWATCH_EDITION` | `ce` \| `cloud` — drives all feature flags |

@@ -1,0 +1,23 @@
+# .cursor/skills/agent-memory/ — local session notes (never commit)
+.cursor/skills/agent-memory/**
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Dependencies & build
+node_modules/
+dist/
+.next/
+.turbo/
+.open-next/
+
+# Test artifacts
+e2e/test-results/
+playwright-report/
+coverage/
+
+# IDE
+.idea/
+*.swp
