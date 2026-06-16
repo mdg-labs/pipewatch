@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/shadows.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/motion.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/semantic.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/styles.css">
+  <script src="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/_ds_bundle.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans, system-ui, sans-serif); color: var(--text-primary); }
+    @keyframes pw-spin { to { transform: rotate(360deg); } }
+  </style>
+</helmet>
+
+<div style="display:flex; min-height:100vh; background:var(--bg-base);">
+
+  <!-- ══════════════════════════════════════════════════════
+       SIDEBAR (no active nav item — breadcrumb context)
+  ══════════════════════════════════════════════════════════ -->
+  <aside style="width:220px; flex-shrink:0; height:100vh; position:sticky; top:0;
+    background:var(--bg-surface); border-right:1px solid var(--border-default);
+    display:flex; flex-direction:column; overflow:hidden;">
+
+    <div style="padding:14px 16px 13px; display:flex; align-items:center; gap:9px;
+      border-bottom:1px solid var(--border-subtle);">
+      <svg width="20" height="20" viewBox="0 0 32 32" fill="none" style="color:var(--pw-amber-500); flex-shrink:0;">
+        <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="2"/>
+        <path d="M5.5 16h4l2-5.5 2 11 2-11 2 11 2-5.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span style="font-size:14px; font-weight:600; letter-spacing:-0.025em; line-height:1;">
+        Pipe<span style="color:var(--pw-amber-500);">Watch</span>
+      </span>
+      <span style="margin-left:auto; font-size:10px; font-family:var(--font-mono);
+        color:var(--pw-amber-500); background:oklch(70% 0.195 55 / 0.12);
+        padding:1px 5px; border-radius:3px; flex-shrink:0;">CE</span>
+    </div>
+
+    <div style="padding:8px 10px; border-bottom:1px solid var(--border-subtle);">
+      <button style="display:flex; align-items:center; gap:7px; width:100%; padding:5px 8px;
+        border-radius:6px; border:1px solid var(--border-default); background:var(--bg-elevated);
+        cursor:pointer; font-family:var(--font-sans); text-align:left;" style-hover="background:var(--bg-overlay);">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary); flex-shrink:0;">
+          <rect x="2" y="3" width="12" height="10" rx="1.5"/>
+          <path d="M5 7h6M5 10h4"/>
+        </svg>
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+          font-family:var(--font-mono); font-size:11px; color:var(--text-primary);">my-workspace</span>
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" style="color:var(--text-tertiary); flex-shrink:0;">
+          <path d="M4 6l4 4 4-4"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav style="flex:1; padding:8px; display:flex; flex-direction:column; gap:1px;">
+      <a href="Dashboard.dc.html" style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px;
+        border-radius:6px; cursor:pointer; text-decoration:none; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/>
+          <rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/>
+        </svg>
+        <span style="font-size:13px; font-weight:400;">Dashboard</span>
+      </a>
+      <!-- Runs — contextually active (current page is a run) -->
+      <div style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px;
+        border-radius:6px; background:var(--bg-elevated); cursor:default;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-primary); flex-shrink:0;">
+          <path d="M3 4h10M3 8h10M3 12h7"/>
+        </svg>
+        <span style="font-size:13px; font-weight:500; color:var(--text-primary);">Runs</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px;
+        border-radius:6px; cursor:pointer; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <path d="M4 2v12M4 2h8a2 2 0 0 1 0 4H4M4 9.5h5.5a2 2 0 0 1 0 4H4"/>
+        </svg>
+        <span style="font-size:13px; font-weight:400;">Repositories</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px;
+        border-radius:6px; cursor:pointer; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <path d="M2 12L5 8l3 2 3-5 3 2"/><path d="M2 14h12"/>
+        </svg>
+        <span style="font-size:13px; font-weight:400;">Insights</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px;
+        border-radius:6px; cursor:pointer; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+          stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+          <circle cx="8" cy="8" r="2.5"/>
+          <path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/>
+        </svg>
+        <span style="font-size:13px; font-weight:400;">Settings</span>
+      </div>
+    </nav>
+
+    <div style="padding:10px 12px; border-top:1px solid var(--border-subtle);
+      display:flex; align-items:center; gap:8px;">
+      <div style="width:28px; height:28px; border-radius:9999px; background:var(--pw-amber-800);
+        display:flex; align-items:center; justify-content:center;
+        font-size:11px; font-weight:700; color:var(--pw-amber-200); flex-shrink:0;">M</div>
+      <div style="flex:1; overflow:hidden; min-width:0;">
+        <div style="font-size:12px; font-weight:500; color:var(--text-primary);
+          white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">michaeldg</div>
+        <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">mdg-labs</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════════════════════
+       MAIN CONTENT
+  ══════════════════════════════════════════════════════════ -->
+  <main style="flex:1; overflow-y:auto; padding:28px 36px; min-width:0;">
+
+    <!-- ── Breadcrumb ── -->
+    <nav style="display:flex; align-items:center; gap:6px; margin-bottom:20px; flex-wrap:wrap;">
+      <a href="Dashboard.dc.html" style="font-family:var(--font-mono); font-size:12px;
+        color:var(--text-secondary); text-decoration:none;" style-hover="color:var(--text-primary);">my-workspace</a>
+      <span style="color:var(--text-tertiary); font-size:12px;">/</span>
+      <a href="Dashboard.dc.html" style="font-family:var(--font-mono); font-size:12px;
+        color:var(--text-secondary); text-decoration:none;" style-hover="color:var(--text-primary);">inboxops</a>
+      <span style="color:var(--text-tertiary); font-size:12px;">/</span>
+      <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);">CI</span>
+      <span style="color:var(--text-tertiary); font-size:12px;">/</span>
+      <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-primary); font-weight:500;">run #12847</span>
+    </nav>
+
+    <!-- ══════════════════════════════════════════════════════
+         RUN HEADER
+    ══════════════════════════════════════════════════════════ -->
+    <div style="background:var(--bg-surface); border:1px solid var(--border-default);
+      border-radius:8px; padding:22px 24px; margin-bottom:24px;">
+
+      <!-- Title row -->
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px;">
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+          <h1 style="font-size:20px; font-weight:600; letter-spacing:-0.025em; color:var(--text-primary);">CI</h1>
+          <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.StatusBadge"
+            status="failure" size="lg" hint-size="72px,28px"></x-import>
+        </div>
+        <a href="https://github.com" target="_blank"
+          style="display:inline-flex; align-items:center; gap:6px; padding:5px 12px;
+          border-radius:6px; border:1px solid var(--border-default); background:var(--bg-elevated);
+          font-size:12px; color:var(--text-secondary); text-decoration:none; white-space:nowrap;
+          transition:border-color 100ms, background 100ms;" style-hover="border-color:var(--border-strong); color:var(--text-primary);">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          View on GitHub →
+        </a>
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:flex; align-items:center; gap:24px; flex-wrap:wrap; margin-bottom:16px;
+        padding-bottom:16px; border-bottom:1px solid var(--border-subtle);">
+        <div>
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Duration</div>
+          <div style="font-family:var(--font-mono); font-size:14px; font-weight:600; color:var(--text-primary);">3m 47s</div>
+        </div>
+        <div>
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Started</div>
+          <div style="font-size:13px; color:var(--text-secondary);">14 minutes ago</div>
+        </div>
+        <div>
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Completed</div>
+          <div style="font-size:13px; color:var(--text-secondary);">11 minutes ago</div>
+        </div>
+        <div>
+          <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Trigger</div>
+          <div style="font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);
+            background:var(--bg-elevated); border:1px solid var(--border-subtle);
+            padding:1px 7px; border-radius:4px; display:inline-block;">push</div>
+        </div>
+      </div>
+
+      <!-- Commit + actor row -->
+      <div style="display:flex; align-items:flex-start; gap:24px; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+          <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);
+            background:var(--bg-elevated); border:1px solid var(--border-subtle);
+            padding:2px 7px; border-radius:4px;">main</span>
+          <a href="https://github.com" target="_blank" style="font-family:var(--font-mono); font-size:12px;
+            color:var(--text-accent); background:oklch(70% 0.195 55 / 0.08);
+            border:1px solid var(--border-accent); padding:2px 7px; border-radius:4px;
+            text-decoration:none;" style-hover="background:oklch(70% 0.195 55 / 0.14);">a3f9c12</a>
+          <span style="font-size:13px; color:var(--text-secondary); font-style:italic;">
+            fix: resolve JWT refresh race condition
+          </span>
+        </div>
+        <div style="display:flex; align-items:center; gap:7px; margin-left:auto;">
+          <div style="width:24px; height:24px; border-radius:9999px; background:var(--pw-amber-800);
+            display:flex; align-items:center; justify-content:center;
+            font-size:10px; font-weight:700; color:var(--pw-amber-200); flex-shrink:0;">M</div>
+          <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);">michaeldg</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         JOB EXECUTION GRAPH
+    ══════════════════════════════════════════════════════════ -->
+    <div style="margin-bottom:6px; display:flex; align-items:center; gap:8px;">
+      <h2 style="font-size:12px; font-weight:600; color:var(--text-primary); text-transform:uppercase;
+        letter-spacing:0.06em;">Job execution graph</h2>
+    </div>
+
+    <div style="background:var(--bg-surface); border:1px solid var(--border-default);
+      border-radius:8px; padding:24px; margin-bottom:8px;">
+      <!-- DAG container — position:relative for absolute-positioned nodes -->
+      <div style="position:relative; width:100%; max-width:660px; height:220px;">
+
+        <!-- SVG connector layer -->
+        <svg style="position:absolute; top:0; left:0; width:100%; height:220px; pointer-events:none;"
+          viewBox="0 0 660 220" preserveAspectRatio="none">
+          <defs>
+            <marker id="arw" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,1 L0,7 L7,4 z" fill="var(--border-strong)"/>
+            </marker>
+            <marker id="arw-skip" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+              <path d="M0,1 L0,7 L7,4 z" fill="oklch(60% 0.090 298 / 0.45)"/>
+            </marker>
+          </defs>
+          <!-- lint → test -->
+          <path d="M148,104 C184,104 184,54 210,54"
+            fill="none" stroke="var(--border-strong)" stroke-width="1.5" marker-end="url(#arw)"/>
+          <!-- lint → typecheck -->
+          <path d="M148,104 C184,104 184,158 210,158"
+            fill="none" stroke="var(--border-strong)" stroke-width="1.5" marker-end="url(#arw)"/>
+          <!-- test → deploy (skipped — dashed, muted violet) -->
+          <path d="M346,54 L470,54"
+            fill="none" stroke="oklch(60% 0.090 298 / 0.45)" stroke-width="1.5"
+            stroke-dasharray="5 3" marker-end="url(#arw-skip)"/>
+        </svg>
+
+        <!-- Lint node (success) — left=24, top=78, w=124, h=52 -->
+        <div style="position:absolute; left:24px; top:78px; width:124px; height:52px;
+          background:var(--status-success-subtle); border:1px solid var(--status-success-muted);
+          border-radius:6px; padding:8px 12px; display:flex; flex-direction:column; gap:5px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+            <span style="font-family:var(--font-mono); font-size:13px; font-weight:500; color:var(--text-primary);">lint</span>
+            <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-tertiary);">23s</span>
+          </div>
+          <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.StatusBadge"
+            status="success" hint-size="90px,18px"></x-import>
+        </div>
+
+        <!-- Test node (FAILURE — prominent) — left=210, top=28, w=136, h=52 -->
+        <div style="position:absolute; left:210px; top:28px; width:136px; height:52px;
+          background:var(--status-failure-subtle); border:1.5px solid var(--status-failure-muted);
+          border-radius:6px; padding:8px 12px; display:flex; flex-direction:column; gap:5px;
+          box-shadow:var(--glow-failure);">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+            <span style="font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--text-primary);">test</span>
+            <span style="font-family:var(--font-mono); font-size:11px; color:var(--status-failure);">2m 18s</span>
+          </div>
+          <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.StatusBadge"
+            status="failure" hint-size="60px,18px"></x-import>
+        </div>
+
+        <!-- Typecheck node (success) — left=210, top=132, w=146, h=52 -->
+        <div style="position:absolute; left:210px; top=132px; top:132px; width:146px; height:52px;
+          background:var(--status-success-subtle); border:1px solid var(--status-success-muted);
+          border-radius:6px; padding:8px 12px; display:flex; flex-direction:column; gap:5px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+            <span style="font-family:var(--font-mono); font-size:13px; font-weight:500; color:var(--text-primary);">typecheck</span>
+            <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-tertiary);">31s</span>
+          </div>
+          <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.StatusBadge"
+            status="success" hint-size="90px,18px"></x-import>
+        </div>
+
+        <!-- Deploy node (SKIPPED — muted violet) — left=470, top=28, w=124, h=52 -->
+        <div style="position:absolute; left:470px; top:28px; width:124px; height:52px;
+          background:var(--status-skipped-subtle); border:1px solid oklch(60% 0.090 298 / 0.22);
+          border-radius:6px; padding:8px 12px; display:flex; flex-direction:column; gap:5px; opacity:0.62;">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+            <span style="font-family:var(--font-mono); font-size:13px; font-weight:500; color:var(--text-primary);">deploy</span>
+            <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-tertiary);">—</span>
+          </div>
+          <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.StatusBadge"
+            status="skipped" hint-size="68px,18px"></x-import>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Graph annotations -->
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:28px;">
+      <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400);
+        background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px;
+        border:1px dashed oklch(70% 0.195 55 / 0.30); white-space:nowrap;">
+        ↑ job DAG — directional SVG connectors — failed node gets glow-failure shadow
+      </span>
+      <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400);
+        background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px;
+        border:1px dashed oklch(70% 0.195 55 / 0.30); white-space:nowrap;">
+        skipped ≠ cancelled — muted violet vs neutral slate
+      </span>
+      <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400);
+        background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px;
+        border:1px dashed oklch(70% 0.195 55 / 0.30); white-space:nowrap;">
+        running jobs would show live elapsed ticker here (SSE)
+      </span>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         JOB PANELS
+    ══════════════════════════════════════════════════════════ -->
+    <div style="margin-bottom:8px;">
+      <h2 style="font-size:12px; font-weight:600; color:var(--text-primary); text-transform:uppercase;
+        letter-spacing:0.06em;">Jobs</h2>
+    </div>
+
+    <div style="display:flex; flex-direction:column; gap:6px;">
+
+      <!-- ── test job (EXPANDED — auto-expanded because failed) ── -->
+      <div style="background:var(--bg-surface); border:1.5px solid var(--status-failure-muted);
+        border-radius:8px; overflow:hidden;">
+        <!-- Panel header -->
+        <button onClick="{{ toggleTest }}"
+          style="width:100%; display:flex; align-items:center; gap:10px; padding:12px 16px;
+          background:var(--status-failure-subtle); border:none; cursor:pointer; text-align:left;"
+          style-hover="background:oklch(58% 0.205 23 / 0.14);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round" style="color:var(--status-failure); flex-shrink:0;">
+            <circle cx="8" cy="8" r="6.5"/>
+            <path d="M10.5 5.5l-5 5M5.5 5.5l5 5"/>
+          </svg>
+          <span style="font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--text-primary); flex:1;">test</span>
+          <span style="font-family:var(--font-mono); font-size:12px; color:var(--status-failure);">2m 18s</span>
+          <span style="font-size:11px; color:var(--text-tertiary); background:var(--bg-elevated);
+            padding:1px 6px; border-radius:3px; border:1px solid var(--border-subtle);">ubuntu-latest</span>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" style="color:var(--text-tertiary); flex-shrink:0;
+            transform: {{ testChevron }}; transition:transform 150ms;">
+            <path d="M4 6l4 4 4-4"/>
+          </svg>
+        </button>
+        <!-- Panel body (expanded) -->
+        <sc-if value="{{ testExpanded }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:0 16px 16px;">
+            <!-- Step list -->
+            <div style="display:flex; flex-direction:column; gap:2px; padding-top:4px;">
+
+              <!-- ✓ Set up Node.js -->
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:5px;">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+                <span style="flex:1; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);">Set up Node.js</span>
+                <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-tertiary); min-width:40px; text-align:right;">3s</span>
+              </div>
+
+              <!-- ✓ Install dependencies -->
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:5px;">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+                <span style="flex:1; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);">Install dependencies</span>
+                <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-tertiary); min-width:40px; text-align:right;">18s</span>
+              </div>
+
+              <!-- ✓ Run unit tests -->
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:5px;">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+                <span style="flex:1; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);">Run unit tests</span>
+                <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-tertiary); min-width:40px; text-align:right;">45s</span>
+              </div>
+
+              <!-- ✗ Run integration tests — FAILED — focal point -->
+              <div style="display:flex; align-items:flex-start; gap:10px; padding:10px 12px;
+                border-radius:6px; background:var(--status-failure-subtle);
+                border:1px solid var(--status-failure-muted);
+                border-left:3px solid var(--status-failure); margin:4px 0;">
+                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="var(--status-failure)" stroke-width="1.5" stroke-linecap="round" style="flex-shrink:0; margin-top:1px;"><circle cx="8" cy="8" r="6.5"/><path d="M10.5 5.5l-5 5M5.5 5.5l5 5"/></svg>
+                <div style="flex:1;">
+                  <div style="font-family:var(--font-mono); font-size:13px; font-weight:600;
+                    color:var(--status-failure); line-height:1.3;">Run integration tests</div>
+                  <div style="font-size:11px; color:var(--status-failure); opacity:0.8; margin-top:2px;">
+                    Exit code 1 · AssertionError in auth/session.test.ts:47
+                  </div>
+                </div>
+                <span style="font-family:var(--font-mono); font-size:12px; color:var(--status-failure); font-weight:600; min-width:50px; text-align:right;">1m 12s</span>
+              </div>
+              <!-- Failed step annotation -->
+              <div style="padding:0 2px 4px;">
+                <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400);
+                  background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px;
+                  border:1px dashed oklch(70% 0.195 55 / 0.30); white-space:nowrap;">
+                  ↑ failed step — unmissable focal point — failure-subtle bg + left accent border + failure colour on all text
+                </span>
+              </div>
+
+              <!-- ↷ Upload test results (skipped) -->
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:5px; opacity:0.5;">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--status-skipped)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="8" cy="8" r="6.5"/><path d="M6 5.5l3 2.5-3 2.5V5.5zM10.5 5.5v5"/></svg>
+                <span style="flex:1; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);">Upload test results</span>
+                <span style="font-family:var(--font-mono); font-size:11px; color:var(--status-skipped); min-width:50px; text-align:right;">skipped</span>
+              </div>
+
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- ── lint job (COLLAPSED — success) ── -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; overflow:hidden;">
+        <button onClick="{{ toggleLint }}"
+          style="width:100%; display:flex; align-items:center; gap:10px; padding:12px 16px;
+          background:transparent; border:none; cursor:pointer; text-align:left;"
+          style-hover="background:var(--bg-elevated);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round" style="color:var(--status-success); flex-shrink:0;">
+            <circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/>
+          </svg>
+          <span style="font-family:var(--font-mono); font-size:13px; font-weight:500; color:var(--text-primary); flex:1;">lint</span>
+          <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-tertiary);">23s</span>
+          <span style="font-size:11px; color:var(--text-tertiary); background:var(--bg-elevated);
+            padding:1px 6px; border-radius:3px; border:1px solid var(--border-subtle);">ubuntu-latest</span>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" style="color:var(--text-tertiary); flex-shrink:0;
+            transform: {{ lintChevron }}; transition:transform 150ms;">
+            <path d="M4 6l4 4 4-4"/>
+          </svg>
+        </button>
+        <sc-if value="{{ lintExpanded }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:4px 16px 14px;">
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:5px;">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+                <span style="flex:1; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);">Run ESLint</span>
+                <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-tertiary);">23s</span>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- ── deploy job (COLLAPSED — skipped) ── -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; overflow:hidden; opacity:0.65;">
+        <button onClick="{{ toggleDeploy }}"
+          style="width:100%; display:flex; align-items:center; gap:10px; padding:12px 16px;
+          background:transparent; border:none; cursor:pointer; text-align:left;"
+          style-hover="background:var(--bg-elevated);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round" style="color:var(--status-skipped); flex-shrink:0;">
+            <circle cx="8" cy="8" r="6.5"/>
+            <path d="M6 5.5l3 2.5-3 2.5V5.5zM10.5 5.5v5"/>
+          </svg>
+          <span style="font-family:var(--font-mono); font-size:13px; font-weight:500; color:var(--text-primary); flex:1;">deploy</span>
+          <span style="font-family:var(--font-mono); font-size:12px; color:var(--status-skipped);">skipped</span>
+          <span style="font-size:11px; color:var(--text-tertiary); margin-left:4px;">— upstream test failed</span>
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" style="color:var(--text-tertiary); flex-shrink:0;
+            transform: {{ deployChevron }}; transition:transform 150ms;">
+            <path d="M4 6l4 4 4-4"/>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Job panel annotations -->
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;">
+      <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400);
+        background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px;
+        border:1px dashed oklch(70% 0.195 55 / 0.30); white-space:nowrap;">
+        ↑ test panel auto-expanded — failed job always expanded on load
+      </span>
+      <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400);
+        background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px;
+        border:1px dashed oklch(70% 0.195 55 / 0.30); white-space:nowrap;">
+        skipped (violet) ≠ cancelled (neutral) — distinct visual identity
+      </span>
+    </div>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1280, &quot;height&quot;: 900 }
+}">
+class Component extends DCLogic {
+  state = { expandedJob: 'test' };
+
+  renderVals() {
+    const { expandedJob } = this.state;
+    const toggle = (job) => () =>
+      this.setState({ expandedJob: expandedJob === job ? null : job });
+
+    return {
+      toggleTest:   toggle('test'),
+      toggleLint:   toggle('lint'),
+      toggleDeploy: toggle('deploy'),
+      testExpanded:   expandedJob === 'test',
+      lintExpanded:   expandedJob === 'lint',
+      deployExpanded: expandedJob === 'deploy',
+      testChevron:   expandedJob === 'test'   ? 'rotate(180deg)' : 'rotate(0deg)',
+      lintChevron:   expandedJob === 'lint'   ? 'rotate(180deg)' : 'rotate(0deg)',
+      deployChevron: expandedJob === 'deploy' ? 'rotate(180deg)' : 'rotate(0deg)',
+    };
+  }
+}
+</script>
+</body>
+</html>

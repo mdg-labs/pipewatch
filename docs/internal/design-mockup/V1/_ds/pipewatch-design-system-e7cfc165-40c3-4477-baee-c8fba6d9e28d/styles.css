@@ -1,0 +1,12 @@
+/* PipeWatch Design System — Global Stylesheet Entry Point
+ * Import this single file to pull in all design tokens and font definitions.
+ * Never add inline rules here — @import statements only.
+ * Consumers: <link rel="stylesheet" href="path/to/styles.css"> */
+
+@import './tokens/fonts.css';
+@import './tokens/colors.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/shadows.css';
+@import './tokens/motion.css';
+@import './tokens/semantic.css';

@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/shadows.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/motion.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/semantic.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/styles.css">
+  <script src="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/_ds_bundle.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans, system-ui, sans-serif); color: var(--text-primary); }
+    @keyframes pw-pulse { 0%,100%{opacity:1}50%{opacity:0.25} }
+  </style>
+</helmet>
+
+<div style="min-height:100vh; background:var(--bg-base); display:flex; flex-direction:column;">
+
+  <!-- ─── Top bar ─── -->
+  <div style="padding:16px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--border-subtle);">
+    <!-- Logo -->
+    <div style="display:flex; align-items:center; gap:8px;">
+      <svg width="20" height="20" viewBox="0 0 32 32" fill="none" style="color:var(--pw-amber-500);">
+        <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="2"/>
+        <path d="M5.5 16h4l2-5.5 2 11 2-11 2 11 2-5.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span style="font-size:14px; font-weight:600; letter-spacing:-0.025em;">Pipe<span style="color:var(--pw-amber-500);">Watch</span></span>
+    </div>
+    <!-- Skip link -->
+    <a href="Dashboard.dc.html" style="font-size:13px; color:var(--text-tertiary); text-decoration:none; display:flex; align-items:center; gap:4px;" style-hover="color:var(--text-secondary);">
+      Back to Dashboard
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M6 4l4 4-4 4"/></svg>
+    </a>
+  </div>
+
+  <!-- ─── Main centered content ─── -->
+  <div style="flex:1; display:flex; flex-direction:column; align-items:center; padding:48px 24px 64px;">
+
+    <!-- ════════════════════════════════
+         STEP PROGRESS INDICATOR
+    ════════════════════════════════════ -->
+    <div style="display:flex; align-items:center; gap:0; margin-bottom:48px; max-width:560px; width:100%;">
+
+      <!-- Step 1: Complete -->
+      <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
+        <div style="width:28px; height:28px; border-radius:9999px; background:var(--status-success-subtle); border:1.5px solid var(--status-success-muted); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>
+        </div>
+        <div>
+          <div style="font-size:10px; color:var(--status-success); font-weight:500; line-height:1.2;">Step 1</div>
+          <div style="font-size:12px; color:var(--text-secondary); line-height:1.2;">Create workspace</div>
+        </div>
+      </div>
+
+      <!-- Connector line: step 1 → 2 (filled = completed) -->
+      <div style="flex:1; height:1.5px; background:var(--status-success-muted); margin:0 12px; min-width:16px;"></div>
+
+      <!-- Step 2: Active -->
+      <div style="display:flex; align-items:center; gap:10px; flex-shrink:0;">
+        <div style="width:28px; height:28px; border-radius:9999px; background:oklch(70% 0.195 55 / 0.15); border:1.5px solid var(--pw-amber-500); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 0 0 3px oklch(70% 0.195 55 / 0.12);">
+          <span style="font-size:11px; font-weight:700; color:var(--pw-amber-500); line-height:1;">2</span>
+        </div>
+        <div>
+          <div style="font-size:10px; color:var(--text-accent); font-weight:500; line-height:1.2;">Step 2</div>
+          <div style="font-size:12px; color:var(--text-primary); font-weight:600; line-height:1.2;">Connect GitHub</div>
+        </div>
+      </div>
+
+      <!-- Connector line: step 2 → 3 (unfilled = upcoming) -->
+      <div style="flex:1; height:1.5px; background:var(--border-default); margin:0 12px; min-width:16px;"></div>
+
+      <!-- Step 3: Upcoming -->
+      <div style="display:flex; align-items:center; gap:10px; flex-shrink:0; opacity:0.55;">
+        <div style="width:28px; height:28px; border-radius:9999px; background:var(--bg-elevated); border:1.5px solid var(--border-default); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <span style="font-size:11px; font-weight:600; color:var(--text-tertiary); line-height:1;">3</span>
+        </div>
+        <div>
+          <div style="font-size:10px; color:var(--text-tertiary); font-weight:500; line-height:1.2;">Step 3</div>
+          <div style="font-size:12px; color:var(--text-tertiary); line-height:1.2;">Select repos</div>
+        </div>
+      </div>
+
+      <!-- Connector line: step 3 → 4 -->
+      <div style="flex:1; height:1.5px; background:var(--border-default); margin:0 12px; min-width:16px; opacity:0.55;"></div>
+
+      <!-- Step 4: Upcoming -->
+      <div style="display:flex; align-items:center; gap:10px; flex-shrink:0; opacity:0.55;">
+        <div style="width:28px; height:28px; border-radius:9999px; background:var(--bg-elevated); border:1.5px solid var(--border-default); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+          <span style="font-size:11px; font-weight:600; color:var(--text-tertiary); line-height:1;">4</span>
+        </div>
+        <div>
+          <div style="font-size:10px; color:var(--text-tertiary); font-weight:500; line-height:1.2;">Step 4</div>
+          <div style="font-size:12px; color:var(--text-tertiary); line-height:1.2;">Done</div>
+        </div>
+      </div>
+    </div>
+    <!-- Progress annotation -->
+    <div style="max-width:560px; width:100%; margin-bottom:28px; margin-top:-34px;">
+      <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400); background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px; border:1px dashed oklch(70% 0.195 55 / 0.30);">
+        ↑ wizard progress — step 1 complete (green ✓) · step 2 active (amber ring) · steps 3–4 upcoming (muted)
+      </span>
+    </div>
+
+    <!-- ════════════════════════════════
+         WIZARD CARD
+    ════════════════════════════════════ -->
+    <div style="width:100%; max-width:560px; background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; overflow:hidden; box-shadow:var(--shadow-md);">
+
+      <!-- Card header -->
+      <div style="padding:28px 28px 0;">
+        <h1 style="font-size:22px; font-weight:700; letter-spacing:-0.025em; color:var(--text-primary); margin-bottom:6px;">
+          Install the GitHub App
+        </h1>
+        <p style="font-size:14px; color:var(--text-secondary); line-height:1.5;">
+          PipeWatch needs read access to your GitHub Actions data.
+        </p>
+      </div>
+
+      <!-- Permissions explainer -->
+      <div style="padding:20px 28px;">
+        <div style="background:var(--bg-elevated); border:1px solid var(--border-default); border-radius:8px; overflow:hidden;">
+          <!-- What PipeWatch reads -->
+          <div style="padding:14px 16px; border-bottom:1px solid var(--border-subtle);">
+            <div style="font-size:10px; font-weight:600; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px;">Read access granted</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; align-items:flex-start; gap:10px;">
+                <div style="width:20px; height:20px; border-radius:9999px; background:var(--status-success-subtle); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px; font-weight:500; color:var(--text-primary); line-height:1.3;">Actions</div>
+                  <div style="font-size:12px; color:var(--text-secondary);">Workflow runs, jobs, steps, and timing data</div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:flex-start; gap:10px;">
+                <div style="width:20px; height:20px; border-radius:9999px; background:var(--status-success-subtle); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;">
+                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px; font-weight:500; color:var(--text-primary); line-height:1.3;">Metadata</div>
+                  <div style="font-size:12px; color:var(--text-secondary);">Repository names, visibility, and branch info</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- What PipeWatch does NOT do -->
+          <div style="padding:14px 16px;">
+            <div style="font-size:10px; font-weight:600; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:10px;">Never requested</div>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <div style="display:flex; align-items:flex-start; gap:10px;">
+                <div style="width:20px; height:20px; border-radius:9999px; background:var(--bg-overlay); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; border:1px solid var(--border-default);">
+                  <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round"><path d="M4 8h8"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px; color:var(--text-secondary); line-height:1.3;">No write access of any kind</div>
+                  <div style="font-size:12px; color:var(--text-tertiary);">PipeWatch cannot trigger, cancel, or modify runs</div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:flex-start; gap:10px;">
+                <div style="width:20px; height:20px; border-radius:9999px; background:var(--bg-overlay); display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px; border:1px solid var(--border-default);">
+                  <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="var(--text-tertiary)" stroke-width="2" stroke-linecap="round"><path d="M4 8h8"/></svg>
+                </div>
+                <div>
+                  <div style="font-size:13px; color:var(--text-secondary); line-height:1.3;">No access to your code</div>
+                  <div style="font-size:12px; color:var(--text-tertiary);">File contents, commits, and PRs are not readable</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Primary CTA -->
+      <div style="padding:0 28px 16px;">
+        <button style="width:100%; height:46px; border-radius:6px; border:none; cursor:pointer;
+          background:var(--interactive-accent); color:var(--interactive-fg);
+          font-family:var(--font-sans); font-size:15px; font-weight:600; letter-spacing:-0.01em;
+          display:flex; align-items:center; justify-content:center; gap:9px;
+          transition:background 100ms var(--ease-out), transform 100ms var(--ease-out);"
+          style-hover="background:var(--interactive-hover);"
+          style-active="transform:scale(0.97);">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          Install GitHub App →
+        </button>
+        <!-- CTA annotation -->
+        <div style="margin-top:6px;">
+          <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400); background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px; border:1px dashed oklch(70% 0.195 55 / 0.30);">
+            ↑ primary CTA — full-width in card — press:scale(0.97) — opens GitHub OAuth in new tab
+          </span>
+        </div>
+      </div>
+
+      <!-- Separator -->
+      <div style="padding:0 28px; display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+        <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
+        <span style="font-size:12px; color:var(--text-tertiary);">or</span>
+        <div style="flex:1; height:1px; background:var(--border-subtle);"></div>
+      </div>
+
+      <!-- Manual entry (expandable) -->
+      <div style="padding:0 28px 24px;">
+        <button onClick="{{ toggleManual }}"
+          style="width:100%; display:flex; align-items:center; justify-content:space-between; gap:8px;
+          background:transparent; border:none; cursor:pointer; padding:8px 0; text-align:left;"
+          style-hover="opacity:0.8;">
+          <span style="font-size:13px; color:var(--text-secondary);">
+            Already installed? Enter your installation ID manually
+          </span>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+            style="color:var(--text-tertiary); flex-shrink:0; transform:{{ manualChevron }}; transition:transform 150ms;">
+            <path d="M4 6l4 4 4-4"/>
+          </svg>
+        </button>
+
+        <!-- Expanded manual entry form -->
+        <sc-if value="{{ manualOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:10px; display:flex; flex-direction:column; gap:10px;">
+            <div style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400); background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px; border:1px dashed oklch(70% 0.195 55 / 0.30);">
+              ↑ collapsed → expanded · CE fallback path · for users who installed via org-level GitHub App
+            </div>
+            <div>
+              <label style="display:block; font-size:12px; font-weight:500; color:var(--text-secondary); margin-bottom:5px;">GitHub App Installation ID</label>
+              <input
+                type="text"
+                placeholder="e.g. 12345678"
+                style="width:100%; height:36px; border-radius:6px; border:1px solid var(--border-default);
+                  background:var(--bg-sunken); color:var(--text-primary);
+                  font-family:var(--font-mono); font-size:13px; padding:0 12px;
+                  outline:none; transition:border-color 100ms;"
+              />
+              <div style="font-size:11px; color:var(--text-tertiary); margin-top:5px;">
+                Find this in GitHub → Settings → Integrations → GitHub Apps
+              </div>
+            </div>
+            <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.Button"
+              variant="secondary" size="sm" hint-size="86px,32px">Connect</x-import>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- Small print -->
+      <div style="padding:14px 28px 22px; border-top:1px solid var(--border-subtle);">
+        <p style="font-size:11px; color:var(--text-tertiary); line-height:1.7;">
+          You'll be redirected to GitHub to complete the installation. PipeWatch CE users: you'll need a public endpoint or
+          <a href="https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/" target="_blank"
+            style="color:var(--text-secondary); text-decoration:underline; text-underline-offset:2px;" style-hover="color:var(--text-primary);">Cloudflare Tunnel</a>
+          to receive webhooks from GitHub.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Below-card help link -->
+    <div style="margin-top:20px; text-align:center;">
+      <a href="#" style="font-size:13px; color:var(--text-tertiary); text-decoration:none;" style-hover="color:var(--text-secondary);">
+        Need help? Read the setup guide →
+      </a>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1024, &quot;height&quot;: 860 }
+}">
+class Component extends DCLogic {
+  state = { manualOpen: false };
+
+  renderVals() {
+    const { manualOpen } = this.state;
+    return {
+      manualOpen,
+      toggleManual: () => this.setState({ manualOpen: !manualOpen }),
+      manualChevron: manualOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+    };
+  }
+}
+</script>
+</body>
+</html>

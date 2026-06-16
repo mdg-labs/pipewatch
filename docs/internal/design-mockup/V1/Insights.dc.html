@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/shadows.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/motion.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/semantic.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/styles.css">
+  <script src="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/_ds_bundle.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans, system-ui, sans-serif); color: var(--text-primary); }
+  </style>
+</helmet>
+
+<div style="display:flex; min-height:100vh; background:var(--bg-base);">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside style="width:220px; flex-shrink:0; height:100vh; position:sticky; top:0;
+    background:var(--bg-surface); border-right:1px solid var(--border-default);
+    display:flex; flex-direction:column; overflow:hidden;">
+    <div style="padding:14px 16px 13px; display:flex; align-items:center; gap:9px; border-bottom:1px solid var(--border-subtle);">
+      <svg width="20" height="20" viewBox="0 0 32 32" fill="none" style="color:var(--pw-amber-500); flex-shrink:0;">
+        <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="2"/>
+        <path d="M5.5 16h4l2-5.5 2 11 2-11 2 11 2-5.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span style="font-size:14px; font-weight:600; letter-spacing:-0.025em;">Pipe<span style="color:var(--pw-amber-500);">Watch</span></span>
+      <span style="margin-left:auto; font-size:10px; font-family:var(--font-mono); color:var(--pw-amber-500); background:oklch(70% 0.195 55 / 0.12); padding:1px 5px; border-radius:3px;">CE</span>
+    </div>
+    <div style="padding:8px 10px; border-bottom:1px solid var(--border-subtle);">
+      <button style="display:flex; align-items:center; gap:7px; width:100%; padding:5px 8px; border-radius:6px; border:1px solid var(--border-default); background:var(--bg-elevated); cursor:pointer; font-family:var(--font-sans); text-align:left;" style-hover="background:var(--bg-overlay);">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary); flex-shrink:0;"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 7h6M5 10h4"/></svg>
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--font-mono); font-size:11px; color:var(--text-primary);">my-workspace</span>
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--text-tertiary);"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+    </div>
+    <nav style="flex:1; padding:8px; display:flex; flex-direction:column; gap:1px;">
+      <a href="Dashboard.dc.html" style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px; border-radius:6px; cursor:pointer; text-decoration:none; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        <span style="font-size:13px;">Dashboard</span>
+      </a>
+      <div style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px; border-radius:6px; cursor:pointer; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M3 4h10M3 8h10M3 12h7"/></svg>
+        <span style="font-size:13px;">Runs</span>
+      </div>
+      <a href="Repo Detail.dc.html" style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px; border-radius:6px; cursor:pointer; text-decoration:none; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M4 2v12M4 2h8a2 2 0 0 1 0 4H4M4 9.5h5.5a2 2 0 0 1 0 4H4"/></svg>
+        <span style="font-size:13px;">Repositories</span>
+      </a>
+      <!-- Insights — active -->
+      <div style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px; border-radius:6px; background:oklch(70% 0.195 55 / 0.12);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-accent); flex-shrink:0;"><path d="M2 12L5 8l3 2 3-5 3 2"/><path d="M2 14h12"/></svg>
+        <span style="font-size:13px; font-weight:500; color:var(--text-accent);">Insights</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px; border-radius:6px; cursor:pointer; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
+        <span style="font-size:13px;">Settings</span>
+      </div>
+    </nav>
+    <div style="padding:10px 12px; border-top:1px solid var(--border-subtle); display:flex; align-items:center; gap:8px;">
+      <div style="width:28px; height:28px; border-radius:9999px; background:var(--pw-amber-800); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--pw-amber-200); flex-shrink:0;">M</div>
+      <div style="flex:1; overflow:hidden; min-width:0;">
+        <div style="font-size:12px; font-weight:500;">michaeldg</div>
+        <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">mdg-labs</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main style="flex:1; overflow-y:auto; padding:28px 36px; min-width:0;">
+
+    <!-- Page header -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; gap:16px;">
+      <h1 style="font-size:20px; font-weight:600; letter-spacing:-0.025em;">Insights</h1>
+      <!-- Time range toggle -->
+      <div style="display:flex; align-items:center; background:var(--bg-elevated); border:1px solid var(--border-default); border-radius:6px; padding:2px; gap:1px;">
+        <button style="{{ btn7Style }}" onClick="{{ toggleRange7 }}">7d</button>
+        <button style="{{ btn30Style }}" onClick="{{ toggleRange30 }}">30d</button>
+      </div>
+    </div>
+
+    <!-- Filter row -->
+    <div style="display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:6px; border:1px solid var(--border-default); background:var(--bg-elevated); cursor:pointer;" style-hover="border-color:var(--border-strong);">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary);"><path d="M4 2v12M4 2h8a2 2 0 0 1 0 4H4M4 9.5h5.5a2 2 0 0 1 0 4H4"/></svg>
+        <span style="font-size:12px; font-weight:500;">All repos</span>
+        <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--text-tertiary);"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px; padding:5px 10px; border-radius:6px; border:1px solid var(--border-default); background:var(--bg-elevated); cursor:pointer;" style-hover="border-color:var(--border-strong);">
+        <span style="font-size:12px; font-weight:500;">All workflows</span>
+        <svg width="9" height="9" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--text-tertiary);"><path d="M4 6l4 4 4-4"/></svg>
+      </div>
+    </div>
+
+    <!-- ─── Summary cards ─── -->
+    <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:24px;">
+      <!-- Total runs -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; padding:16px;">
+        <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:8px;">Total runs</div>
+        <div style="font-size:28px; font-weight:700; letter-spacing:-0.03em; font-feature-settings:'tnum'; color:var(--text-primary); line-height:1; margin-bottom:6px;">1,247</div>
+        <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:var(--status-success);">
+          <span>↑</span><span>12% vs prev. period</span>
+        </div>
+      </div>
+      <!-- Success rate -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; padding:16px;">
+        <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:8px;">Success rate</div>
+        <div style="font-size:28px; font-weight:700; letter-spacing:-0.03em; font-feature-settings:'tnum'; color:var(--text-primary); line-height:1; margin-bottom:6px;">91.3%</div>
+        <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:oklch(75% 0.160 50);">
+          <span>↓</span><span>2.1% vs prev. period</span>
+        </div>
+      </div>
+      <!-- Avg duration -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; padding:16px;">
+        <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:8px;">Avg duration</div>
+        <div style="font-family:var(--font-mono); font-size:26px; font-weight:700; letter-spacing:-0.02em; font-feature-settings:'tnum'; color:var(--text-primary); line-height:1; margin-bottom:6px;">2m 34s</div>
+        <div style="display:flex; align-items:center; gap:4px; font-size:11px; color:var(--status-success);">
+          <span>↓</span><span style="font-family:var(--font-mono);">18s</span><span>faster</span>
+        </div>
+      </div>
+      <!-- Most active -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; padding:16px;">
+        <div style="font-size:10px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:8px;">Most active repo</div>
+        <div style="font-family:var(--font-mono); font-size:18px; font-weight:600; color:var(--text-primary); line-height:1.2; margin-bottom:6px;">inboxops</div>
+        <div style="font-size:11px; color:var(--text-tertiary); font-feature-settings:'tnum';">384 runs this period</div>
+      </div>
+    </div>
+
+    <!-- ─── Charts ─── -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+
+      <!-- Chart 1: Duration over time -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <span style="font-size:13px; font-weight:600; color:var(--text-primary);">Duration over time</span>
+          <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">minutes</span>
+        </div>
+        <!-- SVG Chart -->
+        <svg width="100%" viewBox="0 0 528 252" style="display:block; overflow:visible;">
+          <!-- Horizontal gridlines -->
+          <line x1="50" y1="209" x2="510" y2="209" stroke="oklch(25% 0.011 252)" stroke-width="0.75"/>
+          <line x1="50" y1="160" x2="510" y2="160" stroke="oklch(21% 0.012 252)" stroke-width="0.5" stroke-dasharray="3 4"/>
+          <line x1="50" y1="111" x2="510" y2="111" stroke="oklch(21% 0.012 252)" stroke-width="0.5" stroke-dasharray="3 4"/>
+          <line x1="50" y1="62"  x2="510" y2="62"  stroke="oklch(21% 0.012 252)" stroke-width="0.5" stroke-dasharray="3 4"/>
+          <line x1="50" y1="14"  x2="510" y2="14"  stroke="oklch(21% 0.012 252)" stroke-width="0.5" stroke-dasharray="3 4"/>
+          <!-- Y-axis labels -->
+          <text x="44" y="213" text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">0m</text>
+          <text x="44" y="164" text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">2m</text>
+          <text x="44" y="115" text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">4m</text>
+          <text x="44" y="66"  text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">6m</text>
+          <text x="44" y="17"  text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">8m</text>
+          <!-- X-axis labels -->
+          <text x="{{ xP1 }}" y="240" text-anchor="middle" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">{{ xL1 }}</text>
+          <text x="{{ xP2 }}" y="240" text-anchor="middle" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">{{ xL2 }}</text>
+          <text x="{{ xP3 }}" y="240" text-anchor="middle" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">{{ xL3 }}</text>
+          <text x="{{ xP4 }}" y="240" text-anchor="middle" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">{{ xL4 }}</text>
+          <text x="510" y="240" text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">{{ xL5 }}</text>
+          <!-- Deploy line (teal, secondary) -->
+          <path d="{{ depDurPath }}" fill="none" stroke="oklch(65% 0.160 195)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+          <!-- CI line (amber, primary) -->
+          <path d="{{ ciDurPath }}" fill="none" stroke="oklch(70% 0.195 55)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- CI end dot -->
+          <circle cx="{{ ciDurEndX }}" cy="{{ ciDurEndY }}" r="3.5" fill="oklch(70% 0.195 55)"/>
+          <!-- Deploy end dot -->
+          <circle cx="{{ depEndX }}" cy="{{ depEndY }}" r="2.5" fill="oklch(65% 0.160 195)"/>
+          <!-- Spike annotation (30d only) -->
+          <sc-if value="{{ showSpike }}" hint-placeholder-val="{{ true }}">
+            <circle cx="{{ spikeX }}" cy="{{ spikeY }}" r="5" fill="none" stroke="oklch(70% 0.195 55)" stroke-width="1.5" opacity="0.55"/>
+            <line x1="{{ spikeX }}" y1="{{ spikeY }}" x2="{{ spikeX }}" y2="209" stroke="oklch(70% 0.195 55 / 0.25)" stroke-width="1" stroke-dasharray="3 2"/>
+            <text x="{{ spikeX }}" y="{{ spikeAnnY }}" text-anchor="middle" style="fill:oklch(70% 0.195 55 / 0.65); font-size:8px; font-family:'JetBrains Mono',monospace;">day 18</text>
+          </sc-if>
+        </svg>
+        <!-- Legend -->
+        <div style="display:flex; align-items:center; gap:16px; margin-top:10px;">
+          <div style="display:flex; align-items:center; gap:5px;">
+            <div style="width:12px; height:2px; border-radius:1px; background:oklch(70% 0.195 55);"></div>
+            <span style="font-size:11px; color:var(--text-secondary);">CI</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:5px;">
+            <div style="width:12px; height:2px; border-radius:1px; background:oklch(65% 0.160 195); opacity:0.75;"></div>
+            <span style="font-size:11px; color:var(--text-secondary);">Deploy</span>
+          </div>
+          <div style="margin-left:auto;">
+            <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400); background:oklch(70% 0.195 55 / 0.08); padding:2px 6px; border-radius:3px; border:1px dashed oklch(70% 0.195 55 / 0.30);">hover tooltip · step + date</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart 2: Failure rate over time -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; padding:20px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+          <span style="font-size:13px; font-weight:600; color:var(--text-primary);">Failure rate over time</span>
+          <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">CI workflow</span>
+        </div>
+        <svg width="100%" viewBox="0 0 528 252" style="display:block; overflow:visible;">
+          <!-- Gridlines -->
+          <line x1="50" y1="209" x2="510" y2="209" stroke="oklch(25% 0.011 252)" stroke-width="0.75"/>
+          <line x1="50" y1="160" x2="510" y2="160" stroke="oklch(21% 0.012 252)" stroke-width="0.5" stroke-dasharray="3 4"/>
+          <line x1="50" y1="111" x2="510" y2="111" stroke="oklch(21% 0.012 252)" stroke-width="0.5" stroke-dasharray="3 4"/>
+          <line x1="50" y1="62"  x2="510" y2="62"  stroke="oklch(21% 0.012 252)" stroke-width="0.5" stroke-dasharray="3 4"/>
+          <line x1="50" y1="14"  x2="510" y2="14"  stroke="oklch(21% 0.012 252)" stroke-width="0.5" stroke-dasharray="3 4"/>
+          <!-- Y-axis labels -->
+          <text x="44" y="213" text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">0%</text>
+          <text x="44" y="164" text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">10%</text>
+          <text x="44" y="115" text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">20%</text>
+          <text x="44" y="66"  text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">30%</text>
+          <text x="44" y="17"  text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">40%</text>
+          <!-- X-axis labels -->
+          <text x="{{ xP1 }}" y="240" text-anchor="middle" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">{{ xL1 }}</text>
+          <text x="{{ xP2 }}" y="240" text-anchor="middle" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">{{ xL2 }}</text>
+          <text x="{{ xP3 }}" y="240" text-anchor="middle" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">{{ xL3 }}</text>
+          <text x="{{ xP4 }}" y="240" text-anchor="middle" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">{{ xL4 }}</text>
+          <text x="510" y="240" text-anchor="end" style="fill:oklch(47% 0.008 252); font-size:9px; font-family:'JetBrains Mono',monospace;">{{ xL5 }}</text>
+          <!-- Area fill (very subtle) -->
+          <path d="{{ ciFailArea }}" fill="oklch(58% 0.205 23)" opacity="0.07"/>
+          <!-- Failure rate line -->
+          <path d="{{ ciFailPath }}" fill="none" stroke="oklch(58% 0.205 23)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- End dot -->
+          <circle cx="{{ failEndX }}" cy="{{ failEndY }}" r="3.5" fill="oklch(58% 0.205 23)"/>
+          <!-- Bad period annotation -->
+          <sc-if value="{{ showSpike }}" hint-placeholder-val="{{ true }}">
+            <circle cx="{{ peakX }}" cy="{{ peakY }}" r="5" fill="none" stroke="oklch(58% 0.205 23)" stroke-width="1.5" opacity="0.55"/>
+            <line x1="{{ peakX }}" y1="{{ peakY }}" x2="{{ peakX }}" y2="209" stroke="oklch(58% 0.205 23 / 0.22)" stroke-width="1" stroke-dasharray="3 2"/>
+            <text x="{{ peakX }}" y="{{ peakAnnY }}" text-anchor="middle" style="fill:oklch(58% 0.205 23 / 0.70); font-size:8px; font-family:'JetBrains Mono',monospace;">day 13–16</text>
+          </sc-if>
+        </svg>
+        <!-- Legend -->
+        <div style="display:flex; align-items:center; gap:16px; margin-top:10px;">
+          <div style="display:flex; align-items:center; gap:5px;">
+            <div style="width:12px; height:2px; border-radius:1px; background:oklch(58% 0.205 23);"></div>
+            <span style="font-size:11px; color:var(--text-secondary);">CI failure rate</span>
+          </div>
+          <div style="margin-left:auto;">
+            <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400); background:oklch(70% 0.195 55 / 0.08); padding:2px 6px; border-radius:3px; border:1px dashed oklch(70% 0.195 55 / 0.30);">spike days 12–16 · since recovered</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── Data tables ─── -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+      <!-- Slowest Workflows -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; overflow:hidden;">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--border-default);">
+          <span style="font-size:13px; font-weight:600; color:var(--text-primary);">Slowest workflows</span>
+          <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary); margin-left:8px;">avg duration</span>
+        </div>
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="background:var(--bg-elevated); border-bottom:1px solid var(--border-subtle);">
+              <th style="padding:7px 14px; text-align:left; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.06em; text-transform:uppercase;">Workflow</th>
+              <th style="padding:7px 14px; text-align:right; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.06em; text-transform:uppercase; font-family:var(--font-mono);">Avg</th>
+              <th style="padding:7px 14px; text-align:right; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.06em; text-transform:uppercase; font-family:var(--font-mono);">p50</th>
+              <th style="padding:7px 14px; text-align:right; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.06em; text-transform:uppercase; font-family:var(--font-mono);">p95</th>
+              <th style="padding:7px 14px; width:24px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- CI -->
+            <tr style="border-bottom:1px solid var(--border-subtle);" style-hover="background:var(--bg-elevated); cursor:pointer;">
+              <td style="padding:10px 14px;">
+                <span style="font-size:13px; font-weight:500; color:var(--text-primary); text-decoration:none;" style-hover="text-decoration:underline;">CI</span>
+              </td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-primary); font-feature-settings:'tnum';">3m 12s</td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); font-feature-settings:'tnum';">2m 58s</td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); font-feature-settings:'tnum';">6m 44s</td>
+              <td style="padding:10px 14px; text-align:center;">
+                <span style="font-size:11px; color:oklch(75% 0.160 50); font-weight:600;">↑</span>
+              </td>
+            </tr>
+            <!-- Deploy -->
+            <tr style="border-bottom:1px solid var(--border-subtle);" style-hover="background:var(--bg-elevated); cursor:pointer;">
+              <td style="padding:10px 14px;"><span style="font-size:13px; font-weight:500; color:var(--text-primary);">Deploy</span></td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-primary); font-feature-settings:'tnum';">1m 02s</td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); font-feature-settings:'tnum';">58s</td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); font-feature-settings:'tnum';">1m 48s</td>
+              <td style="padding:10px 14px; text-align:center;"><span style="font-size:11px; color:var(--text-tertiary);">→</span></td>
+            </tr>
+            <!-- Release -->
+            <tr style-hover="background:var(--bg-elevated); cursor:pointer;">
+              <td style="padding:10px 14px;"><span style="font-size:13px; font-weight:500; color:var(--text-primary);">Release</span></td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-primary); font-feature-settings:'tnum';">2m 18s</td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); font-feature-settings:'tnum';">2m 05s</td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); font-feature-settings:'tnum';">4m 12s</td>
+              <td style="padding:10px 14px; text-align:center;"><span style="font-size:11px; color:var(--status-success);">↓</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="padding:8px 14px;">
+          <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400); background:oklch(70% 0.195 55 / 0.08); padding:2px 6px; border-radius:3px; border:1px dashed oklch(70% 0.195 55 / 0.30);">↑ workflow name → underline on hover · cursor:pointer · annotated</span>
+        </div>
+      </div>
+
+      <!-- Most Failing Workflows -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; overflow:hidden;">
+        <div style="padding:14px 16px; border-bottom:1px solid var(--border-default);">
+          <span style="font-size:13px; font-weight:600; color:var(--text-primary);">Most failing workflows</span>
+          <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary); margin-left:8px;">failure rate</span>
+        </div>
+        <table style="width:100%; border-collapse:collapse;">
+          <thead>
+            <tr style="background:var(--bg-elevated); border-bottom:1px solid var(--border-subtle);">
+              <th style="padding:7px 14px; text-align:left; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.06em; text-transform:uppercase;">Workflow</th>
+              <th style="padding:7px 14px; text-align:right; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.06em; text-transform:uppercase;">Rate</th>
+              <th style="padding:7px 14px; text-align:right; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.06em; text-transform:uppercase;"># Failures</th>
+              <th style="padding:7px 14px; width:24px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- CI -->
+            <tr style="border-bottom:1px solid var(--border-subtle);" style-hover="background:var(--bg-elevated); cursor:pointer;">
+              <td style="padding:10px 14px;"><span style="font-size:13px; font-weight:500; color:var(--text-primary);">CI</span></td>
+              <td style="padding:10px 14px; text-align:right;">
+                <span style="font-family:var(--font-mono); font-size:12px; color:oklch(64% 0.215 23); font-weight:600; font-feature-settings:'tnum';">12.4%</span>
+              </td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); font-feature-settings:'tnum';">155</td>
+              <td style="padding:10px 14px; text-align:center;"><span style="font-size:11px; color:oklch(75% 0.160 50); font-weight:600;">↑</span></td>
+            </tr>
+            <!-- Deploy -->
+            <tr style="border-bottom:1px solid var(--border-subtle);" style-hover="background:var(--bg-elevated); cursor:pointer;">
+              <td style="padding:10px 14px;"><span style="font-size:13px; font-weight:500; color:var(--text-primary);">Deploy</span></td>
+              <td style="padding:10px 14px; text-align:right;">
+                <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); font-feature-settings:'tnum';">3.1%</span>
+              </td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); font-feature-settings:'tnum';">12</td>
+              <td style="padding:10px 14px; text-align:center;"><span style="font-size:11px; color:var(--text-tertiary);">→</span></td>
+            </tr>
+            <!-- Release -->
+            <tr style-hover="background:var(--bg-elevated); cursor:pointer;">
+              <td style="padding:10px 14px;"><span style="font-size:13px; font-weight:500; color:var(--text-primary);">Release</span></td>
+              <td style="padding:10px 14px; text-align:right;">
+                <span style="font-family:var(--font-mono); font-size:12px; color:var(--status-success); font-weight:500; font-feature-settings:'tnum';">0%</span>
+              </td>
+              <td style="padding:10px 14px; text-align:right; font-family:var(--font-mono); font-size:12px; color:var(--text-secondary); font-feature-settings:'tnum';">0</td>
+              <td style="padding:10px 14px; text-align:center;">
+                <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1280, &quot;height&quot;: 920 }
+}">
+class Component extends DCLogic {
+  state = { timeRange: '30d' };
+
+  renderVals() {
+    const { timeRange } = this.state;
+    const is30 = timeRange === '30d';
+
+    // ── Raw data (30 days) ─────────────────────────────────────
+    const ciDurFull  = [3.8,3.6,3.9,3.5,3.7,3.4,3.6,3.3,3.5,3.2,3.4,3.1,3.3,3.0,3.2,2.9,3.1,7.2,3.0,2.8,2.9,2.7,2.8,2.6,2.7,2.5,2.6,2.4,2.5,2.4];
+    const depDurFull = [1.1,1.0,1.2,1.1,1.0,1.1,1.2,1.0,1.1,1.3,1.1,1.0,1.1,1.2,1.0,1.1,1.0,1.2,1.1,1.0,1.1,1.0,0.9,1.0,1.1,0.9,1.0,1.1,0.9,1.0];
+    const ciFailFull = [8,12,7,10,6,8,11,9,7,10,14,18,28,35,32,22,15,10,8,9,7,10,8,12,9,7,8,10,7,9];
+
+    const ciDur  = is30 ? ciDurFull  : ciDurFull.slice(-7);
+    const depDur = is30 ? depDurFull : depDurFull.slice(-7);
+    const ciF    = is30 ? ciFailFull : ciFailFull.slice(-7);
+
+    // ── SVG coordinate constants ───────────────────────────────
+    const ml=50, mt=14, cw=460, ch=195;   // margin-left, margin-top, chart-width, chart-height
+    const baseY = mt + ch;                 // 209 — x-axis y position
+
+    const px = (data, maxY) => data.map((v, i) => {
+      const x = ml + (i / (data.length - 1)) * cw;
+      const y = mt + ch - (v / maxY) * ch;
+      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+
+    const areaPx = (data, maxY) => {
+      const pts = data.map((v, i) => [ml + (i/(data.length-1))*cw, mt + ch - (v/maxY)*ch]);
+      const line = pts.map(([x,y],i) => `${i===0?'M':'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+      return `${line} L${(ml+cw).toFixed(1)},${baseY} L${ml},${baseY}Z`;
+    };
+
+    // ── End points ─────────────────────────────────────────────
+    const ciDurLast = ciDur[ciDur.length-1];
+    const depLast   = depDur[depDur.length-1];
+    const failLast  = ciF[ciF.length-1];
+    const ciDurEndX = (ml+cw).toFixed(1);
+    const ciDurEndY = (mt + ch - (ciDurLast/8)*ch).toFixed(1);
+    const depEndX   = ciDurEndX;
+    const depEndY   = (mt + ch - (depLast/8)*ch).toFixed(1);
+    const failEndX  = ciDurEndX;
+    const failEndY  = (mt + ch - (failLast/40)*ch).toFixed(1);
+
+    // ── Spike annotations (30d only) ──────────────────────────
+    const spikeIdx = 17; // day 18 in ciDur
+    const spikeX   = (ml + (spikeIdx/29)*cw).toFixed(1);
+    const spikeY   = (mt + ch - (7.2/8)*ch).toFixed(1);
+    const spikeAnnY = (parseFloat(spikeY) - 9).toFixed(1);
+
+    const peakIdx = 13; // day 14 in ciFail (value 35)
+    const peakX   = (ml + (peakIdx/29)*cw).toFixed(1);
+    const peakY   = (mt + ch - (35/40)*ch).toFixed(1);
+    const peakAnnY = (parseFloat(peakY) - 9).toFixed(1);
+
+    // ── X-axis labels ──────────────────────────────────────────
+    const xLabels = is30 ? ['−30d','−22d','−15d','−7d','Today'] : ['−7d','−5d','−3d','−1d','Today'];
+    const xPos    = is30 ? [50, 161, 272, 383, 510]              : [50, 165, 280, 395, 510];
+
+    // ── Toggle styles ──────────────────────────────────────────
+    const btnBase = 'padding:4px 12px; border-radius:5px; border:none; cursor:pointer; font-size:12px; font-weight:500; font-family:var(--font-sans); transition:background 100ms,color 100ms;';
+    const btnOn   = btnBase + 'background:oklch(70% 0.195 55 / 0.15); color:var(--text-accent);';
+    const btnOff  = btnBase + 'background:transparent; color:var(--text-secondary);';
+
+    return {
+      is30,
+      toggleRange30: () => this.setState({ timeRange: '30d' }),
+      toggleRange7:  () => this.setState({ timeRange: '7d' }),
+      btn30Style: is30 ? btnOn : btnOff,
+      btn7Style:  !is30 ? btnOn : btnOff,
+
+      ciDurPath:  px(ciDur, 8),
+      depDurPath: px(depDur, 8),
+      ciFailPath: px(ciF, 40),
+      ciFailArea: areaPx(ciF, 40),
+
+      ciDurEndX, ciDurEndY, depEndX, depEndY, failEndX, failEndY,
+      showSpike: is30,
+      spikeX, spikeY, spikeAnnY,
+      peakX, peakY, peakAnnY,
+
+      xL1: xLabels[0], xP1: xPos[0],
+      xL2: xLabels[1], xP2: xPos[1],
+      xL3: xLabels[2], xP3: xPos[2],
+      xL4: xLabels[3], xP4: xPos[3],
+      xL5: xLabels[4],
+    };
+  }
+}
+</script>
+</body>
+</html>

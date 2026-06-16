@@ -1,0 +1,29 @@
+/*
+ * ⚠️  PRODUCTION NOTICE — GDPR / DSGVO COMPLIANCE
+ * ─────────────────────────────────────────────────
+ * This file uses Google Fonts CDN for design-system PREVIEW ONLY.
+ * In production, replace both @import lines with self-hosted @font-face
+ * rules pointing to font files committed to the repository.
+ *
+ * Required families and their self-hostable origins:
+ *   • Hanken Grotesk — https://github.com/marcologous/hanken-grotesk
+ *     Weights needed: 300, 400, 500, 600, 700 (variable font available)
+ *   • JetBrains Mono  — https://github.com/JetBrains/JetBrainsMono
+ *     Weights needed: 400, 500, 600, 700 (variable font available)
+ *
+ * Self-hosted @font-face template:
+ * ─────────────────────────────────
+ * @font-face {
+ *   font-family: 'Hanken Grotesk';
+ *   src: url('/fonts/HankenGrotesk[wght].woff2') format('woff2-variations');
+ *   font-weight: 100 900;
+ *   font-display: swap;
+ * }
+ * @font-face {
+ *   font-family: 'JetBrains Mono';
+ *   src: url('/fonts/JetBrainsMono[wght].woff2') format('woff2-variations');
+ *   font-weight: 100 800;
+ *   font-display: swap;
+ * }
+ */
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/shadows.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/motion.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/semantic.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/styles.css">
+  <script src="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/_ds_bundle.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans, system-ui, sans-serif); color: var(--text-primary); }
+    @keyframes pw-spin { to { transform: rotate(360deg); } }
+  </style>
+</helmet>
+
+<div style="background:var(--bg-base); min-height:100vh;">
+
+  <!-- ══════════════════════════════════════════════════════
+       NAV
+  ══════════════════════════════════════════════════════════ -->
+  <header style="position:sticky; top:0; z-index:50; background:oklch(12% 0.014 252 / 0.92);
+    backdrop-filter:blur(12px); border-bottom:1px solid var(--border-subtle);">
+    <div style="max-width:1100px; margin:0 auto; padding:0 32px;
+      display:flex; align-items:center; height:56px; gap:32px;">
+
+      <!-- Logo -->
+      <a href="Homepage.dc.html" style="display:flex; align-items:center; gap:9px; text-decoration:none; flex-shrink:0;">
+        <svg width="22" height="22" viewBox="0 0 32 32" fill="none" style="color:var(--pw-amber-500);">
+          <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="2"/>
+          <path d="M5.5 16h4l2-5.5 2 11 2-11 2 11 2-5.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span style="font-size:15px; font-weight:600; letter-spacing:-0.025em; color:var(--text-primary);">
+          Pipe<span style="color:var(--pw-amber-500);">Watch</span>
+        </span>
+      </a>
+
+      <!-- Nav links -->
+      <nav style="display:flex; align-items:center; gap:2px; flex:1;">
+        <a href="#" style="padding:5px 12px; border-radius:6px; font-size:13px;
+          color:var(--text-secondary); text-decoration:none;" style-hover="color:var(--text-primary); background:var(--bg-elevated);">Pricing</a>
+        <a href="#" style="padding:5px 12px; border-radius:6px; font-size:13px;
+          color:var(--text-secondary); text-decoration:none;" style-hover="color:var(--text-primary); background:var(--bg-elevated);">Docs</a>
+        <a href="#" style="padding:5px 12px; border-radius:6px; font-size:13px;
+          color:var(--text-secondary); text-decoration:none;" style-hover="color:var(--text-primary); background:var(--bg-elevated);">Changelog</a>
+        <!-- GitHub stars badge -->
+        <a href="#" style="display:flex; align-items:center; gap:6px; padding:4px 10px;
+          border-radius:6px; font-size:12px; color:var(--text-secondary); text-decoration:none;
+          border:1px solid var(--border-subtle); margin-left:4px;" style-hover="border-color:var(--border-default); color:var(--text-primary);">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" style="color:var(--pw-amber-500);">
+            <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+          </svg>
+          847
+        </a>
+      </nav>
+
+      <!-- Auth CTAs -->
+      <div style="display:flex; align-items:center; gap:8px; flex-shrink:0;">
+        <a href="Dashboard.dc.html" style="padding:5px 14px; border-radius:6px; font-size:13px; font-weight:500;
+          color:var(--text-secondary); text-decoration:none;" style-hover="color:var(--text-primary); background:var(--bg-elevated);">Sign in</a>
+        <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.Button"
+          variant="primary" size="sm" hint-size="130px,32px">Join waitlist</x-import>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════
+       HERO
+  ══════════════════════════════════════════════════════════ -->
+  <section style="max-width:1100px; margin:0 auto; padding:88px 32px 80px;
+    display:grid; grid-template-columns:1fr 1fr; gap:56px; align-items:center;">
+
+    <!-- Hero copy -->
+    <div>
+      <!-- Eyebrow badge -->
+      <div style="display:inline-flex; align-items:center; gap:6px; padding:4px 12px;
+        border-radius:9999px; background:oklch(70% 0.195 55 / 0.12);
+        border:1px solid oklch(70% 0.195 55 / 0.30); margin-bottom:24px;">
+        <span style="width:6px; height:6px; border-radius:9999px; background:var(--pw-amber-500);
+          animation:pw-pulse 1.5s ease-in-out infinite;"></span>
+        <span style="font-family:var(--font-mono); font-size:11px; color:var(--pw-amber-400);
+          font-weight:500; letter-spacing:0.04em;">Open beta · CE v0.1 available</span>
+      </div>
+
+      <h1 style="font-size:clamp(36px, 4.5vw, 52px); font-weight:700;
+        letter-spacing:-0.035em; line-height:1.1; color:var(--text-primary); margin-bottom:20px;">
+        Your GitHub Actions pipeline —<br>
+        <span style="color:var(--pw-amber-500);">all in one place</span>
+      </h1>
+
+      <p style="font-size:18px; color:var(--text-secondary); line-height:1.6;
+        max-width:440px; margin-bottom:36px; font-weight:400;">
+        Live pipeline view across every repository.<br>Never tab-switch again.
+      </p>
+
+      <!-- CTAs -->
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+        <!-- Primary CTA -->
+        <div style="position:relative;">
+          <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.Button"
+            variant="primary" size="lg" hint-size="180px,44px">Join the waitlist</x-import>
+          <!-- CTA annotation -->
+          <div style="position:absolute; top:-28px; left:0; font-family:var(--font-mono); font-size:9px;
+            color:var(--pw-amber-400); background:oklch(70% 0.195 55 / 0.08); padding:2px 8px;
+            border-radius:3px; border:1px dashed oklch(70% 0.195 55 / 0.30); white-space:nowrap;
+            pointer-events:none;">↑ primary conversion CTA</div>
+        </div>
+        <a href="https://github.com" target="_blank"
+          style="display:inline-flex; align-items:center; gap:7px; padding:0 20px; height:44px;
+          border-radius:6px; border:1px solid var(--border-default); background:var(--bg-surface);
+          font-size:14px; font-weight:500; color:var(--text-secondary); text-decoration:none;"
+          style-hover="border-color:var(--border-strong); color:var(--text-primary);">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--text-secondary);">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          View on GitHub →
+        </a>
+      </div>
+    </div>
+
+    <!-- Hero product visual — real product screenshot simulation -->
+    <div style="position:relative; display:flex; justify-content:center; align-items:flex-start;">
+      <div style="width:100%; max-width:520px; border-radius:10px; overflow:hidden;
+        box-shadow:0 32px 64px oklch(0% 0 0 / 0.50), 0 0 0 1px var(--border-default);
+        transform:perspective(900px) rotateY(-5deg) rotateX(2deg);
+        transform-origin:left center; transition:transform 400ms var(--ease-out);"
+        style-hover="transform:perspective(900px) rotateY(-2deg) rotateX(1deg);">
+
+        <!-- Window chrome bar -->
+        <div style="background:var(--bg-overlay); border-bottom:1px solid var(--border-default);
+          padding:10px 14px; display:flex; align-items:center; gap:8px;">
+          <div style="display:flex; gap:5px;">
+            <div style="width:10px; height:10px; border-radius:9999px; background:oklch(58% 0.205 23 / 0.7);"></div>
+            <div style="width:10px; height:10px; border-radius:9999px; background:oklch(70% 0.195 55 / 0.7);"></div>
+            <div style="width:10px; height:10px; border-radius:9999px; background:oklch(63% 0.163 148 / 0.7);"></div>
+          </div>
+          <div style="flex:1; background:var(--bg-elevated); border:1px solid var(--border-subtle);
+            border-radius:4px; padding:3px 10px; font-family:var(--font-mono); font-size:10px;
+            color:var(--text-tertiary);">pipewatch.app/workspaces/my-workspace/</div>
+        </div>
+
+        <!-- Mini dashboard content -->
+        <div style="background:var(--bg-base); padding:16px;">
+          <!-- Mini health bar -->
+          <div style="display:flex; border:1px solid var(--border-default); border-radius:6px;
+            overflow:hidden; margin-bottom:12px;">
+            <div style="flex:1; padding:10px 12px; border-right:1px solid var(--border-subtle);">
+              <div style="font-size:9px; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Repos</div>
+              <div style="font-size:18px; font-weight:700; color:var(--text-primary); font-feature-settings:'tnum'; letter-spacing:-0.02em;">14</div>
+            </div>
+            <div style="flex:1; padding:10px 12px; border-right:1px solid var(--border-subtle); background:var(--status-running-subtle);">
+              <div style="font-size:9px; color:var(--status-running); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Running</div>
+              <div style="font-size:18px; font-weight:700; color:var(--status-running); font-feature-settings:'tnum'; letter-spacing:-0.02em;">2</div>
+            </div>
+            <div style="flex:1; padding:10px 12px; border-right:1px solid var(--border-subtle); background:var(--status-failure-subtle);">
+              <div style="font-size:9px; color:var(--status-failure); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Failing</div>
+              <div style="font-size:18px; font-weight:700; color:var(--status-failure); font-feature-settings:'tnum'; letter-spacing:-0.02em;">1</div>
+            </div>
+            <div style="flex:1; padding:10px 12px;">
+              <div style="font-size:9px; color:var(--status-success); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:3px;">Healthy</div>
+              <div style="font-size:18px; font-weight:700; color:var(--status-success); font-feature-settings:'tnum'; letter-spacing:-0.02em;">11</div>
+            </div>
+          </div>
+
+          <!-- Mini card row -->
+          <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px;">
+            <!-- Mini card: running -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border-default);
+              border-radius:6px; padding:10px;">
+              <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">mdg-labs/</div>
+              <div style="font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--text-primary); margin-bottom:6px;">inboxops</div>
+              <div style="display:flex; align-items:center; gap:4px; margin-bottom:8px;">
+                <span style="width:5px; height:5px; border-radius:9999px; background:var(--status-running);
+                  animation:pw-pulse 1.5s ease-in-out infinite; flex-shrink:0;"></span>
+                <span style="font-size:10px; color:var(--status-running); font-weight:500;">Running</span>
+              </div>
+              <div style="background:var(--bg-elevated); border-radius:3px; overflow:hidden;">
+                <svg width="100%" height="14" viewBox="0 0 80 14" preserveAspectRatio="none">
+                  <path d="M0,9 L13,7 L26,13 L40,3 L53,7 L66,9 L80,3" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <!-- Mini card: failing -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border-default);
+              border-radius:6px; padding:10px;">
+              <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">mdg-labs/</div>
+              <div style="font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--text-primary); margin-bottom:6px;">slugbase</div>
+              <div style="display:flex; align-items:center; gap:4px; margin-bottom:8px;">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--status-failure)" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M10.5 5.5l-5 5M5.5 5.5l5 5"/></svg>
+                <span style="font-size:10px; color:var(--status-failure); font-weight:500;">Failed</span>
+              </div>
+              <div style="background:var(--bg-elevated); border-radius:3px; overflow:hidden;">
+                <svg width="100%" height="14" viewBox="0 0 80 14" preserveAspectRatio="none">
+                  <path d="M0,5 L13,7 L26,3 L40,5 L53,8 L66,11 L80,13" fill="none" stroke="var(--status-failure)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+            <!-- Mini card: healthy -->
+            <div style="background:var(--bg-surface); border:1px solid var(--border-default);
+              border-radius:6px; padding:10px;">
+              <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">mdg-labs/</div>
+              <div style="font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--text-primary); margin-bottom:6px;">pipewatch</div>
+              <div style="display:flex; align-items:center; gap:4px; margin-bottom:8px;">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+                <span style="font-size:10px; color:var(--status-success); font-weight:500;">Succeeded</span>
+              </div>
+              <div style="background:var(--bg-elevated); border-radius:3px; overflow:hidden;">
+                <svg width="100%" height="14" viewBox="0 0 80 14" preserveAspectRatio="none">
+                  <path d="M0,5 L13,4 L26,5 L40,3 L53,4 L66,5 L80,3" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       SOCIAL PROOF BAR
+  ══════════════════════════════════════════════════════════ -->
+  <div style="border-top:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle);
+    background:var(--bg-surface);">
+    <div style="max-width:1100px; margin:0 auto; padding:14px 32px;
+      display:flex; align-items:center; justify-content:center; gap:0; flex-wrap:wrap;">
+      <!-- Items with separator dots -->
+      <span style="font-size:12px; color:var(--text-tertiary); padding:0 18px; white-space:nowrap;">Open source</span>
+      <span style="color:var(--border-strong); font-size:16px; user-select:none;">·</span>
+      <span style="font-size:12px; color:var(--text-tertiary); padding:0 18px; white-space:nowrap;">Self-hostable</span>
+      <span style="color:var(--border-strong); font-size:16px; user-select:none;">·</span>
+      <span style="font-size:12px; color:var(--text-tertiary); padding:0 18px; white-space:nowrap;">SOC 2 Type II</span>
+      <span style="color:var(--border-strong); font-size:16px; user-select:none;">·</span>
+      <span style="font-size:12px; color:var(--text-tertiary); padding:0 18px; white-space:nowrap;">EU data residency</span>
+      <span style="color:var(--border-strong); font-size:16px; user-select:none;">·</span>
+      <span style="display:flex; align-items:center; gap:5px; padding:0 18px; white-space:nowrap;">
+        <svg width="11" height="11" viewBox="0 0 16 16" fill="var(--pw-amber-500)">
+          <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/>
+        </svg>
+        <span style="font-size:12px; color:var(--text-secondary); font-weight:500;">847 GitHub stars</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       FEATURE HIGHLIGHT 1 — Live pipeline view
+  ══════════════════════════════════════════════════════════ -->
+  <section style="max-width:1100px; margin:0 auto; padding:88px 32px;
+    display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;">
+
+    <!-- Text -->
+    <div>
+      <div style="font-family:var(--font-mono); font-size:11px; color:var(--pw-amber-500);
+        letter-spacing:0.08em; text-transform:uppercase; margin-bottom:12px; font-weight:500;">Feature 01</div>
+      <h2 style="font-size:34px; font-weight:700; letter-spacing:-0.03em; line-height:1.15;
+        color:var(--text-primary); margin-bottom:16px;">Live pipeline view</h2>
+      <p style="font-size:16px; color:var(--text-secondary); line-height:1.7; margin-bottom:28px;">
+        See every workflow run the moment it starts. Jobs, steps, durations — live, without refreshing.
+      </p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:5px; height:5px; border-radius:9999px; background:var(--pw-amber-500); flex-shrink:0;"></div>
+          <span style="font-size:14px; color:var(--text-secondary);">Server-sent events, zero polling</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:5px; height:5px; border-radius:9999px; background:var(--pw-amber-500); flex-shrink:0;"></div>
+          <span style="font-size:14px; color:var(--text-secondary);">Visual DAG — see job dependencies instantly</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <div style="width:5px; height:5px; border-radius:9999px; background:var(--pw-amber-500); flex-shrink:0;"></div>
+          <span style="font-size:14px; color:var(--text-secondary);">Failed step highlighted automatically</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini run detail mockup -->
+    <div style="border:1px solid var(--border-default); border-radius:10px; overflow:hidden;
+      box-shadow:var(--shadow-lg);">
+      <!-- Mock header bar -->
+      <div style="background:var(--bg-overlay); border-bottom:1px solid var(--border-default);
+        padding:10px 14px; display:flex; align-items:center; gap:8px;">
+        <div style="display:flex; gap:5px;">
+          <div style="width:9px; height:9px; border-radius:9999px; background:oklch(47% 0.008 252);"></div>
+          <div style="width:9px; height:9px; border-radius:9999px; background:oklch(47% 0.008 252);"></div>
+          <div style="width:9px; height:9px; border-radius:9999px; background:oklch(47% 0.008 252);"></div>
+        </div>
+        <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary); margin-left:4px;">
+          CI · run #12847
+        </div>
+        <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.StatusBadge"
+          status="failure" hint-size="60px,18px"></x-import>
+      </div>
+
+      <!-- Mini job graph -->
+      <div style="background:var(--bg-base); padding:20px 24px;">
+        <div style="font-size:10px; font-weight:500; color:var(--text-tertiary); text-transform:uppercase;
+          letter-spacing:0.07em; margin-bottom:14px;">Job execution graph</div>
+
+        <!-- Simplified DAG -->
+        <div style="position:relative; height:110px; max-width:440px;">
+          <svg style="position:absolute; top:0; left:0; width:100%; height:110px; pointer-events:none;"
+            viewBox="0 0 440 110" preserveAspectRatio="none">
+            <defs>
+              <marker id="arw2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                <path d="M0,0.5 L0,6.5 L6.5,3.5 z" fill="var(--border-strong)"/>
+              </marker>
+              <marker id="arw2-skip" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto">
+                <path d="M0,0.5 L0,6.5 L6.5,3.5 z" fill="oklch(60% 0.090 298 / 0.45)"/>
+              </marker>
+            </defs>
+            <path d="M92,52 C116,52 116,27 140,27" fill="none" stroke="var(--border-strong)" stroke-width="1.5" marker-end="url(#arw2)"/>
+            <path d="M92,52 C116,52 116,80 140,80" fill="none" stroke="var(--border-strong)" stroke-width="1.5" marker-end="url(#arw2)"/>
+            <path d="M232,27 L300,27" fill="none" stroke="oklch(60% 0.090 298 / 0.45)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#arw2-skip)"/>
+          </svg>
+
+          <!-- lint -->
+          <div style="position:absolute; left:14px; top:30px; width:78px; height:44px;
+            background:var(--status-success-subtle); border:1px solid var(--status-success-muted);
+            border-radius:5px; padding:6px 8px;">
+            <div style="font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--text-primary);">lint</div>
+            <div style="font-family:var(--font-mono); font-size:10px; color:var(--status-success);">23s</div>
+          </div>
+          <!-- test (failed) -->
+          <div style="position:absolute; left:140px; top:8px; width:92px; height:44px;
+            background:var(--status-failure-subtle); border:1.5px solid var(--status-failure-muted);
+            border-radius:5px; padding:6px 8px; box-shadow:var(--glow-failure);">
+            <div style="font-family:var(--font-mono); font-size:11px; font-weight:600; color:var(--status-failure);">test ✗</div>
+            <div style="font-family:var(--font-mono); font-size:10px; color:var(--status-failure);">2m 18s</div>
+          </div>
+          <!-- typecheck -->
+          <div style="position:absolute; left:140px; top:60px; width:104px; height:44px;
+            background:var(--status-success-subtle); border:1px solid var(--status-success-muted);
+            border-radius:5px; padding:6px 8px;">
+            <div style="font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--text-primary);">typecheck</div>
+            <div style="font-family:var(--font-mono); font-size:10px; color:var(--status-success);">31s</div>
+          </div>
+          <!-- deploy (skipped) -->
+          <div style="position:absolute; left:300px; top:8px; width:96px; height:44px;
+            background:var(--status-skipped-subtle); border:1px solid oklch(60% 0.090 298 / 0.20);
+            border-radius:5px; padding:6px 8px; opacity:0.55;">
+            <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-secondary);">deploy</div>
+            <div style="font-family:var(--font-mono); font-size:10px; color:var(--status-skipped);">skipped</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       FEATURE HIGHLIGHT 2 — Multi-repo at a glance
+  ══════════════════════════════════════════════════════════ -->
+  <section style="background:var(--bg-surface); border-top:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle);">
+    <div style="max-width:1100px; margin:0 auto; padding:88px 32px;
+      display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center;">
+
+      <!-- Mini repo cards mockup -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <!-- Card: running -->
+        <div style="background:var(--bg-elevated); border:1px solid var(--border-default); border-radius:7px; padding:12px;">
+          <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary); margin-bottom:1px;">mdg-labs/</div>
+          <div style="font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--text-primary); margin-bottom:8px;">inboxops</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:5px;">
+              <span style="width:5px; height:5px; border-radius:9999px; background:var(--status-running); animation:pw-pulse 1.5s ease-in-out infinite;"></span>
+              <span style="font-size:10px; color:var(--status-running); font-weight:500;">Running</span>
+            </div>
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">main</span>
+          </div>
+          <svg width="100%" height="12" viewBox="0 0 60 12" preserveAspectRatio="none">
+            <path d="M0,7 L10,5 L20,10 L30,2 L40,5 L50,7 L60,2" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <!-- Card: failing -->
+        <div style="background:var(--bg-elevated); border:1px solid var(--border-default); border-radius:7px; padding:12px;">
+          <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary); margin-bottom:1px;">mdg-labs/</div>
+          <div style="font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--text-primary); margin-bottom:8px;">slugbase</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:5px;">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--status-failure)" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M10.5 5.5l-5 5M5.5 5.5l5 5"/></svg>
+              <span style="font-size:10px; color:var(--status-failure); font-weight:500;">Failed</span>
+            </div>
+            <span style="font-size:10px; color:var(--status-failure); font-weight:500;">24%↑</span>
+          </div>
+          <svg width="100%" height="12" viewBox="0 0 60 12" preserveAspectRatio="none">
+            <path d="M0,4 L10,5 L20,2 L30,4 L40,7 L50,9 L60,11" fill="none" stroke="var(--status-failure)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <!-- Card: healthy 1 -->
+        <div style="background:var(--bg-elevated); border:1px solid var(--border-default); border-radius:7px; padding:12px;">
+          <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary); margin-bottom:1px;">mdg-labs/</div>
+          <div style="font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--text-primary); margin-bottom:8px;">pipewatch</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:5px;">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+              <span style="font-size:10px; color:var(--status-success); font-weight:500;">OK</span>
+            </div>
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">main</span>
+          </div>
+          <svg width="100%" height="12" viewBox="0 0 60 12" preserveAspectRatio="none">
+            <path d="M0,5 L10,4 L20,5 L30,3 L40,4 L50,5 L60,3" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <!-- Card: cancelled -->
+        <div style="background:var(--bg-elevated); border:1px solid var(--border-default); border-radius:7px; padding:12px; opacity:0.65;">
+          <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary); margin-bottom:1px;">mdg-labs/</div>
+          <div style="font-family:var(--font-mono); font-size:12px; font-weight:500; color:var(--text-primary); margin-bottom:8px;">proxdroid</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+            <div style="display:flex; align-items:center; gap:5px;">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="var(--status-cancelled)" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="8" r="6.5"/><path d="M5 8h6"/></svg>
+              <span style="font-size:10px; color:var(--status-cancelled); font-weight:500;">Cancelled</span>
+            </div>
+            <span style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">feat/auth</span>
+          </div>
+          <svg width="100%" height="12" viewBox="0 0 60 12" preserveAspectRatio="none">
+            <path d="M0,8 L10,9 L20,8 L30,10 L40,8 L50,9 L60,8" fill="none" stroke="var(--status-cancelled)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Text -->
+      <div>
+        <div style="font-family:var(--font-mono); font-size:11px; color:var(--pw-amber-500);
+          letter-spacing:0.08em; text-transform:uppercase; margin-bottom:12px; font-weight:500;">Feature 02</div>
+        <h2 style="font-size:34px; font-weight:700; letter-spacing:-0.03em; line-height:1.15;
+          color:var(--text-primary); margin-bottom:16px;">Multi-repo at a glance</h2>
+        <p style="font-size:16px; color:var(--text-secondary); line-height:1.7; margin-bottom:28px;">
+          One dashboard for all your repos. Sort by failure rate, filter by status, spot problems instantly.
+        </p>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:5px; height:5px; border-radius:9999px; background:var(--pw-amber-500); flex-shrink:0;"></div>
+            <span style="font-size:14px; color:var(--text-secondary);">7-day sparklines for every repo</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:5px; height:5px; border-radius:9999px; background:var(--pw-amber-500); flex-shrink:0;"></div>
+            <span style="font-size:14px; color:var(--text-secondary);">Filter by status, sort by last run</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:5px; height:5px; border-radius:9999px; background:var(--pw-amber-500); flex-shrink:0;"></div>
+            <span style="font-size:14px; color:var(--text-secondary);">All 6 pipeline states represented</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       EDITIONS CALLOUT
+  ══════════════════════════════════════════════════════════ -->
+  <section style="max-width:1100px; margin:0 auto; padding:88px 32px;">
+    <div style="text-align:center; margin-bottom:48px;">
+      <h2 style="font-size:34px; font-weight:700; letter-spacing:-0.03em; color:var(--text-primary); margin-bottom:12px;">
+        Two ways to run PipeWatch
+      </h2>
+      <p style="font-size:16px; color:var(--text-secondary);">Same product. Your choice of deployment.</p>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+
+      <!-- PipeWatch CE -->
+      <div style="background:var(--bg-surface); border:1px solid var(--border-default);
+        border-radius:12px; padding:32px;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none" style="color:var(--pw-amber-500);">
+            <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="2"/>
+            <path d="M5.5 16h4l2-5.5 2 11 2-11 2 11 2-5.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span style="font-size:18px; font-weight:600; color:var(--text-primary);">PipeWatch CE</span>
+          <span style="font-family:var(--font-mono); font-size:10px; color:var(--pw-amber-500);
+            background:oklch(70% 0.195 55 / 0.12); padding:1px 7px; border-radius:3px;
+            border:1px solid oklch(70% 0.195 55 / 0.30);">CE</span>
+        </div>
+        <p style="font-size:15px; font-weight:500; color:var(--text-secondary); margin-bottom:20px;">
+          Self-hosted. Free forever.
+        </p>
+        <div style="background:var(--bg-code); border:1px solid var(--border-default); border-radius:6px;
+          padding:12px 16px; margin-bottom:24px;">
+          <div style="font-size:10px; color:var(--text-tertiary); font-weight:500; margin-bottom:6px;
+            text-transform:uppercase; letter-spacing:0.06em;">Docker Compose</div>
+          <code style="font-family:var(--font-mono); font-size:12px; color:var(--pw-amber-300);
+            white-space:nowrap; display:block; overflow:hidden; text-overflow:ellipsis;">
+            docker compose up -d pipewatch
+          </code>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:28px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+            <span style="font-size:13px; color:var(--text-secondary);">All features included</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+            <span style="font-size:13px; color:var(--text-secondary);">No licence key required</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+            <span style="font-size:13px; color:var(--text-secondary);">Your data, your infrastructure</span>
+          </div>
+        </div>
+        <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.Button"
+          variant="secondary" size="md" hint-size="140px,36px">Read the docs →</x-import>
+      </div>
+
+      <!-- PipeWatch Cloud -->
+      <div style="background:var(--bg-surface); border:1.5px solid var(--border-accent);
+        border-radius:12px; padding:32px; position:relative; overflow:hidden;">
+        <!-- Subtle amber glow top-right -->
+        <div style="position:absolute; top:-40px; right:-40px; width:180px; height:180px;
+          border-radius:9999px; background:oklch(70% 0.195 55 / 0.08); pointer-events:none;"></div>
+
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none" style="color:var(--pw-amber-500);">
+            <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="2"/>
+            <path d="M5.5 16h4l2-5.5 2 11 2-11 2 11 2-5.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span style="font-size:18px; font-weight:600; color:var(--text-primary);">PipeWatch Cloud</span>
+          <span style="font-family:var(--font-mono); font-size:10px; color:var(--pw-amber-500);
+            background:oklch(70% 0.195 55 / 0.12); padding:1px 7px; border-radius:3px;
+            border:1px solid oklch(70% 0.195 55 / 0.30);">Cloud</span>
+        </div>
+        <p style="font-size:15px; font-weight:500; color:var(--text-secondary); margin-bottom:20px;">
+          Managed. Fair pricing.
+        </p>
+        <div style="background:oklch(70% 0.195 55 / 0.06); border:1px solid var(--border-accent);
+          border-radius:6px; padding:12px 16px; margin-bottom:24px;">
+          <div style="font-size:13px; color:var(--text-accent); font-weight:500; margin-bottom:3px;">Free plan available</div>
+          <div style="font-size:12px; color:var(--text-secondary);">No credit card. Scales with your team.</div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px; margin-bottom:28px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+            <span style="font-size:13px; color:var(--text-secondary);">Zero ops — we handle infra</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+            <span style="font-size:13px; color:var(--text-secondary);">SOC 2 Type II certified</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M5 8l2 2 4-4"/></svg>
+            <span style="font-size:13px; color:var(--text-secondary);">EU data residency available</span>
+          </div>
+        </div>
+        <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.Button"
+          variant="primary" size="md" hint-size="160px,36px">Join the waitlist →</x-import>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════
+       FOOTER
+  ══════════════════════════════════════════════════════════ -->
+  <footer style="border-top:1px solid var(--border-subtle); background:var(--bg-surface);">
+    <div style="max-width:1100px; margin:0 auto; padding:32px;
+      display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <svg width="16" height="16" viewBox="0 0 32 32" fill="none" style="color:var(--pw-amber-500);">
+          <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="2"/>
+          <path d="M5.5 16h4l2-5.5 2 11 2-11 2 11 2-5.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span style="font-size:13px; font-weight:600; color:var(--text-secondary);">PipeWatch</span>
+        <span style="font-size:12px; color:var(--text-tertiary);">by MDG Labs</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:20px;">
+        <a href="#" style="font-size:12px; color:var(--text-tertiary); text-decoration:none;" style-hover="color:var(--text-secondary);">Privacy</a>
+        <a href="#" style="font-size:12px; color:var(--text-tertiary); text-decoration:none;" style-hover="color:var(--text-secondary);">Terms</a>
+        <a href="#" style="font-size:12px; color:var(--text-tertiary); text-decoration:none;" style-hover="color:var(--text-secondary);">GitHub</a>
+        <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-tertiary);">v0.1.0</span>
+      </div>
+    </div>
+  </footer>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1280, &quot;height&quot;: 900 }
+}">
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/shadows.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/motion.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/tokens/semantic.css">
+  <link rel="stylesheet" href="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/styles.css">
+  <script src="_ds/pipewatch-design-system-e7cfc165-40c3-4477-baee-c8fba6d9e28d/_ds_bundle.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font-sans, system-ui, sans-serif); color: var(--text-primary); }
+  </style>
+</helmet>
+
+<div style="display:flex; min-height:100vh; background:var(--bg-base);">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside style="width:220px; flex-shrink:0; height:100vh; position:sticky; top:0; background:var(--bg-surface); border-right:1px solid var(--border-default); display:flex; flex-direction:column; overflow:hidden;">
+    <div style="padding:14px 16px 13px; display:flex; align-items:center; gap:9px; border-bottom:1px solid var(--border-subtle);">
+      <svg width="20" height="20" viewBox="0 0 32 32" fill="none" style="color:var(--pw-amber-500); flex-shrink:0;"><circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="2"/><path d="M5.5 16h4l2-5.5 2 11 2-11 2 11 2-5.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span style="font-size:14px; font-weight:600; letter-spacing:-0.025em;">Pipe<span style="color:var(--pw-amber-500);">Watch</span></span>
+      <span style="margin-left:auto; font-size:10px; font-family:var(--font-mono); color:var(--pw-amber-500); background:oklch(70% 0.195 55 / 0.12); padding:1px 5px; border-radius:3px;">CE</span>
+    </div>
+    <div style="padding:8px 10px; border-bottom:1px solid var(--border-subtle);">
+      <button style="display:flex; align-items:center; gap:7px; width:100%; padding:5px 8px; border-radius:6px; border:1px solid var(--border-default); background:var(--bg-elevated); cursor:pointer; font-family:var(--font-sans); text-align:left;" style-hover="background:var(--bg-overlay);">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary); flex-shrink:0;"><rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M5 7h6M5 10h4"/></svg>
+        <span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--font-mono); font-size:11px; color:var(--text-primary);">my-workspace</span>
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--text-tertiary);"><path d="M4 6l4 4 4-4"/></svg>
+      </button>
+    </div>
+    <nav style="flex:1; padding:8px; display:flex; flex-direction:column; gap:1px; overflow-y:auto;">
+      <a href="Dashboard.dc.html" style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px; border-radius:6px; cursor:pointer; text-decoration:none; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+        <span style="font-size:13px;">Dashboard</span>
+      </a>
+      <div style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px; border-radius:6px; cursor:pointer; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M3 4h10M3 8h10M3 12h7"/></svg>
+        <span style="font-size:13px;">Runs</span>
+      </a>
+      <a href="Repo Detail.dc.html" style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px; border-radius:6px; cursor:pointer; text-decoration:none; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M4 2v12M4 2h8a2 2 0 0 1 0 4H4M4 9.5h5.5a2 2 0 0 1 0 4H4"/></svg>
+        <span style="font-size:13px;">Repositories</span>
+      </a>
+      <a href="Insights.dc.html" style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px; border-radius:6px; cursor:pointer; text-decoration:none; color:var(--text-secondary);" style-hover="background:var(--bg-elevated); color:var(--text-primary);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M2 12L5 8l3 2 3-5 3 2"/><path d="M2 14h12"/></svg>
+        <span style="font-size:13px;">Insights</span>
+      </a>
+      <!-- Settings — expanded parent -->
+      <div style="display:flex; align-items:center; gap:9px; padding:0 10px; height:34px; border-radius:6px; background:oklch(70% 0.195 55 / 0.06);">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-accent); flex-shrink:0;"><circle cx="8" cy="8" r="2.5"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"/></svg>
+        <span style="font-size:13px; font-weight:500; color:var(--text-accent);">Settings</span>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:1px; padding-left:12px; border-left:1px solid var(--border-subtle); margin-left:16px;">
+        <div style="display:flex; align-items:center; padding:0 10px; height:30px; border-radius:5px; cursor:pointer; color:var(--text-secondary); font-size:12px;" style-hover="background:var(--bg-elevated); color:var(--text-primary);">General</div>
+        <a href="Settings Members.dc.html" style="display:flex; align-items:center; padding:0 10px; height:30px; border-radius:5px; cursor:pointer; color:var(--text-secondary); font-size:12px; text-decoration:none;" style-hover="background:var(--bg-elevated); color:var(--text-primary);">Members</a>
+        <div style="display:flex; align-items:center; padding:0 10px; height:30px; border-radius:5px; cursor:pointer; color:var(--text-secondary); font-size:12px;" style-hover="background:var(--bg-elevated); color:var(--text-primary);">Installations</div>
+        <!-- API Keys — active sub-item -->
+        <div style="display:flex; align-items:center; padding:0 10px; height:30px; border-radius:5px; background:var(--bg-elevated); font-size:12px; font-weight:500; color:var(--text-primary);">API Keys</div>
+        <div style="display:flex; align-items:center; padding:0 10px; height:30px; border-radius:5px; cursor:pointer; color:var(--text-secondary); font-size:12px;" style-hover="background:var(--bg-elevated); color:var(--text-primary);">Billing</div>
+      </div>
+    </nav>
+    <div style="padding:10px 12px; border-top:1px solid var(--border-subtle); display:flex; align-items:center; gap:8px;">
+      <div style="width:28px; height:28px; border-radius:9999px; background:var(--pw-amber-800); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:var(--pw-amber-200); flex-shrink:0;">M</div>
+      <div style="flex:1; overflow:hidden; min-width:0;">
+        <div style="font-size:12px; font-weight:500;">michaeldg</div>
+        <div style="font-family:var(--font-mono); font-size:10px; color:var(--text-tertiary);">mdg-labs</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main style="flex:1; overflow-y:auto; padding:28px 36px; min-width:0;">
+
+    <!-- Page header -->
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:6px;">
+      <div>
+        <div style="font-size:11px; font-family:var(--font-mono); color:var(--text-tertiary); margin-bottom:3px;">/workspaces/my-workspace/settings/api-keys</div>
+        <h1 style="font-size:20px; font-weight:600; letter-spacing:-0.025em;">API Keys</h1>
+      </div>
+      <button style="display:inline-flex; align-items:center; gap:7px; height:34px; padding:0 16px; border-radius:6px; border:none; background:var(--interactive-accent); color:var(--interactive-fg); font-family:var(--font-sans); font-size:13px; font-weight:600; cursor:pointer; flex-shrink:0; transition:background 100ms;" style-hover="background:var(--interactive-hover);">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+        Create API key
+      </button>
+    </div>
+    <p style="font-size:13px; color:var(--text-secondary); margin-bottom:24px; max-width:540px; line-height:1.6;">
+      Use API keys to access PipeWatch programmatically. Keys are workspace-scoped and never shown again after creation.
+    </p>
+
+    <!-- ─── Active keys table ─── -->
+    <div style="background:var(--bg-surface); border:1px solid var(--border-default); border-radius:8px; overflow:hidden; margin-bottom:12px;">
+      <table style="width:100%; border-collapse:collapse;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border-default); background:var(--bg-elevated);">
+            <th style="padding:9px 16px; text-align:left; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.07em; text-transform:uppercase;">Name</th>
+            <th style="padding:9px 16px; text-align:left; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.07em; text-transform:uppercase; font-family:var(--font-mono);">Prefix</th>
+            <th style="padding:9px 16px; text-align:left; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.07em; text-transform:uppercase;">Created by</th>
+            <th style="padding:9px 16px; text-align:left; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.07em; text-transform:uppercase;">Last used</th>
+            <th style="padding:9px 16px; text-align:left; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.07em; text-transform:uppercase;">Expires</th>
+            <th style="padding:9px 16px; text-align:right; font-size:10px; font-weight:500; color:var(--text-tertiary); letter-spacing:0.07em; text-transform:uppercase;"></th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Row 1: CI pipeline -->
+          <tr style="border-bottom:1px solid var(--border-subtle);" style-hover="background:var(--bg-elevated);">
+            <td style="padding:11px 16px;">
+              <span style="font-size:13px; font-weight:500; color:var(--text-primary);">CI pipeline</span>
+            </td>
+            <td style="padding:11px 16px;">
+              <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-tertiary); background:var(--bg-elevated); border:1px solid var(--border-subtle); padding:2px 8px; border-radius:4px;">pw_live_a3f9…</span>
+            </td>
+            <td style="padding:11px 16px;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <div style="width:18px; height:18px; border-radius:9999px; background:var(--pw-amber-800); display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:var(--pw-amber-200); flex-shrink:0;">M</div>
+                <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-secondary);">michaeldg</span>
+              </div>
+            </td>
+            <td style="padding:11px 16px; font-size:12px; color:var(--text-secondary);">2 hours ago</td>
+            <td style="padding:11px 16px; font-size:12px; color:var(--text-tertiary);">No expiry</td>
+            <td style="padding:11px 16px; text-align:right;">
+              <button style="font-size:12px; color:var(--status-failure); background:transparent; border:1px solid transparent; border-radius:5px; cursor:pointer; padding:3px 10px; font-family:var(--font-sans); font-weight:500;" style-hover="background:var(--status-failure-subtle); border-color:var(--status-failure-muted);">Revoke</button>
+            </td>
+          </tr>
+          <!-- Row 2: Local dev -->
+          <tr style="border-bottom:1px solid var(--border-subtle);" style-hover="background:var(--bg-elevated);">
+            <td style="padding:11px 16px;"><span style="font-size:13px; font-weight:500; color:var(--text-primary);">Local dev</span></td>
+            <td style="padding:11px 16px;"><span style="font-family:var(--font-mono); font-size:12px; color:var(--text-tertiary); background:var(--bg-elevated); border:1px solid var(--border-subtle); padding:2px 8px; border-radius:4px;">pw_live_b7c2…</span></td>
+            <td style="padding:11px 16px;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <div style="width:18px; height:18px; border-radius:9999px; background:var(--pw-amber-800); display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:var(--pw-amber-200); flex-shrink:0;">M</div>
+                <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-secondary);">michaeldg</span>
+              </div>
+            </td>
+            <td style="padding:11px 16px; font-size:12px; color:var(--text-secondary);">5 days ago</td>
+            <td style="padding:11px 16px; font-size:12px; color:var(--text-tertiary);">No expiry</td>
+            <td style="padding:11px 16px; text-align:right;"><button style="font-size:12px; color:var(--status-failure); background:transparent; border:1px solid transparent; border-radius:5px; cursor:pointer; padding:3px 10px; font-family:var(--font-sans); font-weight:500;" style-hover="background:var(--status-failure-subtle); border-color:var(--status-failure-muted);">Revoke</button></td>
+          </tr>
+          <!-- Row 3: Monitoring script — last used never, expires in 14 days -->
+          <tr style-hover="background:var(--bg-elevated);">
+            <td style="padding:11px 16px;"><span style="font-size:13px; font-weight:500; color:var(--text-primary);">Monitoring script</span></td>
+            <td style="padding:11px 16px;"><span style="font-family:var(--font-mono); font-size:12px; color:var(--text-tertiary); background:var(--bg-elevated); border:1px solid var(--border-subtle); padding:2px 8px; border-radius:4px;">pw_live_d1e8…</span></td>
+            <td style="padding:11px 16px;">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <div style="width:18px; height:18px; border-radius:9999px; background:oklch(28% 0.060 195); display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:700; color:oklch(72% 0.120 195); flex-shrink:0;">A</div>
+                <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-secondary);">anna</span>
+              </div>
+            </td>
+            <!-- "Never used" — muted italic, subtle signal key may not be set up -->
+            <td style="padding:11px 16px; font-size:12px; color:var(--text-tertiary); font-style:italic;">Never</td>
+            <!-- Expiry warning -->
+            <td style="padding:11px 16px;">
+              <span style="font-size:12px; color:oklch(75% 0.160 50); font-weight:500;">in 14 days</span>
+            </td>
+            <td style="padding:11px 16px; text-align:right;"><button style="font-size:12px; color:var(--status-failure); background:transparent; border:1px solid transparent; border-radius:5px; cursor:pointer; padding:3px 10px; font-family:var(--font-sans); font-weight:500;" style-hover="background:var(--status-failure-subtle); border-color:var(--status-failure-muted);">Revoke</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <!-- Table annotation -->
+    <div style="margin-bottom:16px;">
+      <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400); background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px; border:1px dashed oklch(70% 0.195 55 / 0.30);">
+        ↑ prefix col — monospace, muted — identifier not the key · "Never" — italic, tertiary — key may not be wired · "in 14 days" — muted warning amber
+      </span>
+    </div>
+
+    <!-- Show revoked toggle -->
+    <div style="display:flex; align-items:center; gap:10px;">
+      <x-import component-from-global-scope="PipeWatchDesignSystem_e7cfc1.Switch"
+        label="Show revoked keys"
+        checked="{{ false }}"
+        hint-size="180px,22px"></x-import>
+    </div>
+
+  </main>
+</div>
+
+<!-- ════════════════════════════════
+     API KEY CREATION MODAL
+     Post-creation state — key shown once
+════════════════════════════════════ -->
+<sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ true }}">
+  <!-- No backdrop click — Done is the only exit -->
+  <div style="position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center;">
+    <div style="position:absolute; inset:0; background:oklch(12% 0.014 252 / 0.78); backdrop-filter:blur(4px);"></div>
+
+    <div style="position:relative; z-index:51; width:500px; max-width:calc(100vw - 48px); background:var(--bg-surface); border:1px solid var(--border-default); border-radius:12px; box-shadow:var(--shadow-xl); overflow:hidden;">
+
+      <!-- Modal header — no X button (intentional) -->
+      <div style="padding:24px 24px 20px; border-bottom:1px solid var(--border-subtle);">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
+          <div style="width:28px; height:28px; border-radius:9999px; background:var(--status-success-subtle); display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="var(--status-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>
+          </div>
+          <h2 style="font-size:17px; font-weight:600; letter-spacing:-0.02em;">API key created</h2>
+        </div>
+        <p style="font-size:13px; color:var(--status-failure); font-weight:500;">Copy this key now. It won't be shown again.</p>
+      </div>
+
+      <div style="padding:20px 24px; display:flex; flex-direction:column; gap:16px;">
+
+        <!-- The key — most security-critical UI element -->
+        <div>
+          <div style="font-size:11px; font-weight:500; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:8px;">Your new API key</div>
+          <div style="background:var(--bg-code); border:1px solid var(--border-default); border-radius:6px; padding:12px 14px; display:flex; align-items:center; gap:10px; box-shadow:var(--shadow-inset);">
+            <code style="font-family:var(--font-mono); font-size:12px; color:var(--pw-amber-300); flex:1; word-break:break-all; line-height:1.6; user-select:all;">pw_live_x9k2m4n8p3q7r1s6t0u5v2w8y4z1a9b3c6d0e7f2</code>
+            <button onClick="{{ copyKey }}" style="display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:5px; border:1px solid var(--border-default); background:var(--bg-elevated); font-size:12px; font-weight:500; color:{{ copyBtnColor }}; font-family:var(--font-sans); cursor:pointer; white-space:nowrap; flex-shrink:0; transition:background 100ms, color 100ms;" style-hover="background:var(--bg-overlay);">
+              <sc-if value="{{ keyCopied }}" hint-placeholder-val="{{ false }}">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3.5 3.5L13 5"/></svg>
+              </sc-if>
+              <sc-if value="{{ keyNotCopied }}" hint-placeholder-val="{{ true }}">
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M3 11V3a1.5 1.5 0 0 1 1.5-1.5H11"/></svg>
+              </sc-if>
+              {{ copyBtnText }}
+            </button>
+          </div>
+          <div style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400); background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px; border:1px dashed oklch(70% 0.195 55 / 0.30); margin-top:6px; display:inline-block;">
+            ↑ security-critical — monospace code block · user-select:all · copy button with feedback state
+          </div>
+        </div>
+
+        <!-- Security warning strip -->
+        <div style="display:flex; align-items:flex-start; gap:9px; padding:10px 12px; background:oklch(70% 0.195 55 / 0.06); border:1px solid oklch(70% 0.195 55 / 0.22); border-radius:6px;">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--pw-amber-500)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0; margin-top:1px;"><path d="M8 1l7 13H1L8 1z"/><path d="M8 6v4M8 11.5v.5"/></svg>
+          <span style="font-size:12px; color:var(--text-secondary); line-height:1.5;">Store this key securely. PipeWatch cannot recover it if lost.</span>
+        </div>
+
+        <!-- Key name (read-only confirmation) -->
+        <div>
+          <div style="font-size:11px; font-weight:500; color:var(--text-tertiary); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:6px;">Key name</div>
+          <div style="height:36px; border-radius:6px; border:1px solid var(--border-subtle); background:var(--bg-elevated); display:flex; align-items:center; padding:0 12px; font-size:13px; color:var(--text-secondary);">
+            Monitoring integration
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Modal footer — Done is the only exit -->
+      <div style="padding:16px 24px 20px; border-top:1px solid var(--border-subtle); display:flex; flex-direction:column; gap:8px;">
+        <button onClick="{{ closeModal }}" style="width:100%; height:40px; border-radius:6px; border:none; background:var(--interactive-accent); color:var(--interactive-fg); font-family:var(--font-sans); font-size:14px; font-weight:600; cursor:pointer; transition:background 100ms;" style-hover="background:var(--interactive-hover);">Done</button>
+        <div style="text-align:center;">
+          <span style="font-family:var(--font-mono); font-size:9px; color:var(--pw-amber-400); background:oklch(70% 0.195 55 / 0.08); padding:2px 8px; border-radius:3px; border:1px dashed oklch(70% 0.195 55 / 0.30);">
+            ↑ no X button · no backdrop-click close · Done is the only exit — prevents accidental key loss
+          </span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{
+  &quot;$preview&quot;: { &quot;width&quot;: 1280, &quot;height&quot;: 860 }
+}">
+class Component extends DCLogic {
+  state = { modalOpen: true, keyCopied: false };
+
+  componentWillUnmount() { clearTimeout(this._ct); }
+
+  renderVals() {
+    const { modalOpen, keyCopied } = this.state;
+    return {
+      modalOpen,
+      closeModal: () => this.setState({ modalOpen: false }),
+      keyCopied,
+      keyNotCopied: !keyCopied,
+      copyBtnText:  keyCopied ? 'Copied' : 'Copy',
+      copyBtnColor: keyCopied ? 'var(--status-success)' : 'var(--text-secondary)',
+      copyKey: () => {
+        navigator.clipboard.writeText('pw_live_x9k2m4n8p3q7r1s6t0u5v2w8y4z1a9b3c6d0e7f2').catch(() => {});
+        this.setState({ keyCopied: true });
+        this._ct = setTimeout(() => this.setState({ keyCopied: false }), 2000);
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>
