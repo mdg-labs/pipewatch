@@ -4,6 +4,6 @@ import baseConfig from "@pipewatch/config/eslint";
 export default [
   ...baseConfig,
   {
-    ignores: ["dist/**"],
+    ignores: ["dist/**", "drizzle/**"],
   },
 ];
