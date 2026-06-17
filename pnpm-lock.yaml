@@ -238,12 +238,18 @@ importers:
       '@pipewatch/config':
         specifier: workspace:*
         version: link:../config
+      '@types/node':
+        specifier: ^22.13.4
+        version: 22.19.21
       eslint:
         specifier: 'catalog:'
         version: 9.39.4
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.6(@types/node@22.19.21)(terser@5.48.0)
 
   packages/utils:
     devDependencies:

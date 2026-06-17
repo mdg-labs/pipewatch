@@ -1,0 +1,78 @@
+/* ============================================================
+   PipeWatch Color Primitives
+   Raw OKLCH palette — use semantic aliases (semantic.css) in
+   components. Direct use of primitives only in token-level CSS.
+   ============================================================ */
+
+:root {
+  /* ── Amber Signal (brand accent) ──────────────────────────── */
+  /* Evokes precision instrument indicator lights. Technical,
+     warm, distinctive — not the default SaaS blue.           */
+  --pw-amber-50:  oklch(97%   0.040 70);
+  --pw-amber-100: oklch(93%   0.080 68);
+  --pw-amber-200: oklch(87%   0.130 65);
+  --pw-amber-300: oklch(81%   0.165 60);
+  --pw-amber-400: oklch(75%   0.188 57);
+  --pw-amber-500: oklch(70%   0.195 55);   /* ← primary accent */
+  --pw-amber-600: oklch(64%   0.188 53);
+  --pw-amber-700: oklch(56%   0.172 52);
+  --pw-amber-800: oklch(45%   0.145 52);
+  --pw-amber-900: oklch(32%   0.100 52);
+  --pw-amber-950: oklch(20%   0.065 52);
+
+  /* ── Cool Slate (neutral foundation) ─────────────────────── */
+  /* A 252° cool temperature gives surfaces character vs plain
+     grey. The primary canvas for both light and dark themes.  */
+  --pw-slate-50:  oklch(97%   0.002 252);
+  --pw-slate-100: oklch(93%   0.003 252);
+  --pw-slate-200: oklch(87%   0.004 252);
+  --pw-slate-300: oklch(77%   0.005 252);
+  --pw-slate-400: oklch(67%   0.006 252);
+  --pw-slate-500: oklch(57%   0.007 252);
+  --pw-slate-600: oklch(47%   0.008 252);
+  --pw-slate-700: oklch(36%   0.009 252);
+  --pw-slate-750: oklch(30%   0.010 252);
+  --pw-slate-800: oklch(25%   0.011 252);
+  --pw-slate-850: oklch(21%   0.012 252);
+  --pw-slate-900: oklch(17%   0.013 252);
+  --pw-slate-950: oklch(12%   0.014 252);
+
+  /* ── Status palette (calm, not alarmist) ─────────────────── */
+  /* Saturated enough to read instantly at a glance; soft
+     enough to live on screen all day without fatigue.        */
+
+  /* Success — understated green */
+  --pw-success:        oklch(63%   0.163 148);
+  --pw-success-bright: oklch(68%   0.173 148);
+  --pw-success-muted:  oklch(63%   0.163 148 / 0.30);
+  --pw-success-subtle: oklch(63%   0.163 148 / 0.10);
+
+  /* Failure — calm red */
+  --pw-failure:        oklch(58%   0.205 23);
+  --pw-failure-bright: oklch(64%   0.215 23);
+  --pw-failure-muted:  oklch(58%   0.205 23 / 0.30);
+  --pw-failure-subtle: oklch(58%   0.205 23 / 0.10);
+
+  /* Running — same as brand accent (it IS the "active signal") */
+  --pw-running:        oklch(70%   0.195 55);
+  --pw-running-subtle: oklch(70%   0.195 55 / 0.10);
+
+  /* Cancelled — neutral slate */
+  --pw-cancelled:        oklch(55%   0.007 252);
+  --pw-cancelled-subtle: oklch(55%   0.007 252 / 0.12);
+
+  /* Skipped — muted violet */
+  --pw-skipped:        oklch(60%   0.090 298);
+  --pw-skipped-subtle: oklch(60%   0.090 298 / 0.10);
+
+  /* Queued — steel blue */
+  --pw-queued:        oklch(62%   0.105 232);
+  --pw-queued-subtle: oklch(62%   0.105 232 / 0.10);
+
+  /* ── Chart palette (harmonious, accessible, multi-series) ── */
+  --pw-chart-1: oklch(70%   0.195 55);   /* amber  — primary    */
+  --pw-chart-2: oklch(65%   0.160 195);  /* teal   — secondary  */
+  --pw-chart-3: oklch(62%   0.155 285);  /* violet — tertiary   */
+  --pw-chart-4: oklch(64%   0.135 165);  /* sage   — quaternary */
+  --pw-chart-5: oklch(63%   0.185 17);   /* coral  — quinary    */
+}

@@ -7,17 +7,20 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    }
+    },
+    "./styles.css": "./src/styles.css"
   },
   "scripts": {
     "build": "tsc --build",
     "lint": "eslint .",
     "typecheck": "tsc --build",
-    "test:unit": "node -e \"process.exit(0)\""
+    "test:unit": "vitest run"
   },
   "devDependencies": {
     "@pipewatch/config": "workspace:*",
+    "@types/node": "^22.13.4",
     "eslint": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^3.0.5"
   }
 }

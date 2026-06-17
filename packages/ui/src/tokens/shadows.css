@@ -1,0 +1,41 @@
+/* ============================================================
+   PipeWatch Shadow & Elevation Tokens
+   Minimal shadow use — surfaces defined primarily by borders.
+   Shadows reserved for floating elements: popovers, modals.
+   ============================================================ */
+
+:root {
+  /* ── Elevation ─────────────────────────────────────────────── */
+  --shadow-none: none;
+
+  /* Inset — inputs, recessed surfaces */
+  --shadow-inset: inset 0 1px 2px oklch(0% 0 0 / 0.25);
+
+  /* xs — tight focus, very subtle lift */
+  --shadow-xs: 0 1px 2px oklch(0% 0 0 / 0.20);
+
+  /* sm — default card lift */
+  --shadow-sm:
+    0 1px 3px oklch(0% 0 0 / 0.22),
+    0 1px 2px oklch(0% 0 0 / 0.14);
+
+  /* md — moderate elevation (interactive cards on hover) */
+  --shadow-md:
+    0 4px 8px oklch(0% 0 0 / 0.22),
+    0 2px 4px oklch(0% 0 0 / 0.14);
+
+  /* lg — tooltips, popovers, dropdowns */
+  --shadow-lg:
+    0 10px 24px oklch(0% 0 0 / 0.28),
+    0 4px 10px oklch(0% 0 0 / 0.18);
+
+  /* xl — modals, dialogs */
+  --shadow-xl:
+    0 24px 48px oklch(0% 0 0 / 0.35),
+    0 8px 20px oklch(0% 0 0 / 0.22);
+
+  /* ── Glow effects (accent + status) ──────────────────────── */
+  --glow-accent:   0 0 0 3px oklch(70% 0.195 55 / 0.22);
+  --glow-success:  0 0 0 3px oklch(63% 0.163 148 / 0.18);
+  --glow-failure:  0 0 0 3px oklch(58% 0.205  23 / 0.18);
+}
