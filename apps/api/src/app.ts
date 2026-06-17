@@ -1,6 +1,6 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 
-import { registerCloudRoutes } from "./edition-features.js";
+import { registerCERoutes, registerCloudRoutes } from "./edition-features.js";
 import { apiError, errorHandler } from "./middleware/error-handler.js";
 import { requestIdMiddleware } from "./middleware/request-id.js";
 import { sentryTraceMiddleware } from "./middleware/sentry.js";
@@ -26,6 +26,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
   registerHealthRoute(app);
   registerOpenApiRoutes(app);
   registerCloudRoutes(app);
+  registerCERoutes(app);
 
   return app;
 }
