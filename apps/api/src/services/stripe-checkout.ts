@@ -2,26 +2,12 @@ import { and, count, eq, isNotNull } from "drizzle-orm";
 import Stripe from "stripe";
 
 import type { ApiEnv } from "@pipewatch/config/env";
+import { PLAN_LIMITS } from "@pipewatch/config/plan-limits";
 import type { Db } from "@pipewatch/db";
 import { users, workspaceMembers, workspaces } from "@pipewatch/db/schema";
 import type { WorkspacePlan } from "@pipewatch/types";
 
-import {
-  countWorkspaceEnabledRepositories,
-  REPO_LIMIT_BY_PLAN,
-} from "./repositories/repository.service.js";
-
-const MEMBER_LIMIT_BY_PLAN: Record<WorkspacePlan, number | null> = {
-  free: 1,
-  pro: 5,
-  business: null,
-};
-
-const RETENTION_LIMIT_BY_PLAN: Record<WorkspacePlan, number> = {
-  free: 30,
-  pro: 365,
-  business: 365,
-};
+import { countWorkspaceEnabledRepositories } from "./repositories/repository.service.js";
 
 export type BillingEnv = Pick<
   ApiEnv,
@@ -311,13 +297,13 @@ export async function getWorkspaceBillingSummary(
     usage: {
       repositories: {
         used: repoUsed,
-        limit: REPO_LIMIT_BY_PLAN[plan],
+        limit: PLAN_LIMITS[plan].repoLimit,
       },
       members: {
         used: memberUsed,
-        limit: MEMBER_LIMIT_BY_PLAN[plan],
+        limit: PLAN_LIMITS[plan].memberLimit,
       },
-      retention_days: Math.min(workspace.defaultRetentionDays, RETENTION_LIMIT_BY_PLAN[plan]),
+      retention_days: Math.min(workspace.defaultRetentionDays, PLAN_LIMITS[plan].maxRetentionDays),
     },
     subscription_status: subscriptionStatus,
     next_billing_date: nextBillingDate,
