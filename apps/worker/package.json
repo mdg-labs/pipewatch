@@ -3,6 +3,20 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./queues/backfill": {
+      "types": "./dist/queues/backfill.d.ts",
+      "default": "./dist/queues/backfill.js"
+    },
+    "./queues/backfill.js": {
+      "types": "./dist/queues/backfill.d.ts",
+      "default": "./dist/queues/backfill.js"
+    }
+  },
   "scripts": {
     "build": "tsc --build",
     "dev": "node --watch dist/index.js",

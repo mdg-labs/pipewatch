@@ -56,6 +56,9 @@ importers:
       '@pipewatch/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@pipewatch/worker':
+        specifier: workspace:*
+        version: link:../worker
       '@scalar/hono-api-reference':
         specifier: ^0.11.3
         version: 0.11.3(hono@4.12.25)

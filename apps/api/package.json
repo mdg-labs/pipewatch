@@ -20,6 +20,7 @@
     "@pipewatch/db": "workspace:*",
     "@pipewatch/types": "workspace:*",
     "@pipewatch/utils": "workspace:*",
+    "@pipewatch/worker": "workspace:*",
     "@scalar/hono-api-reference": "^0.11.3",
     "@sentry/node": "^9.15.0",
     "drizzle-orm": "^0.45.2",

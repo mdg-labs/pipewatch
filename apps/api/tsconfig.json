@@ -4,13 +4,17 @@
     "composite": true,
     "rootDir": "src",
     "outDir": "dist",
-    "noEmit": false
+    "noEmit": false,
+    "paths": {
+      "@pipewatch/worker/queues/backfill.js": ["../worker/src/queues/backfill.ts"]
+    }
   },
   "references": [
     { "path": "../../packages/config" },
     { "path": "../../packages/db" },
     { "path": "../../packages/types" },
-    { "path": "../../packages/utils" }
+    { "path": "../../packages/utils" },
+    { "path": "../worker" }
   ],
   "include": ["src"]
 }

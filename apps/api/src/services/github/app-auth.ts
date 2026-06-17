@@ -34,6 +34,15 @@ export type InstallationTokenResponse = {
   expires_at: string;
 };
 
+export type GitHubInstallationAccount = {
+  login: string;
+  type: string;
+};
+
+export type GitHubInstallationResponse = {
+  account: GitHubInstallationAccount;
+};
+
 export type IntegrationRecord = {
   id: string;
   workspaceId: string;
@@ -148,6 +157,65 @@ async function parseInstallationTokenResponse(
     token: (body as { token: string }).token,
     expires_at: (body as { expires_at: string }).expires_at,
   };
+}
+
+async function parseInstallationResponse(response: Response): Promise<GitHubInstallationResponse> {
+  if (!response.ok) {
+    throw new GitHubAppAuthError(
+      `GitHub installation lookup failed (${String(response.status)})`,
+      response.status === 404 ? 404 : 502,
+      "GITHUB_INSTALLATION_LOOKUP_FAILED",
+    );
+  }
+
+  const body: unknown = await response.json();
+
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    typeof (body as { account?: unknown }).account !== "object" ||
+    (body as { account: unknown }).account === null
+  ) {
+    throw new GitHubAppAuthError(
+      "GitHub installation response is invalid",
+      502,
+      "GITHUB_INSTALLATION_INVALID",
+    );
+  }
+
+  const account = (body as { account: GitHubInstallationAccount }).account;
+
+  if (typeof account.login !== "string" || typeof account.type !== "string") {
+    throw new GitHubAppAuthError(
+      "GitHub installation account is invalid",
+      502,
+      "GITHUB_INSTALLATION_INVALID",
+    );
+  }
+
+  return { account };
+}
+
+/** Fetch GitHub App installation metadata (account login and type). */
+export async function fetchInstallation(
+  installationId: string,
+  config: GitHubAppConfig,
+  fetchImpl: typeof fetch = fetch,
+): Promise<GitHubInstallationResponse> {
+  const appJwt = await createAppJwt(config);
+
+  const response = await fetchImpl(
+    `${GITHUB_API_BASE}/app/installations/${installationId}`,
+    {
+      headers: {
+        Authorization: `Bearer ${appJwt}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    },
+  );
+
+  return parseInstallationResponse(response);
 }
 
 /** Exchange an App JWT for a short-lived installation access token. */
