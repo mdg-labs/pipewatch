@@ -9,6 +9,8 @@ import type { AppSession } from "@/lib/placeholder-session";
 
 import "./app-shell.css";
 
+import { useRepoStream } from "@/hooks/use-repo-stream";
+
 import { Breadcrumbs } from "./Breadcrumbs";
 import { LiveIndicator } from "./LiveIndicator";
 import { Sidebar } from "./Sidebar";
@@ -33,6 +35,7 @@ export function AppShell({ session, children }: AppShellProps) {
   );
   const showBilling = isBillingNavEnabled();
   const showWorkspaceSwitcher = isWorkspaceSwitcherEnabled();
+  const { status: liveStatus } = useRepoStream();
 
   return (
     <div className="pw-app-shell">
@@ -61,7 +64,7 @@ export function AppShell({ session, children }: AppShellProps) {
         <header className="pw-app-topbar">
           <Breadcrumbs workspaceSlug={workspaceSlug} />
           <div className="pw-app-topbar-actions">
-            <LiveIndicator status="offline" />
+            <LiveIndicator status={liveStatus} />
           </div>
         </header>
 
