@@ -175,6 +175,9 @@ importers:
       '@pipewatch/config':
         specifier: workspace:*
         version: link:../config
+      '@types/node':
+        specifier: ^22.13.4
+        version: 22.19.21
       eslint:
         specifier: 'catalog:'
         version: 9.39.4

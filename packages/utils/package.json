@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@pipewatch/config": "workspace:*",
+    "@types/node": "^22.13.4",
     "eslint": "catalog:",
     "typescript": "catalog:"
   }
