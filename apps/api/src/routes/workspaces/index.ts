@@ -26,6 +26,7 @@ import type { ApiEnv } from "../../types.js";
 import { requireJwtSecret } from "../auth/shared.js";
 import { registerApiKeyRoutes } from "./api-keys.js";
 import { registerCheckSlugRoute } from "./check-slug.js";
+import { registerIntegrationRoutes } from "./integrations.js";
 import { registerInviteRoutes } from "./invites.js";
 import { registerMemberRoutes } from "./members.js";
 
@@ -433,6 +434,15 @@ export function registerWorkspaceRoutes(
   });
 
   registerApiKeyRoutes(app, {
+    get db() {
+      return resolveDeps().db;
+    },
+  });
+
+  registerIntegrationRoutes(app, {
+    get env() {
+      return resolveDeps().env;
+    },
     get db() {
       return resolveDeps().db;
     },

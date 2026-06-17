@@ -447,12 +447,17 @@ export async function countWorkspaces(database: Db): Promise<number> {
 
 /** Ensure slug uniqueness constraints are enforced at DB level. */
 export function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    (error as { code: string }).code === "23505"
-  );
+  let current: unknown = error;
+
+  while (typeof current === "object" && current !== null) {
+    if ("code" in current && (current as { code: string }).code === "23505") {
+      return true;
+    }
+
+    current = "cause" in current ? (current as { cause: unknown }).cause : undefined;
+  }
+
+  return false;
 }
 
 export async function createWorkspaceSafe(

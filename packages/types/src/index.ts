@@ -13,7 +13,13 @@ export type {
   OAuthStatePayload,
 } from "./auth.js";
 
-export type { Integration } from "./integration.js";
+export type {
+  CreateIntegrationInput,
+  Integration,
+  IntegrationAccountType,
+  IntegrationSummary,
+  IntegrationTokenHealth,
+} from "./integration.js";
 
 export type {
   PipelineJob,
