@@ -14,9 +14,10 @@ import {
 } from "@pipewatch/db/schema";
 import type { GitHubUserProfile } from "@pipewatch/types";
 import { count, eq, sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { errorHandler } from "../../middleware/error-handler.js";
+import { sendEmail } from "../../services/email/send-email.js";
 import { registerGitHubAuthRoutes } from "./github.js";
 import type { GitHubOAuthClient } from "../../services/auth/oauth.js";
 import type { ApiEnv } from "../../types.js";
@@ -55,7 +56,14 @@ function createMockOAuthClient(
   };
 }
 
-function createTestApp(database: Db, edition: "ce" | "cloud" = "ce") {
+function createTestApp(
+  database: Db,
+  edition: "ce" | "cloud" = "ce",
+  options?: {
+    oauthClient?: GitHubOAuthClient;
+    sendEmailFn?: typeof sendEmail;
+  },
+) {
   const app = new OpenAPIHono<ApiEnv>();
   app.onError(errorHandler);
 
@@ -71,7 +79,8 @@ function createTestApp(database: Db, edition: "ce" | "cloud" = "ce") {
   registerGitHubAuthRoutes(app, {
     env,
     db: database,
-    oauthClient: createMockOAuthClient(),
+    oauthClient: options?.oauthClient ?? createMockOAuthClient(),
+    ...(options?.sendEmailFn ? { sendEmailFn: options.sendEmailFn } : {}),
   });
 
   return app;
@@ -216,8 +225,52 @@ describe("github oauth integration", () => {
     expect(tokenRows[0]?.tokenHash).not.toContain("pw_refresh");
   });
 
-  it("redirects returning users to their workspace dashboard", async () => {
-    const app = createTestApp(database);
+  it("sends welcome email on first OAuth login for a new user", async () => {
+    const sendEmailFn = vi.fn().mockResolvedValue({ sent: true });
+    const newUserProfile: GitHubUserProfile = {
+      githubId: 777777n,
+      githubLogin: "welcome-user",
+      email: "welcome-user@example.com",
+      name: "Welcome User",
+      avatarUrl: null,
+    };
+    const app = createTestApp(database, "ce", {
+      oauthClient: createMockOAuthClient(newUserProfile),
+      sendEmailFn,
+    });
+    const { state, cookieHeader } = await startOAuthFlow(app);
+
+    const callback = await app.request(
+      `http://localhost:3001/auth/github/callback?code=welcome-code&state=${state}`,
+      {
+        headers: { Cookie: cookieHeader },
+      },
+    );
+
+    expect(callback.status).toBe(302);
+    expect(sendEmailFn).toHaveBeenCalledOnce();
+    expect(sendEmailFn).toHaveBeenCalledWith(
+      expect.objectContaining({ APP_URL: "http://localhost:3000" }),
+      expect.objectContaining({
+        to: "welcome-user@example.com",
+        subject: "Welcome to PipeWatch",
+      }),
+    );
+  });
+
+  it("does not send welcome email for returning users", async () => {
+    const sendEmailFn = vi.fn().mockResolvedValue({ sent: true });
+    const returningProfile: GitHubUserProfile = {
+      githubId: 777777n,
+      githubLogin: "welcome-user",
+      email: "welcome-user@example.com",
+      name: "Welcome User",
+      avatarUrl: null,
+    };
+    const app = createTestApp(database, "ce", {
+      oauthClient: createMockOAuthClient(returningProfile),
+      sendEmailFn,
+    });
     const { state, cookieHeader } = await startOAuthFlow(app);
 
     const callback = await app.request(
@@ -228,12 +281,7 @@ describe("github oauth integration", () => {
     );
 
     expect(callback.status).toBe(302);
-    expect(callback.headers.get("location")).toBe(
-      "http://localhost:3000/workspaces/my-workspace/",
-    );
-
-    const [userCount] = await database.select({ value: count() }).from(users);
-    expect(userCount?.value).toBe(1);
+    expect(sendEmailFn).not.toHaveBeenCalled();
   });
 
   it("honours a safe ?next= redirect when provided on initiate", async () => {

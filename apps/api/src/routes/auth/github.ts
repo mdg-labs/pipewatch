@@ -31,12 +31,15 @@ import {
   verifyOAuthState,
   type GitHubOAuthClient,
 } from "../../services/auth/oauth.js";
+import { sendEmail } from "../../services/email/send-email.js";
+import { renderWelcomeEmail } from "../../services/email/templates/welcome.js";
 import type { ApiEnv } from "../../types.js";
 
 export type GitHubAuthDependencies = {
   env: ParsedApiEnv;
   db: Db;
   oauthClient: GitHubOAuthClient;
+  sendEmailFn?: typeof sendEmail;
 };
 
 function resolveSecureCookies(env: ParsedApiEnv): boolean {
@@ -134,6 +137,18 @@ export function registerGitHubAuthRoutes(
       const profile = await oauthClient.exchangeCode(code, redirectUri);
       const wasFirstUser = (await countUsers(db)) === 0;
       const upserted = await upsertGitHubUser(db, profile, wasFirstUser);
+
+      if (upserted.isNew && upserted.user.email) {
+        const welcome = renderWelcomeEmail({
+          recipientName: upserted.user.name,
+          appUrl: config.appUrl,
+        });
+        const deliverWelcome = deps?.sendEmailFn ?? sendEmail;
+        void deliverWelcome(env, {
+          to: upserted.user.email,
+          ...welcome,
+        }).catch(() => undefined);
+      }
 
       let bootstrapWorkspace = null;
       if (upserted.wasFirstUser && upserted.isNew) {
