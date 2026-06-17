@@ -1,15 +1,36 @@
 {
   "extends": "@pipewatch/config/typescript",
   "compilerOptions": {
-    "composite": true,
-    "rootDir": "src",
-    "outDir": "dist",
-    "noEmit": false
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "allowJs": true,
+    "jsx": "preserve",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
+    "resolveJsonModule": true
   },
-  "references": [
-    { "path": "../../packages/types" },
-    { "path": "../../packages/ui" },
-    { "path": "../../packages/utils" }
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
   ],
-  "include": ["src"]
+  "exclude": [
+    "node_modules"
+  ]
 }

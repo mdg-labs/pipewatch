@@ -4,17 +4,25 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc --build",
-    "dev": "node -e \"process.exit(0)\"",
+    "build": "next build",
+    "dev": "next dev",
     "lint": "eslint .",
-    "typecheck": "tsc --build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
     "deploy:marketing": "node -e \"process.exit(0)\""
   },
   "dependencies": {
-    "@pipewatch/utils": "workspace:*"
+    "@pipewatch/config": "workspace:*",
+    "@pipewatch/utils": "workspace:*",
+    "@sentry/nextjs": "^9.15.0",
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
-    "@pipewatch/config": "workspace:*",
+    "@types/node": "^22.13.4",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
     "eslint": "catalog:",
     "typescript": "catalog:"
   }

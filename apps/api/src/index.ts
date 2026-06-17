@@ -1,17 +1,13 @@
-import { DB_PACKAGE_NAME } from "@pipewatch/db";
-import type { Placeholder } from "@pipewatch/types";
-import { UTILS_PACKAGE_NAME } from "@pipewatch/utils";
+import { serve } from "@hono/node-server";
 
-export const API_PACKAGE_NAME = "@pipewatch/api" as const;
+import { createApp } from "./app.js";
+import { initSentry } from "./sentry.js";
 
-export function getApiStub(): {
-  db: typeof DB_PACKAGE_NAME;
-  types: Placeholder;
-  utils: typeof UTILS_PACKAGE_NAME;
-} {
-  return {
-    db: DB_PACKAGE_NAME,
-    types: {},
-    utils: UTILS_PACKAGE_NAME,
-  };
-}
+initSentry();
+
+const app = createApp();
+const port = Number(process.env.PORT ?? 3001);
+
+serve({ fetch: app.fetch, port }, (info) => {
+  process.stdout.write(`api listening on http://localhost:${String(info.port)}\n`);
+});

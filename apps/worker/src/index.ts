@@ -1,17 +1,24 @@
-import { DB_PACKAGE_NAME } from "@pipewatch/db";
-import type { Placeholder } from "@pipewatch/types";
-import { UTILS_PACKAGE_NAME } from "@pipewatch/utils";
+import { Worker } from "bullmq";
 
-export const WORKER_PACKAGE_NAME = "@pipewatch/worker" as const;
+import { registerCloudWorkers } from "./edition-features.js";
+import { initSentry } from "./sentry.js";
 
-export function getWorkerStub(): {
-  db: typeof DB_PACKAGE_NAME;
-  types: Placeholder;
-  utils: typeof UTILS_PACKAGE_NAME;
-} {
-  return {
-    db: DB_PACKAGE_NAME,
-    types: {},
-    utils: UTILS_PACKAGE_NAME,
-  };
-}
+initSentry();
+
+const redisUrl = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
+
+const stubWorker = new Worker(
+  "stub",
+  async () => ({ ok: true }),
+  {
+    connection: {
+      url: redisUrl,
+      maxRetriesPerRequest: null,
+    },
+  },
+);
+
+registerCloudWorkers();
+
+await stubWorker.waitUntilReady();
+process.stdout.write("worker ready\n");
