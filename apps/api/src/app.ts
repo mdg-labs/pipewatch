@@ -11,6 +11,7 @@ import { registerSwitchWorkspaceRoute } from "./routes/auth/switch-workspace.js"
 import { registerHealthRoute } from "./routes/health.js";
 import { registerOpenApiRoutes } from "./routes/openapi.js";
 import { registerBootstrapStatusRoute } from "./routes/public/bootstrap-status.js";
+import { registerUserMeRoutes } from "./routes/users/me.js";
 import type { ApiEnv } from "./types.js";
 
 export function createApp(): OpenAPIHono<ApiEnv> {
@@ -35,6 +36,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
   registerRefreshRoute(app);
   registerLogoutRoutes(app);
   registerSwitchWorkspaceRoute(app);
+  registerUserMeRoutes(app);
   registerCloudRoutes(app);
   registerCERoutes(app);
 

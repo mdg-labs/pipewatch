@@ -28,5 +28,7 @@ export { API_KEY_PREFIX } from "./api-key.js";
 
 export type { ApiKeyAuthIdentity, ApiKeySummary } from "./api-key.js";
 
+export type { UpdateUserProfileInput, UserProfile } from "./user.js";
+
 /** Stub compat for app skeletons — remove when apps adopt real types. */
 export type Placeholder = Record<string, never>;
