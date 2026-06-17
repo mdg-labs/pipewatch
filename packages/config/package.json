@@ -16,6 +16,10 @@
       "types": "./dist/env.d.ts",
       "default": "./dist/env.js"
     },
+    "./plan-limits": {
+      "types": "./dist/plan-limits.d.ts",
+      "default": "./dist/plan-limits.js"
+    },
     "./typescript": "./typescript/tsconfig.base.json",
     "./eslint": "./eslint/base.mjs"
   },

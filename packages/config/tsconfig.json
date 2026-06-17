@@ -6,6 +6,6 @@
     "outDir": "dist",
     "noEmit": false
   },
-  "include": ["edition.ts", "env.ts", "src"],
+  "include": ["edition.ts", "env.ts", "plan-limits.ts", "src"],
   "exclude": ["**/*.test.ts", "vitest.config.ts"]
 }

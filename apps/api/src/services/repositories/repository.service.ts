@@ -1,5 +1,5 @@
-import { flags } from "@pipewatch/config/edition";
-import { and, count, eq, ne, type SQL } from "drizzle-orm";
+import { getPlanLimits, parseWorkspacePlan } from "@pipewatch/config/plan-limits";
+import { and, count, eq, type SQL } from "drizzle-orm";
 
 import type { Db } from "@pipewatch/db";
 import { repositories, workspaces } from "@pipewatch/db/schema";
@@ -10,16 +10,13 @@ import type {
   WorkspacePlan,
 } from "@pipewatch/types";
 
+import {
+  assertRepoEnableAllowed,
+  PlanLimitError,
+  resolveRetentionDaysForPatch,
+} from "../../middleware/plan-limits.js";
+
 const MIN_POLLING_INTERVAL_SECONDS = 30;
-
-/** Per-plan enabled repository caps — stub until P11 billing (PRD §8, §24). */
-const REPO_LIMIT_BY_PLAN: Record<WorkspacePlan, number | null> = {
-  free: 10,
-  pro: 50,
-  business: null,
-};
-
-const PAID_PLANS = new Set<WorkspacePlan>(["pro", "business"]);
 
 export type RepositoryPollingState = {
   repoId: string;
@@ -62,14 +59,6 @@ export class RepositoryError extends Error {
   }
 }
 
-function parseWorkspacePlan(plan: string): WorkspacePlan {
-  if (plan === "pro" || plan === "business") {
-    return plan;
-  }
-
-  return "free";
-}
-
 function toRepositorySummary(row: typeof repositories.$inferSelect): RepositorySummary {
   return {
     id: row.id,
@@ -85,55 +74,19 @@ function toRepositorySummary(row: typeof repositories.$inferSelect): RepositoryS
   };
 }
 
-function clampRetentionDays(plan: WorkspacePlan, days: number): number {
-  if (PAID_PLANS.has(plan)) {
-    if (days < 30 || days > 365) {
-      throw new RepositoryError(
-        "retention_days must be between 30 and 365 for paid plans",
-        422,
-        "VALIDATION_ERROR",
-      );
-    }
-
-    return days;
-  }
-
-  if (days !== 30) {
-    throw new RepositoryError(
-      "retention_days is fixed at 30 for the free plan",
-      422,
-      "VALIDATION_ERROR",
-    );
-  }
-
-  return 30;
-}
-
 function validateRetentionDays(
   plan: WorkspacePlan,
   days: number | null | undefined,
 ): number | null | undefined {
-  if (days === undefined) {
-    return undefined;
-  }
+  try {
+    return resolveRetentionDaysForPatch(plan, days);
+  } catch (error) {
+    if (error instanceof PlanLimitError) {
+      throw new RepositoryError(error.message, error.status, error.code);
+    }
 
-  if (days === null) {
-    return null;
+    throw error;
   }
-
-  if (!Number.isInteger(days) || days < 1) {
-    throw new RepositoryError(
-      "retention_days must be a positive integer or null",
-      422,
-      "VALIDATION_ERROR",
-    );
-  }
-
-  if (!flags.RETENTION_CEILING) {
-    return days;
-  }
-
-  return clampRetentionDays(plan, days);
 }
 
 function validatePollingIntervalSeconds(
@@ -172,52 +125,19 @@ async function loadWorkspacePlan(database: Db, workspaceId: string): Promise<Wor
   return parseWorkspacePlan(row.plan);
 }
 
-async function countEnabledRepositories(
-  database: Db,
-  workspaceId: string,
-  excludeRepoId?: string,
-): Promise<number> {
-  const conditions: SQL[] = [
-    eq(repositories.workspaceId, workspaceId),
-    eq(repositories.enabled, true),
-  ];
-
-  if (excludeRepoId) {
-    conditions.push(ne(repositories.id, excludeRepoId));
-  }
-
-  const [row] = await database
-    .select({ total: count() })
-    .from(repositories)
-    .where(and(...conditions));
-
-  return row?.total ?? 0;
-}
-
 async function assertCanEnableRepository(
   database: Db,
   workspaceId: string,
   repoId: string,
 ): Promise<void> {
-  if (!flags.PLAN_LIMITS_ENABLED) {
-    return;
-  }
+  try {
+    await assertRepoEnableAllowed(database, workspaceId, repoId);
+  } catch (error) {
+    if (error instanceof PlanLimitError) {
+      throw new RepositoryError(error.message, error.status, error.code);
+    }
 
-  const plan = await loadWorkspacePlan(database, workspaceId);
-  const limit = REPO_LIMIT_BY_PLAN[plan];
-
-  if (limit === null) {
-    return;
-  }
-
-  const enabledCount = await countEnabledRepositories(database, workspaceId, repoId);
-
-  if (enabledCount >= limit) {
-    throw new RepositoryError(
-      "Repository limit reached for your plan",
-      403,
-      "FORBIDDEN",
-    );
+    throw error;
   }
 }
 
@@ -359,10 +279,15 @@ export async function countWorkspaceEnabledRepositories(
   database: Db,
   workspaceId: string,
 ): Promise<number> {
-  return countEnabledRepositories(database, workspaceId);
+  const [row] = await database
+    .select({ total: count() })
+    .from(repositories)
+    .where(and(eq(repositories.workspaceId, workspaceId), eq(repositories.enabled, true)));
+
+  return row?.total ?? 0;
 }
 
 export {
   MIN_POLLING_INTERVAL_SECONDS,
-  REPO_LIMIT_BY_PLAN,
+  getPlanLimits,
 };

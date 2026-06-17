@@ -11,17 +11,14 @@ import type {
   WorkspacePlan,
 } from "@pipewatch/types";
 
+import {
+  assertWorkspaceCreateAllowed,
+  PlanLimitError,
+  resolveWorkspaceRetentionForPatch,
+} from "../../middleware/plan-limits.js";
+
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const SLUG_MAX_LENGTH = 64;
-
-/** Per-plan workspace caps — stub until P11 billing (PRD §8, §24). */
-const WORKSPACE_LIMIT_BY_PLAN: Record<WorkspacePlan, number | null> = {
-  free: 1,
-  pro: 3,
-  business: null,
-};
-
-const PAID_PLANS = new Set<WorkspacePlan>(["pro", "business"]);
 
 export class WorkspaceError extends Error {
   readonly status: number;
@@ -128,21 +125,6 @@ export async function checkSlugAvailability(
   return { available: !taken, slug };
 }
 
-async function countOwnedWorkspaces(database: Db, userId: string): Promise<number> {
-  const [row] = await database
-    .select({ total: count() })
-    .from(workspaceMembers)
-    .where(
-      and(
-        eq(workspaceMembers.userId, userId),
-        eq(workspaceMembers.role, "owner"),
-        isNotNull(workspaceMembers.acceptedAt),
-      ),
-    );
-
-  return row?.total ?? 0;
-}
-
 async function countMemberWorkspaces(database: Db, userId: string): Promise<number> {
   const [row] = await database
     .select({ total: count() })
@@ -150,39 +132,6 @@ async function countMemberWorkspaces(database: Db, userId: string): Promise<numb
     .where(and(eq(workspaceMembers.userId, userId), isNotNull(workspaceMembers.acceptedAt)));
 
   return row?.total ?? 0;
-}
-
-async function resolveUserWorkspaceLimit(database: Db, userId: string): Promise<number | null> {
-  const ownedPlans = await database
-    .select({ plan: workspaces.plan })
-    .from(workspaceMembers)
-    .innerJoin(workspaces, eq(workspaceMembers.workspaceId, workspaces.id))
-    .where(
-      and(
-        eq(workspaceMembers.userId, userId),
-        eq(workspaceMembers.role, "owner"),
-        isNotNull(workspaceMembers.acceptedAt),
-      ),
-    );
-
-  if (ownedPlans.length === 0) {
-    return WORKSPACE_LIMIT_BY_PLAN.free;
-  }
-
-  let bestLimit: number | null = WORKSPACE_LIMIT_BY_PLAN.free;
-
-  for (const { plan } of ownedPlans) {
-    const planLimit = WORKSPACE_LIMIT_BY_PLAN[parseWorkspacePlan(plan)];
-    if (planLimit === null) {
-      return null;
-    }
-
-    if (planLimit > (bestLimit ?? 0)) {
-      bestLimit = planLimit;
-    }
-  }
-
-  return bestLimit;
 }
 
 async function assertCanCreateWorkspace(database: Db, userId: string): Promise<void> {
@@ -199,60 +148,27 @@ async function assertCanCreateWorkspace(database: Db, userId: string): Promise<v
     return;
   }
 
-  if (!flags.PLAN_LIMITS_ENABLED) {
-    return;
-  }
-
-  const ownedCount = await countOwnedWorkspaces(database, userId);
-  const limit = await resolveUserWorkspaceLimit(database, userId);
-
-  if (limit !== null && ownedCount >= limit) {
-    throw new WorkspaceError("Workspace limit reached for your plan", 403, "FORBIDDEN");
-  }
-}
-
-function clampRetentionDays(plan: WorkspacePlan, days: number): number {
-  if (PAID_PLANS.has(plan)) {
-    if (days < 30 || days > 365) {
-      throw new WorkspaceError(
-        "default_retention_days must be between 30 and 365 for paid plans",
-        422,
-        "VALIDATION_ERROR",
-      );
+  try {
+    await assertWorkspaceCreateAllowed(database, userId);
+  } catch (error) {
+    if (error instanceof PlanLimitError) {
+      throw new WorkspaceError(error.message, error.status, error.code);
     }
 
-    return days;
+    throw error;
   }
-
-  if (days !== 30) {
-    throw new WorkspaceError(
-      "default_retention_days is fixed at 30 for the free plan",
-      422,
-      "VALIDATION_ERROR",
-    );
-  }
-
-  return 30;
 }
 
 function validateRetentionUpdate(plan: WorkspacePlan, days: number | undefined): number | undefined {
-  if (days === undefined) {
-    return undefined;
-  }
-
-  if (!flags.RETENTION_CEILING) {
-    if (!Number.isInteger(days) || days < 1) {
-      throw new WorkspaceError(
-        "default_retention_days must be a positive integer",
-        422,
-        "VALIDATION_ERROR",
-      );
+  try {
+    return resolveWorkspaceRetentionForPatch(plan, days);
+  } catch (error) {
+    if (error instanceof PlanLimitError) {
+      throw new WorkspaceError(error.message, error.status, error.code);
     }
 
-    return days;
+    throw error;
   }
-
-  return clampRetentionDays(plan, days);
 }
 
 /** List workspaces the user belongs to (accepted membership). */

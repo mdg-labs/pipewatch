@@ -20,7 +20,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { errorHandler } from "../../middleware/error-handler.js";
 import { signAccessToken } from "../../services/auth/jwt.js";
-import { REPO_LIMIT_BY_PLAN } from "../../services/repositories/repository.service.js";
+import { PLAN_LIMITS } from "@pipewatch/config/plan-limits";
 import { registerWorkspaceRoutes } from "./index.js";
 import type { ApiEnv } from "../../types.js";
 
@@ -373,7 +373,9 @@ describe("workspace repositories integration", () => {
         body: JSON.stringify({ retention_days: 90 }),
       },
     );
-    expect(invalidRetention.status).toBe(422);
+    expect(invalidRetention.status).toBe(200);
+    const clamped = (await invalidRetention.json()) as RepositorySummary;
+    expect(clamped.retention_days).toBe(30);
 
     const patchResponse = await app.request(
       `http://localhost/api/v1/workspaces/${workspace.id}/repositories/${repository.id}`,
@@ -403,7 +405,7 @@ describe("workspace repositories integration", () => {
     await addMember(database, workspace.id, owner.id, "owner");
     const integration = await seedIntegration(database, workspace.id);
 
-    const limit = REPO_LIMIT_BY_PLAN.free;
+    const limit = PLAN_LIMITS.free.repoLimit;
     if (limit === null) {
       throw new Error("Expected free plan repo limit");
     }

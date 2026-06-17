@@ -400,7 +400,7 @@ describe("workspaces integration (cloud)", () => {
     });
   });
 
-  it("rejects default_retention_days changes on free plan", async () => {
+  it("clamps default_retention_days to plan max on free plan", async () => {
     const app = createTestApp(database);
     const user = await seedUser(database, "ws-retention-free");
 
@@ -426,7 +426,10 @@ describe("workspaces integration (cloud)", () => {
       },
     );
 
-    expect(response.status).toBe(422);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      default_retention_days: 30,
+    });
   });
 
   it("allows default_retention_days within paid plan range", async () => {

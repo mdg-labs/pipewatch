@@ -13,6 +13,11 @@ import {
   type SendEmailEnv,
 } from "../email/send-email.js";
 import { renderWorkspaceInviteEmail } from "../email/templates/invite.js";
+import {
+  assertMemberAcceptAllowed,
+  assertMemberInviteAllowed,
+  PlanLimitError,
+} from "../../middleware/plan-limits.js";
 
 const INVITE_EXPIRY_DAYS = 7;
 
@@ -244,6 +249,16 @@ export async function createWorkspaceInvite(
   transport?: EmailTransport,
 ): Promise<WorkspaceInvite> {
   const email = normalizeEmail(input.email);
+
+  try {
+    await assertMemberInviteAllowed(database, workspaceId);
+  } catch (error) {
+    if (error instanceof PlanLimitError) {
+      throw new InviteError(error.message, error.status, error.code);
+    }
+
+    throw error;
+  }
 
   await assertInviteeNotMember(database, workspaceId, email);
   await assertNoPendingInvite(database, workspaceId, email);
@@ -479,6 +494,16 @@ export async function acceptWorkspaceInvite(
 
   if (existingMembership) {
     throw new InviteError("User is already a workspace member", 409, "CONFLICT");
+  }
+
+  try {
+    await assertMemberAcceptAllowed(database, invite.workspaceId);
+  } catch (error) {
+    if (error instanceof PlanLimitError) {
+      throw new InviteError(error.message, error.status, error.code);
+    }
+
+    throw error;
   }
 
   await database.transaction(async (tx) => {

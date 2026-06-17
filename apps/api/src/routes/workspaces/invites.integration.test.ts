@@ -61,7 +61,7 @@ async function seedUser(database: Db, loginPrefix: string, email?: string): Prom
   const [user] = await database
     .insert(users)
     .values({
-      githubId: BigInt(Date.now()) + BigInt(Math.floor(Math.random() * 1000)),
+      githubId: BigInt(`0x${randomBytes(7).toString("hex")}`),
       githubLogin: `${loginPrefix}-${suffix}`,
       email: resolvedEmail,
       name: "Workspace User",
