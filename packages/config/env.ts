@@ -53,7 +53,11 @@ const apiEnvSchema = z.object({
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   STRIPE_PRICE_PRO: z.string().min(1).optional(),
   STRIPE_PRICE_BUSINESS: z.string().min(1).optional(),
-  PIPEWATCH_MODE: pipewatchModeSchema.default("webhook"),
+  PIPEWATCH_MODE: pipewatchModeSchema
+    .default("webhook")
+    .describe(
+      "Self-hosted ingestion mode: webhook (default) or polling (CE global override when no public webhook endpoint)",
+    ),
   PORT: z.coerce.number().int().positive().default(3001),
 });
 
@@ -66,7 +70,11 @@ const workerEnvSchema = z.object({
   SENTRY_DSN: z.string().optional(),
   GITHUB_APP_ID: z.string().min(1).optional(),
   GITHUB_APP_PRIVATE_KEY: z.string().min(1).optional(),
-  PIPEWATCH_MODE: pipewatchModeSchema.default("webhook"),
+  PIPEWATCH_MODE: pipewatchModeSchema
+    .default("webhook")
+    .describe(
+      "Self-hosted ingestion mode: webhook (default) or polling (CE global override when no public webhook endpoint)",
+    ),
   RETENTION_DAYS: z.coerce.number().int().positive().default(30),
 });
 

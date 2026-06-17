@@ -21,6 +21,35 @@ const REPO_LIMIT_BY_PLAN: Record<WorkspacePlan, number | null> = {
 
 const PAID_PLANS = new Set<WorkspacePlan>(["pro", "business"]);
 
+export type RepositoryPollingState = {
+  repoId: string;
+  workspaceId: string;
+  integrationId: string;
+  enabled: boolean;
+  pollingIntervalSeconds: number | null;
+};
+
+export type SyncPollingLifecycle = (
+  state: RepositoryPollingState,
+  previousState: RepositoryPollingState,
+) => Promise<void>;
+
+export type UpdateRepositoryOptions = {
+  syncPollingLifecycle?: SyncPollingLifecycle;
+};
+
+function toRepositoryPollingState(
+  row: typeof repositories.$inferSelect,
+): RepositoryPollingState {
+  return {
+    repoId: row.id,
+    workspaceId: row.workspaceId,
+    integrationId: row.integrationId,
+    enabled: row.enabled,
+    pollingIntervalSeconds: row.pollingIntervalSeconds,
+  };
+}
+
 export class RepositoryError extends Error {
   readonly status: number;
   readonly code: string;
@@ -249,6 +278,7 @@ export async function updateWorkspaceRepository(
   workspaceId: string,
   repoId: string,
   input: UpdateRepositoryInput,
+  options?: UpdateRepositoryOptions,
 ): Promise<RepositorySummary> {
   const [existing] = await database
     .select()
@@ -296,6 +326,13 @@ export async function updateWorkspaceRepository(
 
   if (!updated) {
     throw new RepositoryError("Failed to update repository", 500, "INTERNAL_ERROR");
+  }
+
+  if (options?.syncPollingLifecycle) {
+    await options.syncPollingLifecycle(
+      toRepositoryPollingState(updated),
+      toRepositoryPollingState(existing),
+    );
   }
 
   return toRepositorySummary(updated);

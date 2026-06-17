@@ -8,6 +8,7 @@ import {
   enqueueBackfillRepo,
   type BackfillRepoJobPayload,
 } from "@pipewatch/worker/queues/backfill.js";
+import { syncPollingLifecycle } from "@pipewatch/worker/services/polling/lifecycle.js";
 
 import { getWorkspaceContext, roleMeetsMinimum } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
@@ -308,10 +309,28 @@ const syncRepositoryRoute = createRoute({
 
 export type EnqueueBackfillRepo = (payload: BackfillRepoJobPayload) => Promise<void>;
 
+export type SyncPollingLifecycle = (
+  state: {
+    repoId: string;
+    workspaceId: string;
+    integrationId: string;
+    enabled: boolean;
+    pollingIntervalSeconds: number | null;
+  },
+  previousState: {
+    repoId: string;
+    workspaceId: string;
+    integrationId: string;
+    enabled: boolean;
+    pollingIntervalSeconds: number | null;
+  },
+) => Promise<void>;
+
 export type RepositoryRoutesDependencies = {
   db: Db;
   env: ParsedApiEnv;
   enqueueBackfillRepo?: EnqueueBackfillRepo;
+  syncPollingLifecycle?: SyncPollingLifecycle;
 };
 
 function handleRepositoryServiceError(error: unknown): never {
@@ -416,6 +435,30 @@ export function registerRepositoryRoutes(
         workspaceId,
         repoId,
         c.req.valid("json"),
+        {
+          syncPollingLifecycle:
+            deps.syncPollingLifecycle ??
+            (async (state, previousState) => {
+              const redisUrl = deps.env.REDIS_URL;
+              if (!redisUrl) {
+                return;
+              }
+
+              await syncPollingLifecycle(redisUrl, deps.env.PIPEWATCH_MODE, {
+                repoId: state.repoId,
+                workspaceId: state.workspaceId,
+                integrationId: state.integrationId,
+                enabled: state.enabled,
+                pollingIntervalSeconds: state.pollingIntervalSeconds,
+              }, {
+                repoId: previousState.repoId,
+                workspaceId: previousState.workspaceId,
+                integrationId: previousState.integrationId,
+                enabled: previousState.enabled,
+                pollingIntervalSeconds: previousState.pollingIntervalSeconds,
+              });
+            }),
+        },
       );
       return c.json(updated, 200);
     } catch (error) {

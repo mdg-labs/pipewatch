@@ -1552,7 +1552,7 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `NODE_ENV` | staging, production | all | `development` \| `staging` \| `production` |
 | `UMAMI_SCRIPT_URL` | staging, production | marketing | Self-hosted Umami script URL |
 | `UMAMI_WEBSITE_ID` | staging, production | marketing | PipeWatch-specific site ID in Umami |
-| `PIPEWATCH_MODE` | staging, production | api, worker | `webhook` (default) \| `polling` — self-hosted override |
+| `PIPEWATCH_MODE` | staging, production | api, worker | `webhook` (default) \| `polling` — CE self-hosted global override: use polling when no public webhook endpoint; per-repo interval still from `polling_interval_seconds` (default 60s when unset in polling mode) |
 | `RETENTION_DAYS` | staging, production | worker | Self-hosted default retention override (default: 30) |
 | `LAUNCH_MODE` | staging, production | marketing | `waitlist` \| `live` — controls CTA behaviour |
 

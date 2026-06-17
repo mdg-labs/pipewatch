@@ -16,6 +16,7 @@ import {
   PROCESS_PIPELINE_RUN_JOB_NAME,
   processPipelineRun,
 } from "./handlers/process-pipeline-run.js";
+import { POLL_REPO_JOB_NAME, pollRepo } from "./handlers/poll-repo.js";
 import { attachPermanentFailureHandler } from "./queues/dead-letter.js";
 import { createRedisConnection, resolveRedisUrl } from "./queues/connection.js";
 import { QUEUE_NAMES, resolveBackoffDelay } from "./queues/index.js";
@@ -70,6 +71,19 @@ function createBackfillProcessor(env: WorkerEnv): Processor {
   };
 }
 
+function createPollingProcessor(env: WorkerEnv): Processor {
+  const db = getDb();
+
+  return async (job) => {
+    switch (job.name) {
+      case POLL_REPO_JOB_NAME:
+        return pollRepo(job, { db, env });
+      default:
+        throw new Error(`Unknown polling job: ${job.name}`);
+    }
+  };
+}
+
 function resolveProcessor(queueName: string, env: WorkerEnv): Processor {
   if (queueName === QUEUE_NAMES.WEBHOOK_EVENTS) {
     return createWebhookEventsProcessor();
@@ -77,6 +91,10 @@ function resolveProcessor(queueName: string, env: WorkerEnv): Processor {
 
   if (queueName === QUEUE_NAMES.BACKFILL) {
     return createBackfillProcessor(env);
+  }
+
+  if (queueName === QUEUE_NAMES.POLLING) {
+    return createPollingProcessor(env);
   }
 
   return createStubProcessor(queueName);

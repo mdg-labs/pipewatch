@@ -19,6 +19,22 @@
     "./queues/backfill.js": {
       "types": "./dist/queues/backfill.d.ts",
       "default": "./dist/queues/backfill.js"
+    },
+    "./queues/polling": {
+      "types": "./dist/queues/polling.d.ts",
+      "default": "./dist/queues/polling.js"
+    },
+    "./queues/polling.js": {
+      "types": "./dist/queues/polling.d.ts",
+      "default": "./dist/queues/polling.js"
+    },
+    "./services/polling/lifecycle": {
+      "types": "./dist/services/polling/lifecycle.d.ts",
+      "default": "./dist/services/polling/lifecycle.js"
+    },
+    "./services/polling/lifecycle.js": {
+      "types": "./dist/services/polling/lifecycle.d.ts",
+      "default": "./dist/services/polling/lifecycle.js"
     }
   },
   "scripts": {
