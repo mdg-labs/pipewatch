@@ -146,6 +146,48 @@ export {
 } from "./components/repo-card.js";
 
 export {
+  Logo,
+  logoClassName,
+  type LogoProps,
+} from "./components/logo.js";
+
+export {
+  LogoWordmark,
+  logoWordmarkClassName,
+  type LogoWordmarkProps,
+} from "./components/logo-wordmark.js";
+
+export {
+  TimeSeriesChart,
+  buildTimeSeriesGeometry,
+  DEFAULT_CHART_PADDING,
+  timeSeriesChartClassName,
+  type BuildTimeSeriesGeometryOptions,
+  type ChartPadding,
+  type TimeSeriesChartProps,
+  type TimeSeriesGeometry,
+  type TimeSeriesPoint,
+  type TimeSeriesSeries,
+} from "./components/time-series-chart.js";
+
+export {
+  BarChart,
+  buildBarChartGeometry,
+  barChartClassName,
+  type BarChartBarGeometry,
+  type BarChartDatum,
+  type BarChartGeometry,
+  type BarChartProps,
+  type BarChartSeries,
+  type BuildBarChartGeometryOptions,
+} from "./components/bar-chart.js";
+
+export {
+  CHART_COLOR_TOKENS,
+  chartColorForIndex,
+} from "./lib/chart-colors.js";
+
+export {
   Table,
   TableBody,
   TableCell,

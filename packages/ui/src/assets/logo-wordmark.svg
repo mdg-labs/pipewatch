@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 132 32" fill="none" aria-hidden="true">
+  <g transform="translate(0, 0)">
+    <circle cx="16" cy="16" r="13.5" stroke="currentColor" stroke-width="2"/>
+    <path d="M5.5 16h4l2-5.5 2 11 2-11 2 11 2-5.5h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="38" y="21" font-family="var(--font-sans, system-ui, sans-serif)" font-size="14" font-weight="600" letter-spacing="-0.025em" fill="currentColor">Pipe</text>
+  <text x="72" y="21" font-family="var(--font-sans, system-ui, sans-serif)" font-size="14" font-weight="600" letter-spacing="-0.025em" fill="var(--pw-amber-500)">Watch</text>
+</svg>

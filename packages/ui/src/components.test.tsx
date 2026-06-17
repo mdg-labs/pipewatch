@@ -57,6 +57,16 @@ import {
   tableClassName,
   tableHeadClassName,
   tableRowClassName,
+  Logo,
+  logoClassName,
+  LogoWordmark,
+  logoWordmarkClassName,
+  TimeSeriesChart,
+  timeSeriesChartClassName,
+  BarChart,
+  barChartClassName,
+  buildTimeSeriesGeometry,
+  buildBarChartGeometry,
 } from "./index.js";
 
 const componentsDir = join(dirname(fileURLToPath(import.meta.url)), "components");
@@ -78,6 +88,8 @@ describe("component styles", () => {
     expect(styles).toContain("@import './components/tabs.css'");
     expect(styles).toContain("@import './components/repo-card.css'");
     expect(styles).toContain("@import './components/table.css'");
+    expect(styles).toContain("@import './components/logo.css'");
+    expect(styles).toContain("@import './components/charts.css'");
   });
 
   it("uses semantic CSS variables in component stylesheets", () => {
@@ -102,6 +114,8 @@ describe("component styles", () => {
       "tabs.css",
       "repo-card.css",
       "table.css",
+      "logo.css",
+      "charts.css",
     ];
 
     for (const file of cssFiles) {
@@ -572,5 +586,114 @@ describe("Table", () => {
     expect(tableCellClassName({ mono: true })).toBe(
       "pw-table-td pw-table-td-mono",
     );
+  });
+});
+
+describe("Logo", () => {
+  it("renders mark svg with default size", () => {
+    const html = renderToStaticMarkup(<Logo />);
+
+    expect(html).toContain('class="pw-logo"');
+    expect(html).toContain('width="32"');
+    expect(html).toContain('viewBox="0 0 32 32"');
+    expect(html).toContain("<circle");
+    expect(html).toContain("<path");
+  });
+
+  it("applies logo class name helper", () => {
+    expect(logoClassName({ className: "extra" })).toBe("pw-logo extra");
+  });
+});
+
+describe("LogoWordmark", () => {
+  it("renders mark and logotype", () => {
+    const html = renderToStaticMarkup(<LogoWordmark />);
+
+    expect(html).toContain('class="pw-logo-wordmark"');
+    expect(html).toContain('class="pw-logo-wordmark-text"');
+    expect(html).toContain('class="pw-logo-wordmark-accent"');
+    expect(html).toContain("Pipe");
+    expect(html).toContain("Watch");
+    expect(html).toContain('aria-label="PipeWatch"');
+  });
+
+  it("applies wordmark class name helper", () => {
+    expect(logoWordmarkClassName({ className: "extra" })).toBe(
+      "pw-logo-wordmark extra",
+    );
+  });
+});
+
+describe("TimeSeriesChart", () => {
+  it("renders placeholder for insufficient data", () => {
+    const html = renderToStaticMarkup(
+      <TimeSeriesChart series={[{ id: "a", label: "CI", data: [1] }]} />,
+    );
+
+    expect(html).toContain('stroke-dasharray="3 3"');
+  });
+
+  it("renders multi-series chart with semantic colors", () => {
+    const geometry = buildTimeSeriesGeometry({
+      data: [2, 4, 3, 6],
+      width: 528,
+      height: 180,
+    });
+
+    const html = renderToStaticMarkup(
+      <TimeSeriesChart
+        series={[
+          { id: "ci", label: "CI", data: [2, 4, 3, 6] },
+          { id: "deploy", label: "Deploy", data: [1, 2, 2, 3] },
+        ]}
+        labels={["Mon", "Tue", "Wed", "Thu"]}
+        yAxisLabels={["0", "2", "4", "6", "8"]}
+      />,
+    );
+
+    expect(geometry?.linePath).toBeTruthy();
+    expect(html).toContain('stroke="var(--pw-chart-1)"');
+    expect(html).toContain('stroke="var(--pw-chart-2)"');
+    expect(html).toContain("pw-chart-line-draw");
+    expect(timeSeriesChartClassName()).toBe("pw-chart");
+  });
+});
+
+describe("BarChart", () => {
+  it("renders placeholder for empty data", () => {
+    const html = renderToStaticMarkup(
+      <BarChart data={[]} series={[{ id: "success", label: "Success" }]} />,
+    );
+
+    expect(html).toContain('stroke-dasharray="3 3"');
+  });
+
+  it("renders stacked bars with semantic colors", () => {
+    const geometry = buildBarChartGeometry({
+      data: [
+        { label: "Mon", values: [8, 2] },
+        { label: "Tue", values: [6, 1] },
+      ],
+      width: 560,
+      height: 180,
+    });
+
+    const html = renderToStaticMarkup(
+      <BarChart
+        data={[
+          { label: "Mon", values: [8, 2] },
+          { label: "Tue", values: [6, 1] },
+        ]}
+        series={[
+          { id: "success", label: "Success" },
+          { id: "failure", label: "Failure" },
+        ]}
+      />,
+    );
+
+    expect(geometry?.bars.length).toBe(4);
+    expect(html).toContain('fill="var(--pw-chart-1)"');
+    expect(html).toContain("pw-chart-bar-grow");
+    expect(barChartClassName()).toBe("pw-chart");
   });
 });

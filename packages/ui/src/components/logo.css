@@ -1,0 +1,24 @@
+.pw-logo {
+  display: inline-block;
+  flex-shrink: 0;
+  color: var(--pw-amber-500);
+}
+
+.pw-logo-wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-primary);
+}
+
+.pw-logo-wordmark-text {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1;
+}
+
+.pw-logo-wordmark-accent {
+  color: var(--pw-amber-500);
+}
