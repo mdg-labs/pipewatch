@@ -1,9 +1,13 @@
 #!/usr/bin/env node
-/**
- * Integration test entrypoint — ephemeral Postgres + Redis orchestration
- * is implemented in a later task (P0-11).
- */
-process.stdout.write(
-  "test:integration stub — Docker-based ephemeral containers not yet configured\n",
-);
-process.exit(0);
+import { spawnSync } from "node:child_process";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+const result = spawnSync("pnpm", ["--filter", "@pipewatch/api", "test:integration"], {
+  cwd: root,
+  stdio: "inherit",
+});
+
+process.exit(result.status ?? 1);
