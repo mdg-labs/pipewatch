@@ -9,6 +9,7 @@ import { flags } from "@pipewatch/config/edition";
 import { isBillingNavEnabled, isWorkspaceSwitcherEnabled } from "@/lib/edition-features";
 import { publicApiUrl } from "@/lib/env";
 import { themeInitScript } from "@/hooks/use-theme";
+import { ToastProvider } from "@/providers/ToastProvider";
 
 export const metadata: Metadata = {
   title: "PipeWatch",
@@ -30,7 +31,7 @@ export default function RootLayout({
         }
       >
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

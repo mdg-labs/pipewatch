@@ -1,0 +1,34 @@
+.pw-error-retry {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+}
+
+.pw-error-retry-icon {
+  flex-shrink: 0;
+  color: var(--status-failure);
+  margin-top: 2px;
+}
+
+.pw-error-retry-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.pw-error-retry-title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+}
+
+.pw-error-retry-message {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-normal);
+}

@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run",
     "deploy:web": "node -e \"process.exit(0)\""
   },
   "dependencies": {
@@ -17,6 +18,7 @@
     "@pipewatch/ui": "workspace:*",
     "@pipewatch/utils": "workspace:*",
     "@sentry/nextjs": "^9.15.0",
+    "lucide-react": "^0.475.0",
     "next": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
@@ -26,6 +28,8 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "eslint": "catalog:",
-    "typescript": "catalog:"
+    "happy-dom": "^20.8.9",
+    "typescript": "catalog:",
+    "vitest": "^3.0.5"
   }
 }

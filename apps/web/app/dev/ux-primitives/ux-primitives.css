@@ -1,0 +1,56 @@
+.pw-ux-demo {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+}
+
+.pw-ux-demo-header {
+  margin-bottom: var(--space-8);
+}
+
+.pw-ux-demo-header h1 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.pw-ux-demo-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: var(--leading-normal);
+}
+
+.pw-ux-demo-section {
+  margin-bottom: var(--space-8);
+}
+
+.pw-ux-demo-section h2 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.pw-ux-demo-section > p {
+  margin: 0 0 var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.pw-ux-demo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pw-ux-demo-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.pw-ux-demo-meta {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
