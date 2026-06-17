@@ -31,15 +31,13 @@ export async function signAccessToken(
   return jwt.sign(encodeSecret(secret));
 }
 
-/** Verify and decode an access JWT. */
-export async function verifyAccessToken(
-  token: string,
-  secret: string,
-): Promise<AccessTokenClaims> {
-  const { payload } = await jwtVerify(token, encodeSecret(secret), {
-    algorithms: ["HS256"],
-  });
-
+function parseAccessTokenPayload(payload: {
+  sub?: unknown;
+  workspaceId?: unknown;
+  role?: unknown;
+  iat?: unknown;
+  exp?: unknown;
+}): AccessTokenClaims {
   if (typeof payload.sub !== "string") {
     throw new Error("Invalid access token subject");
   }
@@ -55,9 +53,38 @@ export async function verifyAccessToken(
     sub: payload.sub,
     ...(workspaceId !== undefined ? { workspaceId } : {}),
     ...(role !== undefined ? { role } : {}),
-    iat: payload.iat ?? 0,
-    exp: payload.exp ?? 0,
+    iat: typeof payload.iat === "number" ? payload.iat : 0,
+    exp: typeof payload.exp === "number" ? payload.exp : 0,
   };
+}
+
+/** Verify and decode an access JWT. */
+export async function verifyAccessToken(
+  token: string,
+  secret: string,
+): Promise<AccessTokenClaims> {
+  const { payload } = await jwtVerify(token, encodeSecret(secret), {
+    algorithms: ["HS256"],
+  });
+
+  return parseAccessTokenPayload(payload);
+}
+
+/**
+ * Verify signature and decode an access JWT, ignoring expiration.
+ * Used during refresh to preserve active workspace context after switch-workspace.
+ */
+export async function verifyAccessTokenIgnoreExpiry(
+  token: string,
+  secret: string,
+): Promise<AccessTokenClaims> {
+  const { payload } = await jwtVerify(token, encodeSecret(secret), {
+    algorithms: ["HS256"],
+    currentDate: new Date(0),
+    clockTolerance: 365 * 24 * 60 * 60,
+  });
+
+  return parseAccessTokenPayload(payload);
 }
 
 export { ACCESS_TOKEN_TTL_SECONDS };

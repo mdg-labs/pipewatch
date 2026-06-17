@@ -5,6 +5,9 @@ import { apiError, errorHandler } from "./middleware/error-handler.js";
 import { requestIdMiddleware } from "./middleware/request-id.js";
 import { sentryTraceMiddleware } from "./middleware/sentry.js";
 import { registerGitHubAuthRoutes } from "./routes/auth/github.js";
+import { registerLogoutRoutes } from "./routes/auth/logout.js";
+import { registerRefreshRoute } from "./routes/auth/refresh.js";
+import { registerSwitchWorkspaceRoute } from "./routes/auth/switch-workspace.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerOpenApiRoutes } from "./routes/openapi.js";
 import { registerBootstrapStatusRoute } from "./routes/public/bootstrap-status.js";
@@ -29,6 +32,9 @@ export function createApp(): OpenAPIHono<ApiEnv> {
   registerOpenApiRoutes(app);
   registerBootstrapStatusRoute(app);
   registerGitHubAuthRoutes(app);
+  registerRefreshRoute(app);
+  registerLogoutRoutes(app);
+  registerSwitchWorkspaceRoute(app);
   registerCloudRoutes(app);
   registerCERoutes(app);
 
