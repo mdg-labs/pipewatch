@@ -12,11 +12,21 @@ export type ApiKeyAuthIdentity = {
 /** Public API key metadata — never includes the raw key or hash. */
 export type ApiKeySummary = {
   id: string;
-  workspaceId: string;
+  workspace_id: string;
   name: string;
-  keyPrefix: string;
-  expiresAt: string | null;
-  lastUsedAt: string | null;
-  revokedAt: string | null;
-  createdAt: string;
+  key_prefix: string;
+  expires_at: string | null;
+  last_used_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+};
+
+/** Response when creating an API key — full key shown once. */
+export type CreatedApiKey = ApiKeySummary & {
+  key: string;
+};
+
+export type CreateApiKeyInput = {
+  name: string;
+  expires_at?: string | undefined;
 };

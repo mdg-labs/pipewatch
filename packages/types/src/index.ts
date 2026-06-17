@@ -26,7 +26,12 @@ export type { PipelineStep } from "./pipeline-step.js";
 
 export { API_KEY_PREFIX } from "./api-key.js";
 
-export type { ApiKeyAuthIdentity, ApiKeySummary } from "./api-key.js";
+export type {
+  ApiKeyAuthIdentity,
+  ApiKeySummary,
+  CreateApiKeyInput,
+  CreatedApiKey,
+} from "./api-key.js";
 
 export type { UpdateUserProfileInput, UserProfile } from "./user.js";
 
