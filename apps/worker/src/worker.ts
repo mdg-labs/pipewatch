@@ -17,6 +17,10 @@ import {
   processPipelineRun,
 } from "./handlers/process-pipeline-run.js";
 import { POLL_REPO_JOB_NAME, pollRepo } from "./handlers/poll-repo.js";
+import {
+  RETENTION_CLEANUP_JOB_NAME,
+  retentionCleanup,
+} from "./handlers/retention-cleanup.js";
 import { attachPermanentFailureHandler } from "./queues/dead-letter.js";
 import { createRedisConnection, resolveRedisUrl } from "./queues/connection.js";
 import { QUEUE_NAMES, resolveBackoffDelay } from "./queues/index.js";
@@ -84,6 +88,19 @@ function createPollingProcessor(env: WorkerEnv): Processor {
   };
 }
 
+function createMaintenanceProcessor(env: WorkerEnv): Processor {
+  const db = getDb();
+
+  return async (job) => {
+    switch (job.name) {
+      case RETENTION_CLEANUP_JOB_NAME:
+        return retentionCleanup(job, { db, env });
+      default:
+        throw new Error(`Unknown maintenance job: ${job.name}`);
+    }
+  };
+}
+
 function resolveProcessor(queueName: string, env: WorkerEnv): Processor {
   if (queueName === QUEUE_NAMES.WEBHOOK_EVENTS) {
     return createWebhookEventsProcessor();
@@ -95,6 +112,10 @@ function resolveProcessor(queueName: string, env: WorkerEnv): Processor {
 
   if (queueName === QUEUE_NAMES.POLLING) {
     return createPollingProcessor(env);
+  }
+
+  if (queueName === QUEUE_NAMES.MAINTENANCE) {
+    return createMaintenanceProcessor(env);
   }
 
   return createStubProcessor(queueName);
