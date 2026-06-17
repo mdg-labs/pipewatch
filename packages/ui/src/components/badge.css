@@ -1,0 +1,58 @@
+.pw-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px var(--space-1-5);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: 1.4;
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+}
+
+.pw-badge-default {
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  border-color: var(--border-default);
+}
+
+.pw-badge-accent {
+  background: var(--status-running-subtle);
+  color: var(--text-accent);
+  border-color: var(--border-accent);
+}
+
+.pw-badge-success {
+  background: var(--status-success-subtle);
+  color: var(--status-success);
+}
+
+.pw-badge-failure {
+  background: var(--status-failure-subtle);
+  color: var(--status-failure);
+}
+
+.pw-badge-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border-color: var(--border-default);
+}
+
+.pw-badge-mono {
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+  font-size: var(--text-2xs);
+}
+
+.pw-badge-pill {
+  border-radius: var(--radius-full);
+  padding: 1px var(--space-2);
+}
+
+.pw-badge-lg {
+  font-size: var(--text-sm);
+  padding: 2px var(--space-2);
+}

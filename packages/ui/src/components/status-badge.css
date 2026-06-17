@@ -1,0 +1,41 @@
+.pw-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.pw-status-lg {
+  padding: var(--space-1) var(--space-2-5);
+  font-size: var(--text-sm);
+  border-radius: var(--radius-md);
+}
+
+.pw-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.pw-status-pulse {
+  animation: pw-pulse 1.5s ease-in-out infinite;
+}
+
+.pw-status-spin {
+  animation: pw-spin 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-status-pulse,
+  .pw-status-spin {
+    animation: none;
+  }
+}
