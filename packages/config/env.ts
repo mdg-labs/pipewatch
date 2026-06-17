@@ -49,6 +49,7 @@ const apiEnvSchema = z.object({
   SMTP_FROM: z.string().email().optional(),
   POSTMARK_API_KEY: z.string().optional(),
   POSTMARK_BROADCAST_STREAM: z.string().optional(),
+  POSTMARK_WEBHOOK_SECRET: z.string().min(1).optional(),
   STRIPE_SECRET_KEY: z.string().min(1).optional(),
   STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   STRIPE_PRICE_PRO: z.string().min(1).optional(),
@@ -138,6 +139,7 @@ const API_STRICT_FIELDS = [
 ] as const;
 
 const API_CLOUD_STRICT_FIELDS = [
+  "POSTMARK_WEBHOOK_SECRET",
   "STRIPE_SECRET_KEY",
   "STRIPE_WEBHOOK_SECRET",
   "STRIPE_PRICE_PRO",
@@ -269,6 +271,7 @@ export function parseApiEnv(
       "SMTP_FROM",
       "POSTMARK_API_KEY",
       "POSTMARK_BROADCAST_STREAM",
+      "POSTMARK_WEBHOOK_SECRET",
       "STRIPE_SECRET_KEY",
       "STRIPE_WEBHOOK_SECRET",
       "STRIPE_PRICE_PRO",

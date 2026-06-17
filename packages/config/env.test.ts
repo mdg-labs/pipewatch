@@ -54,6 +54,7 @@ const baseMarketingEnv = {
 } as const;
 
 const cloudStripeEnv = {
+  POSTMARK_WEBHOOK_SECRET: "postmark-webhook-secret",
   STRIPE_SECRET_KEY: "sk_test_example",
   STRIPE_WEBHOOK_SECRET: "whsec_example",
   STRIPE_PRICE_PRO: "price_pro",

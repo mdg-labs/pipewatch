@@ -1534,6 +1534,7 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `SMTP_FROM` | staging, production | api | `noreply@pipewatch.app` |
 | `POSTMARK_API_KEY` | staging, production | api | Broadcast stream only — bulk/newsletter sends |
 | `POSTMARK_BROADCAST_STREAM` | staging, production | api | Postmark Message Stream ID for broadcast |
+| `POSTMARK_WEBHOOK_SECRET` | staging, production | api | For Postmark `X-Postmark-Signature` HMAC validation |
 | `STRIPE_SECRET_KEY` | staging, production | api | Stripe secret key |
 | `STRIPE_WEBHOOK_SECRET` | staging, production | api | For Stripe webhook signature validation |
 | `STRIPE_PRICE_PRO` | staging, production | api | Stripe Price ID for Pro plan |
