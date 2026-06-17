@@ -26,11 +26,16 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
+function isAccountPath(pathname: string): boolean {
+  return pathname === "/account" || pathname.startsWith("/account/");
+}
+
 function isProtectedAppPath(pathname: string): boolean {
   return (
     pathname === "/" ||
     pathname.startsWith("/workspaces") ||
-    isOnboardingPath(pathname)
+    isOnboardingPath(pathname) ||
+    isAccountPath(pathname)
   );
 }
 
@@ -108,5 +113,5 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ["/", "/setup", "/sign-in", "/onboarding", "/workspaces/:path*"],
+  matcher: ["/", "/setup", "/sign-in", "/onboarding", "/account", "/workspaces/:path*"],
 };
