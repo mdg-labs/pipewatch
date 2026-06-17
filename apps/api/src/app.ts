@@ -7,6 +7,7 @@ import { sentryTraceMiddleware } from "./middleware/sentry.js";
 import { registerGitHubAuthRoutes } from "./routes/auth/github.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerOpenApiRoutes } from "./routes/openapi.js";
+import { registerBootstrapStatusRoute } from "./routes/public/bootstrap-status.js";
 import type { ApiEnv } from "./types.js";
 
 export function createApp(): OpenAPIHono<ApiEnv> {
@@ -26,6 +27,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
 
   registerHealthRoute(app);
   registerOpenApiRoutes(app);
+  registerBootstrapStatusRoute(app);
   registerGitHubAuthRoutes(app);
   registerCloudRoutes(app);
   registerCERoutes(app);
