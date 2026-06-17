@@ -1,0 +1,37 @@
+.pw-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    var(--bg-overlay) 50%,
+    var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: pw-shimmer 1.6s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+@keyframes pw-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-skeleton {
+    animation: none;
+    background: var(--bg-elevated);
+  }
+}
+
+.pw-skeleton-circle {
+  border-radius: var(--radius-full);
+}
+
+.pw-skeleton-rounded {
+  border-radius: var(--radius-lg);
+}

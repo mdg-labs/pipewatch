@@ -14,13 +14,34 @@ import {
   buttonClassName,
   Card,
   cardClassName,
+  Checkbox,
+  checkboxBoxClassName,
+  Dialog,
+  dialogBoxClassName,
+  EmptyState,
+  emptyStateClassName,
   Input,
   inputWrapClassName,
+  Radio,
+  radioWrapClassName,
+  RadioGroup,
+  radioGroupListClassName,
   RunPulse,
   runPulseDotClassName,
+  Select,
+  selectClassName,
+  Skeleton,
+  skeletonClassName,
   STATUS_BADGE_CONFIG,
   StatusBadge,
   statusBadgeClassName,
+  Switch,
+  switchWrapClassName,
+  Tabs,
+  Toast,
+  toastClassName,
+  Tooltip,
+  tooltipBoxClassName,
   toInitials,
 } from "./index.js";
 
@@ -38,6 +59,9 @@ describe("component styles", () => {
     expect(styles).toContain("@import './components/button.css'");
     expect(styles).toContain("@import './components/status-badge.css'");
     expect(styles).toContain("@import './components/run-pulse.css'");
+    expect(styles).toContain("@import './components/select.css'");
+    expect(styles).toContain("@import './components/dialog.css'");
+    expect(styles).toContain("@import './components/tabs.css'");
   });
 
   it("uses semantic CSS variables in component stylesheets", () => {
@@ -49,6 +73,17 @@ describe("component styles", () => {
       "card.css",
       "avatar.css",
       "run-pulse.css",
+      "select.css",
+      "checkbox.css",
+      "switch.css",
+      "radio.css",
+      "radio-group.css",
+      "skeleton.css",
+      "empty-state.css",
+      "dialog.css",
+      "toast.css",
+      "tooltip.css",
+      "tabs.css",
     ];
 
     for (const file of cssFiles) {
@@ -220,5 +255,205 @@ describe("RunPulse", () => {
     expect(runPulseDotClassName({ ring: true })).toBe(
       "pw-pulse-dot pw-pulse-ring",
     );
+  });
+});
+
+describe("Select", () => {
+  it("renders labelled select markup", () => {
+    const html = renderToStaticMarkup(
+      <Select label="Retention" options={["7 days", "30 days"]} value="30 days" />,
+    );
+
+    expect(html).toContain('class="pw-sel-label"');
+    expect(html).toContain('class="pw-sel pw-sel-md"');
+    expect(html).toContain("Retention");
+  });
+
+  it("applies error and mono modifiers", () => {
+    expect(
+      selectClassName({ size: "lg", error: "Required", mono: true }),
+    ).toBe("pw-sel pw-sel-lg pw-sel-mono pw-sel-err");
+  });
+});
+
+describe("Checkbox", () => {
+  it("renders checked checkbox markup", () => {
+    const html = renderToStaticMarkup(
+      <Checkbox label="Email alerts" checked hint="On failure only" />,
+    );
+
+    expect(html).toContain("pw-cb-on");
+    expect(html).toContain("Email alerts");
+    expect(html).toContain("On failure only");
+  });
+
+  it("applies indeterminate modifier", () => {
+    expect(checkboxBoxClassName({ indeterminate: true })).toBe(
+      "pw-cb-box pw-cb-ind",
+    );
+  });
+});
+
+describe("Switch", () => {
+  it("renders switch with role semantics", () => {
+    const html = renderToStaticMarkup(
+      <Switch label="Live updates" checked size="lg" />,
+    );
+
+    expect(html).toContain('role="switch"');
+    expect(html).toContain('aria-checked="true"');
+    expect(html).toContain("pw-sw-lg");
+  });
+
+  it("applies disabled modifier", () => {
+    expect(switchWrapClassName({ size: "sm", disabled: true })).toBe(
+      "pw-sw-wrap pw-sw-sm pw-sw-disabled",
+    );
+  });
+});
+
+describe("Radio and RadioGroup", () => {
+  it("renders radio option markup", () => {
+    const html = renderToStaticMarkup(
+      <Radio name="plan" value="pro" label="Pro" checked />,
+    );
+
+    expect(html).toContain("pw-radio-on");
+    expect(html).toContain('type="radio"');
+  });
+
+  it("renders radio group with radiogroup role", () => {
+    const html = renderToStaticMarkup(
+      <RadioGroup
+        label="Plan"
+        options={["Free", "Pro"]}
+        value="Free"
+        inline
+      />,
+    );
+
+    expect(html).toContain('role="radiogroup"');
+    expect(html).toContain("pw-rg-inline");
+  });
+
+  it("applies radio class modifiers", () => {
+    expect(radioWrapClassName({ disabled: true })).toBe(
+      "pw-radio-wrap pw-radio-disabled",
+    );
+    expect(radioGroupListClassName({ inline: true })).toBe(
+      "pw-rg-list pw-rg-inline",
+    );
+  });
+});
+
+describe("Skeleton", () => {
+  it("renders hidden loading placeholder", () => {
+    const html = renderToStaticMarkup(<Skeleton variant="circle" width={24} height={24} />);
+
+    expect(html).toContain('aria-hidden="true"');
+    expect(html).toContain("pw-skeleton-circle");
+  });
+
+  it("applies rounded variant class", () => {
+    expect(skeletonClassName({ variant: "rounded" })).toBe(
+      "pw-skeleton pw-skeleton-rounded",
+    );
+  });
+});
+
+describe("EmptyState", () => {
+  it("renders icon, title, description, and CTA slot", () => {
+    const html = renderToStaticMarkup(
+      <EmptyState
+        icon={<span>icon</span>}
+        title="No runs yet"
+        description="Runs appear once webhooks are connected."
+        actions={<button type="button">Connect GitHub</button>}
+      />,
+    );
+
+    expect(html).toContain("pw-empty-icon");
+    expect(html).toContain("No runs yet");
+    expect(html).toContain("Runs appear once webhooks are connected.");
+    expect(html).toContain("Connect GitHub");
+  });
+
+  it("applies base class name", () => {
+    expect(emptyStateClassName({ className: "custom" })).toBe("pw-empty custom");
+  });
+});
+
+describe("Dialog", () => {
+  it("does not render when closed", () => {
+    const html = renderToStaticMarkup(
+      <Dialog open={false} title="Hidden">
+        Body
+      </Dialog>,
+    );
+
+    expect(html).toBe("");
+  });
+
+  it("applies size modifier class", () => {
+    expect(dialogBoxClassName({ size: "lg" })).toBe("pw-dlg-box pw-dlg-lg");
+  });
+});
+
+describe("Toast", () => {
+  it("renders all feedback variants", () => {
+    for (const variant of ["success", "error", "info", "warning"] as const) {
+      const html = renderToStaticMarkup(
+        <Toast title="Saved" variant={variant} />,
+      );
+
+      expect(html).toContain(`pw-toast-${variant}`);
+      expect(html).toContain('role="status"');
+    }
+  });
+
+  it("applies variant class name helper", () => {
+    expect(toastClassName({ variant: "warning" })).toBe(
+      "pw-toast pw-toast-warning",
+    );
+  });
+});
+
+describe("Tooltip", () => {
+  it("renders trigger children without tooltip by default", () => {
+    const html = renderToStaticMarkup(
+      <Tooltip content="Branch name">
+        <button type="button">main</button>
+      </Tooltip>,
+    );
+
+    expect(html).toContain("pw-tip-wrap");
+    expect(html).not.toContain('role="tooltip"');
+  });
+
+  it("applies position and mono modifiers", () => {
+    expect(tooltipBoxClassName({ position: "bottom", mono: true })).toBe(
+      "pw-tip-box pw-tip-bottom pw-tip-mono",
+    );
+  });
+});
+
+describe("Tabs", () => {
+  it("renders tablist with selected tab", () => {
+    const html = renderToStaticMarkup(
+      <Tabs
+        tabs={[
+          { id: "runs", label: "Runs", count: 3 },
+          { id: "repos", label: "Repositories" },
+        ]}
+        defaultTab="runs"
+      >
+        Panel
+      </Tabs>,
+    );
+
+    expect(html).toContain('role="tablist"');
+    expect(html).toContain('aria-selected="true"');
+    expect(html).toContain("pw-tab-count");
+    expect(html).toContain("Panel");
   });
 });

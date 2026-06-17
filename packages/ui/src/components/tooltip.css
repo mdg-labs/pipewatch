@@ -1,0 +1,68 @@
+.pw-tip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pw-tip-box {
+  position: absolute;
+  z-index: 900;
+  pointer-events: none;
+  white-space: nowrap;
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+  padding: 5px 10px;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  animation: pw-tip-in var(--duration-fast) var(--ease-out);
+}
+
+.pw-tip-mono {
+  font-family: var(--font-mono);
+}
+
+@keyframes pw-tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.pw-tip-top {
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pw-tip-bottom {
+  top: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.pw-tip-left {
+  right: calc(100% + 7px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.pw-tip-right {
+  left: calc(100% + 7px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-tip-box {
+    animation: none;
+  }
+}
