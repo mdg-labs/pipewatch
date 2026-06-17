@@ -4,6 +4,9 @@
  */
 
 export { integrations } from "./integrations.js";
+export { pipelineJobs } from "./pipeline-jobs.js";
+export { pipelineRuns } from "./pipeline-runs.js";
+export { pipelineSteps } from "./pipeline-steps.js";
 export { refreshTokens } from "./refresh-tokens.js";
 export { repositories } from "./repositories.js";
 export { users } from "./users.js";
