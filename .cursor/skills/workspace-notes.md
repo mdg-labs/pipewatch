@@ -1,5 +1,26 @@
 # PipeWatch workspace notes
 
+## 2026-06-17 — P5 epic #9 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #50 P5-01 Workspaces CRUD | Done | `3fb8cbb` |
+| #51 P5-02 Members API | Done | `99fbf35` |
+| #54 P5-05 Email service | Done | `564d98f` |
+| #52 P5-03 Invites API | Done | `d64e6d4` |
+| #53 P5-04 API keys CRUD | Done | `f18289f` |
+| #9 epic parent | Done | closes via #53 `fixes #9` |
+
+**Notes:**
+- Epic order: #50 → #51 → #54 → #52 → #53 (per suggested implementation order)
+- No new DB migrations in P5 (workspace_invites + api_keys schema from P2)
+- `pnpm audit --audit-level=high` still fails on pre-existing esbuild advisory
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P6 epic #10 (integrations) or P18 #22 CI scaffold
+
 ## 2026-06-17 — P3 #7 + P4 #8 combined orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Interleaved** P3/P4 per cross-epic deps

@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Run a chat as a pure orchestrator for PipeWatch. Reads the GitHub Issues board (project #5), presents a Lane S/P batch plan, then dispatches sub-agents immediately (unless user says wait). Verifies each task and syncs board Status to Done after every PASS. Epic or single issue — start without asking. Use when the user asks to orchestrate, delegate end-to-end, or implement a GitHub issue/epic.
+description: Run a chat as a pure orchestrator for PipeWatch. Reads the GitHub Issues board (project #5), presents a Lane S/P batch plan, then dispatches sub-agents immediately (unless user says wait). Verifies each task and syncs board Status to Done after every PASS. Sends a Slack DM to the authenticated Slack user when the run ends. Epic or single issue — start without asking. Use when the user asks to orchestrate, delegate end-to-end, or implement a GitHub issue/epic.
 ---
 
 # Orchestrator (PipeWatch)
@@ -33,6 +33,7 @@ The main agent in this chat is a **dispatcher only**. It reads the **GitHub boar
 - Launch sub-agents via **Task** tool
 - **Board status sync** after verifier PASS — GraphQL `updateProjectV2ItemFieldValue` via Shell/`gh` (see [Board sync](#board-sync-mandatory-orchestrator-owned))
 - **Board status audit** — re-query project Status after each task; fix stuck **In Review**
+- **Session-end Slack DM** to the authenticated Slack MCP user (see [Session-end Slack DM](#session-end-slack-dm-mandatory))
 - Ask clarifying questions **only** when target is ambiguous, all children are blocked, or user explicitly paused sync
 
 ### MUST NOT do
@@ -118,6 +119,7 @@ When target is one **Task** (no sub-issues): present one-batch plan → dispatch
 4. **Build + present batch plan** (mandatory before first `Task`).
 5. **Dispatch batch 1** immediately unless user said not to start.
 6. **Ambiguous target only** (no issue number, multiple unrelated epics) → ask once which epic/issue, then plan + start.
+7. **On stop:** update `workspace-notes.md` → [session-end Slack DM](#session-end-slack-dm-mandatory) → final summary in chat.
 
 ## GitHub status ownership
 
@@ -179,7 +181,8 @@ Each prompt includes:
 6. Lane (`S` or `P`) and git context
 7. Epic context: `PARENT`, `CLOSE_PARENTS`
 8. **GITHUB TOOLS** + **GITHUB SYNC** blocks from [prompt-templates.md](prompt-templates.md)
-9. **DB MIGRATIONS** block in every execution prompt
+9. **CI GATE (SHELL)** block in every execution and verifier prompt — `required_permissions: ["all"]` on first Shell attempt; never run pnpm/gh/docker in default sandbox
+10. **DB MIGRATIONS** block in every execution prompt
 
 ## Parallelism — orchestrator decides serial vs parallel
 
@@ -213,14 +216,65 @@ dispatch execution → dispatch verifier (readonly: false)
 → on PASS: commit-linkage audit (fixes #N on staging) → board sync (Done + re-query)
 → on FAIL: stop or re-dispatch fix per user policy; do not advance queue
 → update workspace-notes.md
+→ when queue empty or stopped: session-end Slack DM (see below)
 ```
+
+## Session-end Slack DM (mandatory)
+
+**When:** The orchestrator is about to stop — queue complete (all batches Done or skipped), epic finished, blocked with no further dispatch, or user explicitly ended the run (`plan only` does **not** trigger Slack).
+
+**Skip only if:** user said `no slack` / `don't slack` / `skip slack`, or Slack MCP is unavailable.
+
+**Goal:** DM whoever **authenticated Slack MCP** in Cursor — the current Slack session user. No GitHub or git email lookup.
+
+**Reliability:** Works per-operator when each person connects their own Slack in Cursor. On shared machines with a shared Slack connection, the DM goes to that connection’s user (document in chat if ambiguous).
+
+### Steps (last action before final user-visible summary)
+
+1. **Current Slack user** — MCP `plugin-slack-slack` → `slack_read_user_profile` (omit `user_id` — defaults to authenticated user).
+   - Take `User ID` from the response (e.g. `U0ARDEK75UJ`).
+   - If lookup fails → report `SLACK_DM: SKIPPED (Slack profile unavailable)` in chat; do not fail the run.
+2. **Send DM** — MCP `plugin-slack-slack` → `slack_send_message`:
+   - `channel_id`: Slack `user_id` from step 1
+   - `message`: markdown summary (see template below)
+3. **Confirm in chat** — one line: `Slack DM sent to <real name>` + message permalink, or skip/fail reason.
+
+### Message template
+
+```markdown
+**PipeWatch orchestrator — run complete**
+
+**Target:** #<N> <title> | epic #<parent>
+**Outcome:** complete | partial | blocked | failed
+
+| Issue | Status | Commit |
+|---|---|---|
+| #50 | Done | `abc1234` |
+| … | | |
+
+**Staging:** <N> commits ahead of origin (not pushed) | pushed
+**Blocked / follow-ups:** <none or bullets>
+**Next suggested:** <from workspace-notes or queue>
+```
+
+Keep under ~500 words; link GitHub issues as `https://github.com/mdg-labs/pipewatch/issues/N`.
+
+### Tool reference
+
+| Step | MCP server | Tool |
+|---|---|---|
+| Authenticated Slack user | `plugin-slack-slack` | `slack_read_user_profile` (no `user_id`) |
+| Send DM | `plugin-slack-slack` | `slack_send_message` (`channel_id` = user_id) |
+
+**Do not** use `slack_search_users` / GitHub email / `git config user.email` for recipient resolution — **authenticated Slack user only**. **Do not** post to public channels — **DM only**.
 
 ## Execution agents
 
 1. **GitHub (first):** Status → In Progress (leaf + parent)
 2. **Session memory** in `active/<SESSION-ID>.md`
 3. **Implementation**
-4. **Pre-handoff:** Status → In Review; one implementation commit
+4. **CI gate** — full gate from `06-local-ci-before-commit.mdc` via Shell with `required_permissions: ["all"]` (never default sandbox; see [CI GATE block](prompt-templates.md#ci-gate-shell--mandatory-in-every-execution-and-verifier-prompt))
+5. **Pre-handoff:** Status → In Review; one implementation commit
 
 Commit format: `[#N]` in subject; `fixes #N` in body; `fixes #<parent>` per `CLOSE_PARENTS`.
 
@@ -230,7 +284,7 @@ Commit format: `[#N]` in subject; `fixes #N` in body; `fixes #<parent>` per `CLO
 
 **Layer 1 — Scope:** committed paths vs WRITE SCOPE.
 
-**Layer 2 — Automated checks** from repo root ([doc-index.md](doc-index.md)):
+**Layer 2 — Automated checks** from repo root ([doc-index.md](doc-index.md)) — Shell **`required_permissions: ["all"]`** on first attempt (never default sandbox; see [CI GATE block](prompt-templates.md#ci-gate-shell--mandatory-in-every-execution-and-verifier-prompt)):
 
 ```bash
 pnpm lint && pnpm typecheck && pnpm test:unit
@@ -288,3 +342,7 @@ _task: #<N> | started: <ISO> | ended: <ISO> | duration: <human> | agent: executi
 - Checking "is issue on project" — see rule `12-github-project-board.mdc`
 - Marking **Done** without `fixes #N` in `staging` git history for that issue
 - Landing another issue's work without `fixes #N` for the source task (e.g. P2-05 schema via #47 without `fixes #41`)
+- Running pnpm/gh/docker/CI commands in the **default sandbox** (causes spurious failures — use `required_permissions: ["all"]` first)
+- Ending an orchestrator run **without** session-end Slack DM (unless user opted out or Slack profile lookup failed)
+- Resolving Slack DM recipient via GitHub/git email instead of **authenticated Slack user**
+- Posting orchestrator summaries to **public Slack channels** instead of operator DM

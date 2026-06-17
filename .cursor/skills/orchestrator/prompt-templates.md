@@ -4,11 +4,12 @@ Copy and fill. Sub-agents do not see the orchestrator chat.
 
 Include **role-specific** GITHUB SYNC blocks from [github-board.md](github-board.md).
 
-**Every execution and verifier prompt** must include **GITHUB TOOLS**, **NODE ENV**, and (execution only) **DB MIGRATIONS** blocks below.
+**Every execution and verifier prompt** must include **GITHUB TOOLS**, **NODE ENV**, **CI GATE (SHELL)**, and (execution only) **DB MIGRATIONS** blocks below.
 
 **Orchestrator dispatch rules:**
 
 - **Any GitHub target** (single leaf or epic) → build batch plan, **show plan to user**, then start batch 1 immediately (unless user said `plan only` / `wait` / `don't start`).
+- **Every Task prompt** (execution + verifier) → include the **CI GATE (SHELL)** block verbatim; sub-agents must use `required_permissions: ["all"]` on first Shell attempt.
 - **Verifier Task** → `readonly: false` always (needs GraphQL Status mutations).
 - After verifier PASS → orchestrator runs [board sync](github-board.md#orchestrator--after-every-verifier-pass-mandatory) regardless of verifier output.
 
@@ -89,6 +90,39 @@ NODE ENV:
 
 ---
 
+## CI GATE (SHELL) — mandatory in every execution and verifier prompt
+
+**Root cause:** Default Cursor sandbox blocks Docker (integration tests), GitHub API (`gh`), and some network calls — agents waste a failed run before retrying with permissions.
+
+```text
+CI GATE (SHELL) — MANDATORY:
+- NEVER run pnpm, gh, docker, or CI gate commands in the default sandbox
+- ALWAYS invoke Shell with required_permissions: ["all"] on the FIRST attempt
+- Do NOT "try sandbox first" and retry — start outside sandbox
+- Repo root: /home/mdguggenbichler/projects/pipewatch
+
+Execution — full gate before commit (.cursor/rules/06-local-ci-before-commit.mdc):
+  pnpm lint && \
+  pnpm typecheck && \
+  pnpm test:unit && \
+  pnpm build && \
+  pnpm test:integration && \
+  pnpm audit --audit-level=high
+
+Verifier — Layer 2 minimum (also required_permissions: ["all"]):
+  pnpm lint && pnpm typecheck && pnpm test:unit
+
+Also use required_permissions: ["all"] for:
+- pnpm install
+- gh api graphql (board Status mutations)
+- phase run --env=Development -- …
+- Any command that starts containers, binds ports, or calls GitHub
+
+If a command fails with sandbox/network/Docker errors after using ["all"], report blocked — do not loop sandbox retries.
+```
+
+---
+
 ## DB MIGRATIONS — mandatory in every execution prompt
 
 ```text
@@ -115,6 +149,8 @@ CLOSE_PARENTS: [#<parent>] | none
 
 GITHUB SYNC — EXECUTION: (see github-board.md execution variant)
 
+CI GATE (SHELL): (see prompt-templates.md — required_permissions: ["all"], never sandbox)
+
 ACCEPTANCE CRITERIA:
 - <from issue body>
 
@@ -132,9 +168,10 @@ SESSION MEMORY: .cursor/skills/agent-memory/active/<SESSION-ID>.md
 
 WORK:
 1. Status → In Progress (GITHUB SYNC)
-2. pnpm install if needed
+2. pnpm install if needed (Shell required_permissions: ["all"])
 3. Implement per AC
-4. Pre-handoff: In Review → single commit with [#N] + fixes lines
+4. Full CI gate before commit (CI GATE block — Shell required_permissions: ["all"], never sandbox)
+5. Pre-handoff: In Review → single commit with [#N] + fixes lines
 
 REQUIRED OUTPUT:
 - Session ID, commit SHA, files changed, status: complete | blocked
@@ -156,9 +193,11 @@ DISPATCH NOTE: Orchestrator must launch this agent with readonly: FALSE.
 
 GITHUB SYNC — VERIFIER: (see github-board.md verifier variant)
 
+CI GATE (SHELL): (see prompt-templates.md — required_permissions: ["all"], never sandbox)
+
 VERIFY:
 - Layer 1: scope audit
-- Layer 2: pnpm lint, typecheck, test:unit (from repo root)
+- Layer 2: pnpm lint, typecheck, test:unit (from repo root; CI GATE block — Shell required_permissions: ["all"], never sandbox)
 - Layer 3: AC, PRD contract, security, env vars, commit linking, migration policy (`15-db-migrations-schema.mdc`)
 - Layer 3c3 (mandatory): `git log staging --grep='fixes #<N>'` must return at least one commit for task #<N> (combined commits must list every covered issue on separate `fixes #N` lines)
 
