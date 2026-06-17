@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 import { flags } from "@pipewatch/config/edition";
 
-import { isBillingNavEnabled, isWorkspaceSwitcherEnabled } from "@/lib/edition-features";
+import { isBillingNavEnabled, isWorkspaceSwitcherEnabled } from "@/lib/edition-guards";
 import { publicApiUrl } from "@/lib/env";
 import { themeInitScript } from "@/hooks/use-theme";
 import { ToastProvider } from "@/providers/ToastProvider";

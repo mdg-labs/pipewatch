@@ -4,7 +4,7 @@ import { LogoWordmark } from "@pipewatch/ui";
 import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 
-import { isBillingNavEnabled, isWorkspaceSwitcherEnabled } from "@/lib/edition-features";
+import { isBillingNavEnabled, isWorkspaceSwitcherEnabled } from "@/lib/edition-guards";
 import type { AppSession } from "@/lib/placeholder-session";
 
 import "./app-shell.css";

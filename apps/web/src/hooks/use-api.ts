@@ -69,6 +69,7 @@ export type UseApiResult = {
   workspaceId: string | null;
   workspace: WorkspaceScopedClient | null;
   claims: ReturnType<typeof getAccessTokenClaims>;
+  workspaces: readonly WorkspaceListItem[];
 };
 
 function extractWorkspaceSlug(pathname: string): string | null {
@@ -107,5 +108,6 @@ export function useApi(): UseApiResult {
     workspaceId,
     workspace,
     claims,
+    workspaces,
   };
 }
