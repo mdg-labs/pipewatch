@@ -1,21 +1,26 @@
 import type { PipelineConclusion, PipelineStatus } from "./common.js";
 
-/** Pipeline job API resource — placeholder; Zod schemas added in P2/P3. */
-export interface PipelineJob {
+/** Pipeline job API resource (PRD §7 — page B6). */
+export type PipelineJob = {
   id: string;
-  workspaceId: string;
-  runId: string;
-  externalJobId: string;
+  workspace_id: string;
+  run_id: string;
+  external_job_id: string;
   name: string;
   status: PipelineStatus;
   conclusion: PipelineConclusion;
-  runnerName: string | null;
-  startedAt: string | null;
-  completedAt: string | null;
-  durationMs: number | null;
-}
+  runner_name: string | null;
+  started_at: string;
+  completed_at: string | null;
+  duration_ms: number | null;
+};
 
-/** SSE summary variant — fields finalized in P2/P3. */
+/** List response for jobs on a pipeline run. */
+export type PipelineJobsList = {
+  data: PipelineJob[];
+};
+
+/** SSE summary variant — camelCase for worker SSE payloads. */
 export interface PipelineJobSummary {
   id: string;
   name: string;

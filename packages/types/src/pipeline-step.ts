@@ -1,14 +1,19 @@
 import type { PipelineConclusion, PipelineStatus } from "./common.js";
 
-/** Pipeline step API resource — placeholder; Zod schemas added in P2/P3. */
-export interface PipelineStep {
+/** Pipeline step API resource (PRD §7 — page B6). */
+export type PipelineStep = {
   id: string;
-  jobId: string;
+  job_id: string;
   number: number;
   name: string;
   status: PipelineStatus;
   conclusion: PipelineConclusion;
-  startedAt: string | null;
-  completedAt: string | null;
-  durationMs: number | null;
-}
+  started_at: string;
+  completed_at: string | null;
+  duration_ms: number | null;
+};
+
+/** List response for steps on a pipeline job. */
+export type PipelineStepsList = {
+  data: PipelineStep[];
+};

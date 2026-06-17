@@ -24,6 +24,7 @@ export type {
 export type {
   PipelineJob,
   PipelineJobSummary,
+  PipelineJobsList,
 } from "./pipeline-job.js";
 
 export type {
@@ -33,7 +34,7 @@ export type {
   PipelineRunSummary,
 } from "./pipeline-run.js";
 
-export type { PipelineStep } from "./pipeline-step.js";
+export type { PipelineStep, PipelineStepsList } from "./pipeline-step.js";
 
 export type {
   ListRepositoriesQuery,

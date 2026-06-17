@@ -29,6 +29,7 @@ import { registerCheckSlugRoute } from "./check-slug.js";
 import { registerIntegrationRoutes } from "./integrations.js";
 import { registerInviteRoutes } from "./invites.js";
 import { registerMemberRoutes } from "./members.js";
+import { registerJobRoutes } from "./repositories/runs/jobs.js";
 import { registerRunRoutes } from "./repositories/runs.js";
 import { registerRepositoryRoutes, type EnqueueBackfillRepo } from "./repositories.js";
 
@@ -467,6 +468,12 @@ export function registerWorkspaceRoutes(
   });
 
   registerRunRoutes(app, {
+    get db() {
+      return resolveDeps().db;
+    },
+  });
+
+  registerJobRoutes(app, {
     get db() {
       return resolveDeps().db;
     },
