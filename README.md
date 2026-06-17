@@ -45,3 +45,23 @@ scripts/          Test orchestration and tooling
 ```
 
 See `docs/internal/PipeWatch_MVP_PRD.md` for architecture and product specification.
+
+## PipeWatch CE — container images (GHCR)
+
+Self-hosted CE images are published to GitHub Container Registry under `ghcr.io/mdg-labs/`:
+
+| Service | Image | Default port |
+|---|---|---|
+| API | `ghcr.io/mdg-labs/pipewatch-api` | 3000 |
+| Worker | `ghcr.io/mdg-labs/pipewatch-worker` | — |
+| Web | `ghcr.io/mdg-labs/pipewatch-web` | 3001 |
+
+Common tags: `latest` (stable release), semver release tags, `nightly` (staging builds). The API image runs Drizzle migrations on startup before serving (CE auto-migrate — PRD Decision #36).
+
+Build locally from the repository root:
+
+```bash
+docker build -f apps/api/Dockerfile -t pipewatch-api:local .
+docker build -f apps/worker/Dockerfile -t pipewatch-worker:local .
+docker build -f apps/web/Dockerfile -t pipewatch-web:local .
+```
