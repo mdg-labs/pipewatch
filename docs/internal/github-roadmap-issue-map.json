@@ -1,0 +1,597 @@
+{
+  "epics": {
+    "P21": 24,
+    "P19": 23,
+    "P18": 22,
+    "P17": 21,
+    "P16": 20,
+    "P15": 19,
+    "P14": 18,
+    "P13": 17,
+    "P12": 16,
+    "P11": 15,
+    "P10": 14,
+    "P9": 13,
+    "P8": 12,
+    "P7": 11,
+    "P6": 10,
+    "P5": 9,
+    "P4": 8,
+    "P3": 7,
+    "P2": 6,
+    "P1": 5,
+    "P0": 4
+  },
+  "tasks": {
+    "P12-01": {
+      "number": 78,
+      "id": 4678669621,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7VNQ",
+      "title": "App layout, theme, fonts"
+    },
+    "P11-03": {
+      "number": 77,
+      "id": 4678669363,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7UMw",
+      "title": "Plan enforcement middleware"
+    },
+    "P11-02": {
+      "number": 76,
+      "id": 4678669079,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7TFw",
+      "title": "Stripe webhook handler"
+    },
+    "P11-01": {
+      "number": 75,
+      "id": 4678668663,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7Rdw",
+      "title": "Stripe checkout + portal API"
+    },
+    "P10-03": {
+      "number": 74,
+      "id": 4678668402,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7Qcg",
+      "title": "Postmark webhook (cloud)"
+    },
+    "P10-02": {
+      "number": 73,
+      "id": 4678667957,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7OtQ",
+      "title": "Waitlist API (cloud)"
+    },
+    "P10-01": {
+      "number": 72,
+      "id": 4678667665,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7NkQ",
+      "title": "GitHub webhook receiver"
+    },
+    "P9-02": {
+      "number": 71,
+      "id": 4678667400,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7MiA",
+      "title": "SSE stream endpoint + broadcaster"
+    },
+    "P9-01": {
+      "number": 70,
+      "id": 4678667137,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7LgQ",
+      "title": "SSE token endpoint"
+    },
+    "P8-05": {
+      "number": 69,
+      "id": 4678666804,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7KNA",
+      "title": "Sync / backfill status API"
+    },
+    "P8-04": {
+      "number": 68,
+      "id": 4678666341,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7IZQ",
+      "title": "Insights API"
+    },
+    "P8-03": {
+      "number": 67,
+      "id": 4678666055,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7HRw",
+      "title": "Workspace dashboard aggregate queries"
+    },
+    "P8-02": {
+      "number": 66,
+      "id": 4678665775,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7GLw",
+      "title": "Pipeline jobs & steps API"
+    },
+    "P8-01": {
+      "number": 65,
+      "id": 4678665462,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7E9g",
+      "title": "Pipeline runs API"
+    },
+    "P7-05": {
+      "number": 64,
+      "id": 4678665218,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7EAg",
+      "title": "Retention cleanup job"
+    },
+    "P7-04": {
+      "number": 63,
+      "id": 4678664662,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7B1g",
+      "title": "Polling mode lifecycle"
+    },
+    "P7-03": {
+      "number": 62,
+      "id": 4678664373,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7AtQ",
+      "title": "Backfill jobs (`backfill-integration`, `backfill-repo`)"
+    },
+    "P7-02": {
+      "number": 61,
+      "id": 4678664086,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6_lg",
+      "title": "`process-pipeline-run` + `process-pipeline-job` handlers"
+    },
+    "P7-01": {
+      "number": 60,
+      "id": 4678663824,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6-kA",
+      "title": "Queue infrastructure"
+    },
+    "P6-05": {
+      "number": 59,
+      "id": 4678663406,
+      "node_id": "I_kwDOS8tSvs8AAAABFt687g",
+      "title": "GitHub webhook payload mappers (pure functions)"
+    },
+    "P6-04": {
+      "number": 58,
+      "id": 4678663109,
+      "node_id": "I_kwDOS8tSvs8AAAABFt67xQ",
+      "title": "Repositories API (read + settings patch)"
+    },
+    "P6-03": {
+      "number": 57,
+      "id": 4678662838,
+      "node_id": "I_kwDOS8tSvs8AAAABFt66tg",
+      "title": "GitHub App install callback route"
+    },
+    "P6-02": {
+      "number": 56,
+      "id": 4678662521,
+      "node_id": "I_kwDOS8tSvs8AAAABFt65eQ",
+      "title": "Integrations REST API"
+    },
+    "P6-01": {
+      "number": 55,
+      "id": 4678662057,
+      "node_id": "I_kwDOS8tSvs8AAAABFt63qQ",
+      "title": "GitHub App auth client (installation tokens)"
+    },
+    "P5-05": {
+      "number": 54,
+      "id": 4678661778,
+      "node_id": "I_kwDOS8tSvs8AAAABFt62kg",
+      "title": "Transactional email service + templates"
+    },
+    "P5-04": {
+      "number": 53,
+      "id": 4678661548,
+      "node_id": "I_kwDOS8tSvs8AAAABFt61rA",
+      "title": "API keys CRUD API"
+    },
+    "P5-03": {
+      "number": 52,
+      "id": 4678661299,
+      "node_id": "I_kwDOS8tSvs8AAAABFt60sw",
+      "title": "Invites API + email"
+    },
+    "P5-02": {
+      "number": 51,
+      "id": 4678660751,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6yjw",
+      "title": "Members API"
+    },
+    "P5-01": {
+      "number": 50,
+      "id": 4678660445,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6xXQ",
+      "title": "Workspaces CRUD API"
+    },
+    "P4-05": {
+      "number": 49,
+      "id": 4678660113,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6wEQ",
+      "title": "Bootstrap status endpoint (CE)"
+    },
+    "P4-04": {
+      "number": 48,
+      "id": 4678659629,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6uLQ",
+      "title": "User profile & account delete API"
+    },
+    "P4-03": {
+      "number": 47,
+      "id": 4678659326,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6s_g",
+      "title": "API key authentication"
+    },
+    "P4-02": {
+      "number": 46,
+      "id": 4678659010,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6rwg",
+      "title": "Refresh token rotation + logout"
+    },
+    "P4-01": {
+      "number": 45,
+      "id": 4678658744,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6quA",
+      "title": "GitHub OAuth flow"
+    },
+    "P3-03": {
+      "number": 44,
+      "id": 4678658477,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6prQ",
+      "title": "Edition guards middleware"
+    },
+    "P3-02": {
+      "number": 43,
+      "id": 4678658061,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6oDQ",
+      "title": "Workspace scoping middleware"
+    },
+    "P3-01": {
+      "number": 42,
+      "id": 4678657786,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6m-g",
+      "title": "Hono app structure + OpenAPI bootstrap"
+    },
+    "P2-05": {
+      "number": 41,
+      "id": 4678657484,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6lzA",
+      "title": "Schema: api_keys, subscribers (cloud)"
+    },
+    "P2-04": {
+      "number": 40,
+      "id": 4678657104,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6kUA",
+      "title": "Schema: pipeline_runs, pipeline_jobs, pipeline_steps"
+    },
+    "P2-03": {
+      "number": 39,
+      "id": 4678656809,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6jKQ",
+      "title": "Schema: integrations, repositories"
+    },
+    "P2-02": {
+      "number": 38,
+      "id": 4678656353,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6hYQ",
+      "title": "Schema: users, auth, workspaces"
+    },
+    "P2-01": {
+      "number": 37,
+      "id": 4678656036,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6gJA",
+      "title": "Drizzle setup + db client package"
+    },
+    "P1-06": {
+      "number": 36,
+      "id": 4678655733,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6e9Q",
+      "title": "App composite components"
+    },
+    "P1-05": {
+      "number": 35,
+      "id": 4678655496,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6eCA",
+      "title": "Brand assets + chart primitives"
+    },
+    "P1-04": {
+      "number": 34,
+      "id": 4678655073,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6cYQ",
+      "title": "Data components (Sparkline, RepoCard, data table primitives)"
+    },
+    "P1-03": {
+      "number": 33,
+      "id": 4678654787,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6bQw",
+      "title": "Form & feedback components"
+    },
+    "P1-02": {
+      "number": 32,
+      "id": 4678654481,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6aEQ",
+      "title": "Core components (Button, Badge, StatusBadge, Input, Card, Avatar)"
+    },
+    "P1-01": {
+      "number": 31,
+      "id": 4678654140,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6YvA",
+      "title": "Import design tokens into `packages/ui`"
+    },
+    "P0-06": {
+      "number": 30,
+      "id": 4678653679,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6W7w",
+      "title": "Sentry releases + source maps (CI)"
+    },
+    "P0-05": {
+      "number": 29,
+      "id": 4678653319,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6Vhw",
+      "title": "Environment validation (`packages/config/env.ts`)"
+    },
+    "P0-04": {
+      "number": 28,
+      "id": 4678653024,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6UYA",
+      "title": "App entrypoint scaffolds (api, worker, web, marketing)"
+    },
+    "P0-03": {
+      "number": 27,
+      "id": 4678652463,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6SLw",
+      "title": "Shared packages scaffold (`types`, `utils`)"
+    },
+    "P0-02": {
+      "number": 26,
+      "id": 4678652171,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6RCw",
+      "title": "Edition & feature flags package"
+    },
+    "P0-01": {
+      "number": 25,
+      "id": 4678651911,
+      "node_id": "I_kwDOS8tSvs8AAAABFt6QBw",
+      "title": "Initialize monorepo (pnpm + Turborepo)"
+    },
+    "P12-02": {
+      "number": 79,
+      "id": 4678677112,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7yeA",
+      "title": "App shell (sidebar, top bar, workspace switcher)"
+    },
+    "P12-03": {
+      "number": 80,
+      "id": 4678677354,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7zag",
+      "title": "Shared UX primitives wired"
+    },
+    "P12-04": {
+      "number": 81,
+      "id": 4678677631,
+      "node_id": "I_kwDOS8tSvs8AAAABFt70fw",
+      "title": "API client + auth cookie handling"
+    },
+    "P12-05": {
+      "number": 82,
+      "id": 4678677916,
+      "node_id": "I_kwDOS8tSvs8AAAABFt71nA",
+      "title": "Role gating + edition route guards (frontend)"
+    },
+    "P12-06": {
+      "number": 83,
+      "id": 4678678177,
+      "node_id": "I_kwDOS8tSvs8AAAABFt72oQ",
+      "title": "SSE client hook (`useRepoStream`)"
+    },
+    "P12-07": {
+      "number": 84,
+      "id": 4678678454,
+      "node_id": "I_kwDOS8tSvs8AAAABFt73tg",
+      "title": "API docs link in app shell (B14)"
+    },
+    "P12-08": {
+      "number": 85,
+      "id": 4678678886,
+      "node_id": "I_kwDOS8tSvs8AAAABFt75Zg",
+      "title": "CE bootstrap redirect middleware"
+    },
+    "P13-01": {
+      "number": 86,
+      "id": 4678679113,
+      "node_id": "I_kwDOS8tSvs8AAAABFt76SQ",
+      "title": "Sign in page (B1)"
+    },
+    "P13-02": {
+      "number": 87,
+      "id": 4678679437,
+      "node_id": "I_kwDOS8tSvs8AAAABFt77jQ",
+      "title": "CE bootstrap page (B0)"
+    },
+    "P13-03": {
+      "number": 88,
+      "id": 4678679695,
+      "node_id": "I_kwDOS8tSvs8AAAABFt78jw",
+      "title": "Onboarding wizard (B2)"
+    },
+    "P13-04": {
+      "number": 89,
+      "id": 4678679968,
+      "node_id": "I_kwDOS8tSvs8AAAABFt79oA",
+      "title": "Invite accept page (B18)"
+    },
+    "P14-01": {
+      "number": 90,
+      "id": 4678680337,
+      "node_id": "I_kwDOS8tSvs8AAAABFt7_EQ",
+      "title": "Dashboard page (B3)"
+    },
+    "P14-02": {
+      "number": 91,
+      "id": 4678680665,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8AWQ",
+      "title": "Repository detail / run list (B4)"
+    },
+    "P14-03": {
+      "number": 92,
+      "id": 4678680940,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8BbA",
+      "title": "Run detail page (B6)"
+    },
+    "P14-04": {
+      "number": 93,
+      "id": 4678681207,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8Cdw",
+      "title": "Repository settings (B5)"
+    },
+    "P14-05": {
+      "number": 94,
+      "id": 4678681431,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8DVw",
+      "title": "Insights page (B7)"
+    },
+    "P15-01": {
+      "number": 95,
+      "id": 4678681714,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8Ecg",
+      "title": "Workspace settings general (B8)"
+    },
+    "P15-02": {
+      "number": 96,
+      "id": 4678681996,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8FjA",
+      "title": "Members settings (B9)"
+    },
+    "P15-03": {
+      "number": 97,
+      "id": 4678682482,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8Hcg",
+      "title": "Integrations settings (B10)"
+    },
+    "P15-04": {
+      "number": 98,
+      "id": 4678682782,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8Ing",
+      "title": "API keys settings (B11)"
+    },
+    "P15-05": {
+      "number": 99,
+      "id": 4678683049,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8JqQ",
+      "title": "Billing settings (B12, cloud)"
+    },
+    "P15-06": {
+      "number": 100,
+      "id": 4678683370,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8K6g",
+      "title": "Account settings (B13)"
+    },
+    "P16-01": {
+      "number": 101,
+      "id": 4678683719,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8MRw",
+      "title": "Marketing layout + nav/footer"
+    },
+    "P16-02": {
+      "number": 102,
+      "id": 4678683934,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8NHg",
+      "title": "Homepage (A1)"
+    },
+    "P16-03": {
+      "number": 103,
+      "id": 4678684184,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8OGA",
+      "title": "Pricing page (A2)"
+    },
+    "P16-04": {
+      "number": 104,
+      "id": 4678684468,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8PNA",
+      "title": "Docs site (A3)"
+    },
+    "P16-05": {
+      "number": 105,
+      "id": 4678684716,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8QLA",
+      "title": "Changelog page (A4)"
+    },
+    "P16-06": {
+      "number": 106,
+      "id": 4678685087,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8Rnw",
+      "title": "Waitlist pages (A5, A7)"
+    },
+    "P16-07": {
+      "number": 107,
+      "id": 4678685381,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8SxQ",
+      "title": "Legal pages (A6)"
+    },
+    "P17-01": {
+      "number": 108,
+      "id": 4678685645,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8TzQ",
+      "title": "Production Dockerfiles (api, worker, web)"
+    },
+    "P17-02": {
+      "number": 109,
+      "id": 4678685938,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8U8g",
+      "title": "`docker-compose.yml` + `.env.example`"
+    },
+    "P18-01": {
+      "number": 110,
+      "id": 4678686205,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8V_Q",
+      "title": "CI workflow (`ci.yml` + reusable test/lint workflows)"
+    },
+    "P18-02": {
+      "number": 111,
+      "id": 4678686483,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8XEw",
+      "title": "Deploy orchestrator + sync-secrets + per-service deploy"
+    },
+    "P18-03": {
+      "number": 112,
+      "id": 4678686713,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8X-Q",
+      "title": "`manual-sync-secrets.yml` + `version-check` workflows"
+    },
+    "P18-04": {
+      "number": 113,
+      "id": 4678686973,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8Y_Q",
+      "title": "`build-ce-image.yml` (GHCR)"
+    },
+    "P21-01": {
+      "number": 114,
+      "id": 4678687220,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8Z9A",
+      "title": "Ephemeral test deps script (`scripts/test-with-deps`)"
+    },
+    "P21-02": {
+      "number": 115,
+      "id": 4678687487,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8a_w",
+      "title": "Vitest + ReportPortal wiring"
+    },
+    "P19-01": {
+      "number": 116,
+      "id": 4678687769,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8cGQ",
+      "title": "Playwright E2E suite (critical paths)"
+    },
+    "P19-02": {
+      "number": 117,
+      "id": 4678688075,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8dSw",
+      "title": "OpenAPI completeness audit"
+    },
+    "P19-03": {
+      "number": 118,
+      "id": 4678688471,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8e1w",
+      "title": "CE smoke test script + docs finalization"
+    },
+    "P19-04": {
+      "number": 119,
+      "id": 4678688759,
+      "node_id": "I_kwDOS8tSvs8AAAABFt8f9w",
+      "title": "Page inventory regression checklist (E2E / manual)"
+    }
+  }
+}

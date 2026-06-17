@@ -12,6 +12,37 @@ Orchestrator and **sub-agents** use this when a prompt includes a **GITHUB SYNC*
 | Project | PipeWatch Roadmap (Projects v2, project number: **5**) |
 | MCP server | `user-github` |
 | Auto-close | Via `fixes #N` commit convention on merge to `main` |
+| Default milestone | **MVP** (#1) |
+| Roadmap issue map | `docs/internal/github-roadmap-issue-map.json` (roadmap ID → `#N`, `databaseId`, `node_id`) |
+
+### Roadmap epic numbers (orchestrator quick ref)
+
+| Phase | GitHub `#` | Phase | GitHub `#` |
+|---|---|---|---|
+| P0 | 4 | P10 | 14 |
+| P1 | 5 | P11 | 15 |
+| P2 | 6 | P12 | 16 |
+| P3 | 7 | P13 | 17 |
+| P4 | 8 | P14 | 18 |
+| P5 | 9 | P15 | 19 |
+| P6 | 10 | P16 | 20 |
+| P7 | 11 | P17 | 21 |
+| P8 | 12 | P18 | 22 |
+| P9 | 13 | P19 | 23 |
+| P21 | 24 | | |
+
+Leaf tasks: **#25–#119**. Full per-task map in `github-roadmap-issue-map.json`.
+
+## ID types (do not mix these up)
+
+| Operation | ID kind | GraphQL field | MCP param |
+|---|---|---|---|
+| `sub_issue_write` | **database ID** (integer) | `databaseId` | `sub_issue_id` |
+| `addBlockedBy` / `removeBlockedBy` | **node ID** (`I_kwD…`) | `id` | — (CLI GraphQL only) |
+| `updateProjectV2ItemFieldValue` | **project item ID** (`PVTI_lAD…`) | `projectItems.nodes[].id` | — |
+| `setIssueFieldValue` (org fields) | issue **node ID** (`I_kwD…`) | `id` | — |
+
+`github-roadmap-issue-map.json` already stores `number`, `id` (databaseId), and `node_id` per task — use it instead of re-querying during orchestration.
 
 ## Tool selection policy
 
@@ -55,6 +86,15 @@ gh api graphql -f 'query=query { repository(owner:"mdg-labs", name:"pipewatch") 
 | Closed | `99be8811` |
 | Declined | `e36e1062` |
 
+**Read-only project fields** (derived by GitHub — never set via `updateProjectV2ItemFieldValue`):
+
+| Field | ID |
+|---|---|
+| Parent issue | `PVTF_lADODv-LLc4Ba3QPzhVryE8` |
+| Sub-issues progress | `PVTF_lADODv-LLc4Ba3QPzhVryFA` |
+
+Org Priority/Effort appear on issues via `issue_fields`, not the project-level Priority column (`PVTSSF_lADODv-LLc4Ba3QPzhVryH0`, empty options).
+
 **Step 1 — Get project item ID:**
 
 ```bash
@@ -90,28 +130,101 @@ gh api graphql -f 'query=mutation {
 }'
 ```
 
+## Blocked-by dependencies (GraphQL only)
+
+Separate from parent/child sub-issues. Roadmap `Depends on: #N` in issue bodies is **not** wired as native blocked-by yet — optional follow-up.
+
+```bash
+# Node IDs (I_kwD…), NOT databaseId
+gh api graphql -f 'query=query { repository(owner:"mdg-labs",name:"pipewatch") {
+  blocked: issue(number:<BLOCKED>) { id }
+  blocking: issue(number:<BLOCKING>) { id }
+} }'
+
+gh api graphql -f 'query=mutation {
+  addBlockedBy(input: {
+    issueId: "<BLOCKED_NODE_ID>"
+    blockingIssueId: "<BLOCKING_NODE_ID>"
+  }) { issue { number } blockingIssue { number } }
+}'
+```
+
+`"Target issue has already been taken"` = dependency already exists (no-op).
+
 ## Org-level issue types
 
-Discover via `list_issue_types` (owner: `mdg-labs`).
+MCP `issue_write` → `type` uses the **name** string. GraphQL `updateIssue(issueTypeId)` uses the ID.
 
-| Type | Use for |
+| Type | GraphQL ID | Use for |
+|---|---|---|
+| **Task** | `IT_kwDODv-LLc4B0C98` | Concrete implementation work |
+| **Bug** | `IT_kwDODv-LLc4B0C99` | Defects, regressions, Dependabot alerts |
+| **Feature** | `IT_kwDODv-LLc4B0C9-` | Epics — parent containers for sub-issues |
+
+## Org custom fields — Priority & Effort
+
+**MCP (preferred):** `issue_fields` with `field_name` + `field_option_name` — no IDs needed.
+
+```json
+"issue_fields": [
+  { "field_name": "Priority", "field_option_name": "Medium" },
+  { "field_name": "Effort", "field_option_name": "Low" }
+]
+```
+
+**GraphQL `setIssueFieldValue`** (fallback / batch scripts) — hardcoded org field IDs:
+
+| Field | Field ID |
 |---|---|
-| **Task** | Concrete implementation work |
-| **Bug** | Defects, regressions, Dependabot alerts |
-| **Feature** | Epics — parent containers for sub-issues |
+| Priority | `IFSS_kgDOAkmjgg` |
+| Effort | `IFSS_kgDOAkmjhQ` |
+
+| Priority option | Option ID |
+|---|---|
+| Urgent | `IFSSO_kgDOBADGPQ` |
+| High | `IFSSO_kgDOBADGPg` |
+| Medium | `IFSSO_kgDOBADGPw` |
+| Low | `IFSSO_kgDOBADGQA` |
+
+| Effort option | Option ID |
+|---|---|
+| High | `IFSSO_kgDOBADGQQ` |
+| Medium | `IFSSO_kgDOBADGQg` |
+| Low | `IFSSO_kgDOBADGQw` |
+
+### Effort labels vs org Effort field (both required)
+
+Roadmap issues carry **labels** `effort:XS` … `effort:XL`. The org **Effort** field only accepts `High` / `Medium` / `Low`. Map when setting `issue_fields`:
+
+| Label | Org Effort |
+|---|---|
+| `effort:XS`, `effort:S` | Low |
+| `effort:M` | Medium |
+| `effort:L`, `effort:XL` | High |
+
+Do **not** use typo labels `effort:** S` / `effort:** M` (strays from intake — ignore or remove).
 
 ## Required fields — every issue must have all six
 
 | Field | How to set |
 |---|---|
 | **Type** | MCP `issue_write` → `type` |
-| **Domain label** | MCP `issue_write` → `labels` |
+| **Domain label** | MCP `issue_write` → `labels` (`domain:frontend` \| `domain:backend` \| `domain:infrastructure` \| `domain:operations`) |
 | **Priority** | MCP `issue_write` → `issue_fields` |
-| **Effort** | MCP `issue_write` → `issue_fields` |
+| **Effort** | MCP `issue_write` → `issue_fields` (see label mapping above) |
 | **Assignee** | MCP `issue_write` → `assignees` (use MCP `get_me`) |
-| **Milestone** | MCP `issue_write` → `milestone` |
+| **Milestone** | MCP `issue_write` → `milestone` — default **1** (MVP) for roadmap work |
 
 Valid Priority: `Urgent`, `High`, `Medium`, `Low`. Valid Effort: `High`, `Medium`, `Low`.
+
+### Optional metadata labels (roadmap issues)
+
+| Label | Meaning |
+|---|---|
+| `type:epic` | Feature parent |
+| `type:task` | Leaf task |
+| `effort:XS` … `effort:XL` | T-shirt size (paired with org Effort field) |
+| `regression` | Reopened bug — always with a `domain:*` label |
 
 ## Status workflow
 
@@ -149,11 +262,15 @@ Never modify issue `open`/`closed`. Use board Status only.
 
 ## Milestones
 
+| # | Title | State |
+|---|---|---|
+| 1 | MVP | open |
+
+For net-new non-roadmap work, fetch if unsure:
+
 ```bash
 gh api /repos/mdg-labs/pipewatch/milestones --jq '.[] | {number, title, state, due_on}'
 ```
-
-Pick earliest open milestone by `due_on` unless user specifies otherwise.
 
 ## Status sync — sub-agent duties
 

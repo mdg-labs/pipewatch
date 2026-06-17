@@ -21,3 +21,6 @@ coverage/
 # IDE
 .idea/
 *.swp
+
+# python
+__pycache__/

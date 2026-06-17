@@ -22,7 +22,9 @@ GITHUB TOOLS — MANDATORY:
 PROJECT STATUS — GraphQL only (project #5):
 - Project node ID: PVT_kwDODv-LLc4Ba3QP
 - Status field ID: PVTSSF_lADODv-LLc4Ba3QPzhVryEg
-- Options: Backlog=9485f8e2, Ready=a0e7153f, In Progress=47fc9ee4, In Review=81f76819, Done=98236657, Declined=e36e1062
+- Options: Backlog=9485f8e2, Ready=a0e7153f, In Progress=47fc9ee4, In Review=81f76819, Done=98236657, Closed=99be8811, Declined=e36e1062
+- Roadmap map: docs/internal/github-roadmap-issue-map.json (databaseId + node_id per task)
+- Default milestone: MVP #1; org Effort/Priority via issue_fields (see github-board.md)
 
 Step 1 — item ID:
   gh api graphql -f 'query=query { repository(owner:"mdg-labs",name:"pipewatch") { issue(number:N) { projectItems(first:10) { nodes { id project { number } } } } } }'

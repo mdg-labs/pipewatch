@@ -23,11 +23,15 @@ Board sync: [orchestrator/github-board.md](../orchestrator/github-board.md). Tem
 
 ## Board constants
 
+All IDs, epic map, effort mapping, and GraphQL examples: [orchestrator/github-board.md](../orchestrator/github-board.md).
+
 ```text
 MCP server: user-github
 Owner: mdg-labs
 Repo: pipewatch
 Project number: 5 (PipeWatch Roadmap)
+Default milestone: 1 (MVP)
+Roadmap map: docs/internal/github-roadmap-issue-map.json
 ```
 
 ## Issue summaries
@@ -85,7 +89,7 @@ MCP `sub_issue_write` (method: add).
 
 ### 5a. Dependencies (blocked-by)
 
-GraphQL `addBlockedBy` with Node IDs (`I_...`) — see slugbase pattern in templates.
+GraphQL `addBlockedBy` with **node IDs** (`I_kwD…`, field `id`) — not `databaseId`. Full mutation: [github-board.md § Blocked-by](../orchestrator/github-board.md).
 
 ### 6. Finalize Feature description
 
