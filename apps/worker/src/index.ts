@@ -1,11 +1,14 @@
+import { parseWorkerEnv } from "@pipewatch/config/env";
 import { Worker } from "bullmq";
 
 import { registerCloudWorkers } from "./edition-features.js";
 import { initSentry } from "./sentry.js";
 
+const env = parseWorkerEnv();
+
 initSentry();
 
-const redisUrl = process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
+const redisUrl = env.REDIS_URL ?? "redis://127.0.0.1:6379";
 
 const stubWorker = new Worker(
   "stub",

@@ -870,7 +870,7 @@ The marketing site ships before the app is ready. In pre-launch mode:
 
 - All CTAs point to `/waitlist`
 - Pricing page visible but "Get started" buttons go to waitlist
-- A single env flag (`NEXT_PUBLIC_LAUNCH_MODE=pre|live`) switches CTA behavior site-wide
+- A single env flag (`LAUNCH_MODE=waitlist|live`) switches CTA behavior site-wide
 
 ---
 
@@ -1554,7 +1554,7 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `UMAMI_WEBSITE_ID` | staging, production | marketing | PipeWatch-specific site ID in Umami |
 | `PIPEWATCH_MODE` | staging, production | api, worker | `webhook` (default) \| `polling` — self-hosted override |
 | `RETENTION_DAYS` | staging, production | worker | Self-hosted default retention override (default: 30) |
-| `LAUNCH_MODE` | staging, production | marketing | `pre` \| `live` — controls CTA behaviour |
+| `LAUNCH_MODE` | staging, production | marketing | `waitlist` \| `live` — controls CTA behaviour |
 
 ---
 
