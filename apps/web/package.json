@@ -1,0 +1,23 @@
+{
+  "name": "@pipewatch/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --build",
+    "dev": "node -e \"process.exit(0)\"",
+    "lint": "eslint .",
+    "typecheck": "tsc --build",
+    "deploy:web": "node -e \"process.exit(0)\""
+  },
+  "dependencies": {
+    "@pipewatch/types": "workspace:*",
+    "@pipewatch/ui": "workspace:*",
+    "@pipewatch/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@pipewatch/config": "workspace:*",
+    "eslint": "catalog:",
+    "typescript": "catalog:"
+  }
+}

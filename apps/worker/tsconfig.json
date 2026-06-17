@@ -1,0 +1,15 @@
+{
+  "extends": "@pipewatch/config/typescript",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "noEmit": false
+  },
+  "references": [
+    { "path": "../../packages/db" },
+    { "path": "../../packages/types" },
+    { "path": "../../packages/utils" }
+  ],
+  "include": ["src"]
+}

@@ -9,6 +9,7 @@
 # Dependencies & build
 node_modules/
 dist/
+dist/
 .next/
 .turbo/
 .open-next/
