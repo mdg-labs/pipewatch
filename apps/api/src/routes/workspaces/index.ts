@@ -26,6 +26,7 @@ import type { ListBackfillJobs } from "../../services/sync-status.js";
 import type { ApiEnv } from "../../types.js";
 import { requireJwtSecret } from "../auth/shared.js";
 import { registerApiKeyRoutes } from "./api-keys.js";
+import { registerBillingRoutes, type BillingRoutesDependencies } from "./billing.js";
 import { registerCheckSlugRoute } from "./check-slug.js";
 import { registerDashboardRoutes } from "./dashboard.js";
 import { registerInsightsRoutes } from "./insights.js";
@@ -344,6 +345,7 @@ export type WorkspaceRoutesDependencies = {
   db: Db;
   enqueueBackfillRepo?: EnqueueBackfillRepo;
   listBackfillJobs?: ListBackfillJobs;
+  stripe?: BillingRoutesDependencies["stripe"];
 };
 
 function resolveDatabase(deps?: Partial<WorkspaceRoutesDependencies>): Db {
@@ -394,6 +396,7 @@ export function registerWorkspaceRoutes(
     db: resolveDatabase(deps),
     ...(deps?.enqueueBackfillRepo ? { enqueueBackfillRepo: deps.enqueueBackfillRepo } : {}),
     ...(deps?.listBackfillJobs ? { listBackfillJobs: deps.listBackfillJobs } : {}),
+    ...(deps?.stripe ? { stripe: deps.stripe } : {}),
   });
 
   registerCheckSlugRoute(app, deps?.db ? { db: deps.db } : undefined);
@@ -458,6 +461,16 @@ export function registerWorkspaceRoutes(
     get db() {
       return resolveDeps().db;
     },
+  });
+
+  registerBillingRoutes(app, {
+    get env() {
+      return resolveDeps().env;
+    },
+    get db() {
+      return resolveDeps().db;
+    },
+    ...(deps?.stripe ? { stripe: deps.stripe } : {}),
   });
 
   registerIntegrationRoutes(app, {
