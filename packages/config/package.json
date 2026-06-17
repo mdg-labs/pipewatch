@@ -4,19 +4,33 @@
   "private": true,
   "type": "module",
   "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./edition": {
+      "types": "./dist/edition.d.ts",
+      "default": "./dist/edition.js"
+    },
     "./typescript": "./typescript/tsconfig.base.json",
     "./eslint": "./eslint/base.mjs"
   },
   "scripts": {
-    "build": "node -e \"process.exit(0)\"",
+    "build": "tsc --build",
     "lint": "eslint .",
-    "typecheck": "node -e \"process.exit(0)\""
+    "typecheck": "tsc --build",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@types/node": "^22.13.4",
     "eslint": "catalog:",
     "globals": "^15.14.0",
     "typescript": "catalog:",
-    "typescript-eslint": "^8.18.2"
+    "typescript-eslint": "^8.18.2",
+    "vitest": "^3.0.5"
   }
 }
