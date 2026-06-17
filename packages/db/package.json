@@ -8,6 +8,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./schema": {
+      "types": "./schema/index.ts",
+      "default": "./schema/index.ts"
+    },
     "./neon": {
       "types": "./dist/neon.d.ts",
       "default": "./dist/neon.js"

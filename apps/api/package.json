@@ -22,7 +22,9 @@
     "@pipewatch/types": "workspace:*",
     "@pipewatch/utils": "workspace:*",
     "@sentry/node": "^9.15.0",
-    "hono": "catalog:"
+    "drizzle-orm": "^0.45.2",
+    "hono": "catalog:",
+    "jose": "^6.0.11"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",

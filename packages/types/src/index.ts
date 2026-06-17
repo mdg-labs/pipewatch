@@ -7,6 +7,12 @@ export type {
   WorkspaceRole,
 } from "./common.js";
 
+export type {
+  AccessTokenClaims,
+  GitHubUserProfile,
+  OAuthStatePayload,
+} from "./auth.js";
+
 export type { Integration } from "./integration.js";
 
 export type {

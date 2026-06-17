@@ -4,6 +4,7 @@ import { registerCERoutes, registerCloudRoutes } from "./edition-features.js";
 import { apiError, errorHandler } from "./middleware/error-handler.js";
 import { requestIdMiddleware } from "./middleware/request-id.js";
 import { sentryTraceMiddleware } from "./middleware/sentry.js";
+import { registerGitHubAuthRoutes } from "./routes/auth/github.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerOpenApiRoutes } from "./routes/openapi.js";
 import type { ApiEnv } from "./types.js";
@@ -25,6 +26,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
 
   registerHealthRoute(app);
   registerOpenApiRoutes(app);
+  registerGitHubAuthRoutes(app);
   registerCloudRoutes(app);
   registerCERoutes(app);
 
