@@ -30,6 +30,12 @@ export type { PipelineRun, PipelineRunSummary } from "./pipeline-run.js";
 
 export type { PipelineStep } from "./pipeline-step.js";
 
+export type {
+  ListRepositoriesQuery,
+  RepositorySummary,
+  UpdateRepositoryInput,
+} from "./repository.js";
+
 export { API_KEY_PREFIX } from "./api-key.js";
 
 export type {

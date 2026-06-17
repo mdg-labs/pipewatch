@@ -29,6 +29,7 @@ import { registerCheckSlugRoute } from "./check-slug.js";
 import { registerIntegrationRoutes } from "./integrations.js";
 import { registerInviteRoutes } from "./invites.js";
 import { registerMemberRoutes } from "./members.js";
+import { registerRepositoryRoutes, type EnqueueBackfillRepo } from "./repositories.js";
 
 const WorkspacePlanSchema = z.enum(["free", "pro", "business"]);
 
@@ -334,6 +335,7 @@ const deleteWorkspaceRoute = createRoute({
 export type WorkspaceRoutesDependencies = {
   env: ParsedApiEnv;
   db: Db;
+  enqueueBackfillRepo?: EnqueueBackfillRepo;
 };
 
 function resolveDatabase(deps?: Partial<WorkspaceRoutesDependencies>): Db {
@@ -382,6 +384,7 @@ export function registerWorkspaceRoutes(
   const resolveDeps = (): WorkspaceRoutesDependencies => ({
     env: deps?.env ?? parseApiEnv(),
     db: resolveDatabase(deps),
+    ...(deps?.enqueueBackfillRepo ? { enqueueBackfillRepo: deps.enqueueBackfillRepo } : {}),
   });
 
   registerCheckSlugRoute(app, deps?.db ? { db: deps.db } : undefined);
@@ -446,6 +449,20 @@ export function registerWorkspaceRoutes(
     get db() {
       return resolveDeps().db;
     },
+  });
+
+  registerRepositoryRoutes(app, {
+    get env() {
+      return resolveDeps().env;
+    },
+    get db() {
+      return resolveDeps().db;
+    },
+    ...(deps?.enqueueBackfillRepo
+      ? {
+          enqueueBackfillRepo: deps.enqueueBackfillRepo,
+        }
+      : {}),
   });
 
   app.openapi(getWorkspaceRoute, async (c) => {
