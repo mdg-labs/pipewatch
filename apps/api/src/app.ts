@@ -8,6 +8,7 @@ import { registerGitHubAuthRoutes } from "./routes/auth/github.js";
 import { registerLogoutRoutes } from "./routes/auth/logout.js";
 import { registerRefreshRoute } from "./routes/auth/refresh.js";
 import { registerSwitchWorkspaceRoute } from "./routes/auth/switch-workspace.js";
+import { registerInviteAcceptRoutes } from "./routes/invite/accept.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerOpenApiRoutes } from "./routes/openapi.js";
 import { registerBootstrapStatusRoute } from "./routes/public/bootstrap-status.js";
@@ -38,6 +39,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
   registerLogoutRoutes(app);
   registerSwitchWorkspaceRoute(app);
   registerUserMeRoutes(app);
+  registerInviteAcceptRoutes(app);
   registerWorkspaceRoutes(app);
   registerCloudRoutes(app);
   registerCERoutes(app);
