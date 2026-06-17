@@ -37,6 +37,19 @@ export type {
 export type { PipelineStep, PipelineStepsList } from "./pipeline-step.js";
 
 export type {
+  InsightsMostActiveRepo,
+  InsightsMostFailingWorkflow,
+  InsightsQuery,
+  InsightsRange,
+  InsightsSlowestWorkflow,
+  InsightsSummary,
+  InsightsTimeSeries,
+  InsightsTimeSeriesDay,
+  InsightsTimeSeriesPoint,
+  WorkspaceInsights,
+} from "./insights.js";
+
+export type {
   ListRepositoriesQuery,
   RepositorySummary,
   UpdateRepositoryInput,
