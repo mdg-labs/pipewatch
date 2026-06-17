@@ -31,7 +31,7 @@ describe("edition route registration", () => {
     const app = createApp();
 
     expect((await app.request("/billing/stub")).status).toBe(404);
-    expect((await app.request("/waitlist/stub", { method: "POST" })).status).toBe(404);
+    expect((await app.request("/api/v1/waitlist", { method: "POST" })).status).toBe(404);
   });
 
   it("registers billing and waitlist routes when cloud flags are true", async () => {
@@ -48,9 +48,8 @@ describe("edition route registration", () => {
     expect(billing.status).toBe(200);
     await expect(billing.json()).resolves.toEqual({ status: "cloud-only" });
 
-    const waitlist = await app.request("/waitlist/stub", { method: "POST" });
-    expect(waitlist.status).toBe(200);
-    await expect(waitlist.json()).resolves.toEqual({ status: "cloud-only" });
+    const waitlist = await app.request("/api/v1/waitlist", { method: "POST" });
+    expect(waitlist.status).toBe(422);
   });
 
   it("returns 404 on CE even when cloud routes are registered", async () => {
@@ -63,7 +62,7 @@ describe("edition route registration", () => {
     const app = createApp();
 
     expect((await app.request("/billing/stub")).status).toBe(404);
-    expect((await app.request("/waitlist/stub", { method: "POST" })).status).toBe(404);
+    expect((await app.request("/api/v1/waitlist", { method: "POST" })).status).toBe(404);
   });
 
   it("registers bootstrap route only when BOOTSTRAP_ENABLED is true", async () => {

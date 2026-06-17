@@ -2,6 +2,7 @@ import { flags } from "@pipewatch/config/edition";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 
 import { requireCE, requireCloud } from "./middleware/edition-guards.js";
+import { registerWaitlistRoutes } from "./routes/waitlist.js";
 import type { ApiEnv } from "./types.js";
 
 /** Cloud-only routes — not registered when edition flags are false. */
@@ -11,7 +12,7 @@ export function registerCloudRoutes(app: OpenAPIHono<ApiEnv>): void {
   }
 
   if (flags.WAITLIST_ENABLED) {
-    app.post("/waitlist/stub", requireCloud, (c) => c.json({ status: "cloud-only" }));
+    registerWaitlistRoutes(app);
   }
 }
 
