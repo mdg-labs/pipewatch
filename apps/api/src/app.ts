@@ -11,6 +11,7 @@ import { registerSwitchWorkspaceRoute } from "./routes/auth/switch-workspace.js"
 import { registerInviteAcceptRoutes } from "./routes/invite/accept.js";
 import { registerGitHubInstallCallbackRoute } from "./routes/onboarding/github-callback.js";
 import { registerHealthRoute } from "./routes/health.js";
+import { registerSseTokenRoute } from "./routes/sse-token.js";
 import { registerOpenApiRoutes } from "./routes/openapi.js";
 import { registerBootstrapStatusRoute } from "./routes/public/bootstrap-status.js";
 import { registerUserMeRoutes } from "./routes/users/me.js";
@@ -40,6 +41,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
   registerLogoutRoutes(app);
   registerSwitchWorkspaceRoute(app);
   registerUserMeRoutes(app);
+  registerSseTokenRoute(app);
   registerInviteAcceptRoutes(app);
   registerGitHubInstallCallbackRoute(app);
   registerWorkspaceRoutes(app);
