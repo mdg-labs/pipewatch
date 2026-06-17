@@ -17,6 +17,7 @@
     "build": "tsc --build",
     "lint": "eslint .",
     "typecheck": "tsc --build",
+    "test:unit": "vitest run",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config drizzle.config.ts"
   },
@@ -25,7 +26,8 @@
     "@types/node": "^22.13.4",
     "drizzle-kit": "^0.31.10",
     "eslint": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^3.0.5"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",

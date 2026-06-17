@@ -1,4 +1,10 @@
 /**
  * Drizzle schema — source of truth for database shape.
- * Tables are added in P2-02+ tasks; run `pnpm db:generate` after schema changes.
+ * Run `pnpm db:generate` after schema changes.
  */
+
+export { refreshTokens } from "./refresh-tokens.js";
+export { users } from "./users.js";
+export { workspaceInvites } from "./workspace-invites.js";
+export { workspaceMembers } from "./workspace-members.js";
+export { workspaces } from "./workspaces.js";
