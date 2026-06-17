@@ -66,6 +66,9 @@ Run from repo root (Turborepo). Mark `n/a` only when legitimately undefined.
 | integration | `pnpm test:integration` |
 | build | `pnpm build` |
 | security audit | `pnpm audit --audit-level=high` |
+| agent preflight | `pnpm ci:preflight` — scoped cleanup; set `WORK_ROOT`, `CI_PREFLIGHT_MODE` |
+| agent full gate | `pnpm ci:gate` — execution serial gate with preflight |
+| agent scoped verify | `TURBO_FILTER=@pipewatch/api... pnpm ci:verify-scoped` — verifier Layer 2 |
 | e2e (CI only) | `pnpm test:e2e` — not per-task verification |
 
 Local env via Phase CLI (`phase run --env=Development -- …`) when secrets required. Integration tests use ephemeral containers only — never Neon.

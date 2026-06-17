@@ -14,6 +14,9 @@
     "test:unit": "turbo test:unit",
     "test:integration": "node scripts/test-integration.mjs",
     "test:e2e": "node scripts/test-e2e.mjs",
+    "ci:preflight": "bash scripts/ci-preflight.sh",
+    "ci:gate": "bash scripts/ci-gate.sh",
+    "ci:verify-scoped": "bash scripts/ci-verify-scoped.sh",
     "db:generate": "turbo db:generate --filter=@pipewatch/db",
     "db:migrate": "turbo db:migrate --filter=@pipewatch/db"
   },

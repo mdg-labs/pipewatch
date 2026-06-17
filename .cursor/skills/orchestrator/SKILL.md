@@ -181,8 +181,28 @@ Each prompt includes:
 6. Lane (`S` or `P`) and git context
 7. Epic context: `PARENT`, `CLOSE_PARENTS`
 8. **GITHUB TOOLS** + **GITHUB SYNC** blocks from [prompt-templates.md](prompt-templates.md)
-9. **CI GATE (SHELL)** block in every execution and verifier prompt — `required_permissions: ["all"]` on first Shell attempt; never run pnpm/gh/docker in default sandbox
+9. **CI GATE (SHELL)** block in every execution and verifier prompt — include `WORK_ROOT`, `TURBO_FILTER` (verifier), `CI_PREFLIGHT_MODE`; `required_permissions: ["all"]` on first Shell attempt
 10. **DB MIGRATIONS** block in every execution prompt
+
+## Resource management (CI preflight)
+
+Long orchestrator runs can exhaust the user task limit (`fork: EAGAIN`) when Turbo fans out across the monorepo and Cursor sandbox children are not reaped. Mitigations live in `scripts/ci-preflight.sh`, `scripts/ci-gate.sh`, `scripts/ci-verify-scoped.sh`.
+
+| Control | Purpose |
+|---|---|
+| `TURBO_CONCURRENCY=1` | One Turbo package task at a time per agent |
+| `pnpm ci:preflight` | Scoped stale-process cleanup + pids warning |
+| `pnpm ci:gate` | Execution full gate (sequential steps) |
+| `pnpm ci:verify-scoped` | Verifier Layer 2 on one filter cone only |
+| `WORK_ROOT` | Agent repo/worktree path — scopes preflight cleanup |
+| `CI_PREFLIGHT_MODE=local` | Default; **parallel-safe** (Lane P) |
+| `CI_PREFLIGHT_MODE=global` | Lane S serial only — prunes labeled test containers |
+
+**Parallel Lane P safety:** Each parallel sub-agent gets its own `WORK_ROOT` (worktree path) and `TURBO_FILTER`. Preflight only kills turbo/vitest processes whose `/proc/PID/cwd` is under that agent's `WORK_ROOT`. **Never** use `CI_PREFLIGHT_MODE=global` or unscoped `pkill` while a Lane P batch is in flight — that would kill sibling agents' CI processes.
+
+**Orchestrator between Lane S tasks:** May read `pids.current` via Shell. If above 60% of `pids.max` (~20k), pause dispatch and warn user, or instruct next agent to use `CI_PREFLIGHT_MODE=global` (serial only).
+
+**Verifier Layer 2:** Scoped only — execution already ran `pnpm ci:gate`. Verifier runs `pnpm ci:verify-scoped` with task-specific `TURBO_FILTER`; do not rerun full monorepo lint/typecheck/unit.
 
 ## Parallelism — orchestrator decides serial vs parallel
 
@@ -205,7 +225,7 @@ The orchestrator **must decide** Lane S, P, or B for each batch — present the 
 
 **Epic default:** Lane **S** serial (one leaf → verify → board sync → next leaf) unless step 5 clearly applies.
 
-**Lane P rules:** execution on `orchestrator/<TASK-ID>` only; never commit to `staging` during execution; `pnpm install` first in worktree.
+**Lane P rules:** execution on `orchestrator/<TASK-ID>` only; never commit to `staging` during execution; `pnpm install` first in worktree; each agent sets `WORK_ROOT` to its worktree and `CI_PREFLIGHT_MODE=local`.
 
 ### Epic loop (orchestrator chat)
 
@@ -276,7 +296,7 @@ Keep under ~500 words; link GitHub issues as `https://github.com/mdg-labs/pipewa
 1. **GitHub (first):** Status → In Progress (leaf + parent)
 2. **Session memory** in `active/<SESSION-ID>.md`
 3. **Implementation**
-4. **CI gate** — full gate from `06-local-ci-before-commit.mdc` via Shell with `required_permissions: ["all"]` (never default sandbox; see [CI GATE block](prompt-templates.md#ci-gate-shell--mandatory-in-every-execution-and-verifier-prompt))
+4. **CI gate** — `WORK_ROOT=<path> CI_PREFLIGHT_MODE=<local|global> pnpm ci:gate` via Shell with `required_permissions: ["all"]` (see [CI GATE block](prompt-templates.md#ci-gate-shell--mandatory-in-every-execution-and-verifier-prompt))
 5. **Pre-handoff:** Status → In Review; one implementation commit
 
 Commit format: `[#N]` in subject; `fixes #N` in body; `fixes #<parent>` per `CLOSE_PARENTS`.
@@ -287,11 +307,13 @@ Commit format: `[#N]` in subject; `fixes #N` in body; `fixes #<parent>` per `CLO
 
 **Layer 1 — Scope:** committed paths vs WRITE SCOPE.
 
-**Layer 2 — Automated checks** from repo root ([doc-index.md](doc-index.md)) — Shell **`required_permissions: ["all"]`** on first attempt (never default sandbox; see [CI GATE block](prompt-templates.md#ci-gate-shell--mandatory-in-every-execution-and-verifier-prompt)):
+**Layer 2 — Scoped automated checks** (execution already ran full gate) — Shell **`required_permissions: ["all"]`** on first attempt:
 
 ```bash
-pnpm lint && pnpm typecheck && pnpm test:unit
+WORK_ROOT=<repo-or-worktree> TURBO_FILTER=<filter> pnpm ci:verify-scoped
 ```
+
+Orchestrator supplies `TURBO_FILTER` from primary WRITE SCOPE (see [prompt-templates.md](prompt-templates.md#ci-gate-shell--mandatory-in-every-execution-and-verifier-prompt)).
 
 **Layer 3 — Logic review:**
 
@@ -346,6 +368,8 @@ _task: #<N> | started: <ISO> | ended: <ISO> | duration: <human> | agent: executi
 - Marking **Done** without `fixes #N` in `staging` git history for that issue
 - Landing another issue's work without `fixes #N` for the source task (e.g. P2-05 schema via #47 without `fixes #41`)
 - Running pnpm/gh/docker/CI commands in the **default sandbox** (causes spurious failures — use `required_permissions: ["all"]` first)
+- **Global `pkill` or `CI_PREFLIGHT_MODE=global` during Lane P parallel batch** — kills sibling agents' CI processes
+- **Verifier rerunning full monorepo** `pnpm lint && typecheck && test:unit` when execution already passed `pnpm ci:gate`
 - Ending an orchestrator run **without** session-end Slack DM (unless user opted out or recipient unresolved)
 - DMing the **authenticated MCP user** when auth is the service account (`cursor@mdg-labs.dev`) — always DM the **operator** per [slack-notify.md](slack-notify.md)
 - Resolving Slack DM recipient via GitHub/git email instead of **slack-notify.md** / run override / operator email search

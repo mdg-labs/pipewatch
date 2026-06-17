@@ -92,7 +92,7 @@ NODE ENV:
 
 ## CI GATE (SHELL) — mandatory in every execution and verifier prompt
 
-**Root cause:** Default Cursor sandbox blocks Docker (integration tests), GitHub API (`gh`), and some network calls — agents waste a failed run before retrying with permissions.
+**Root causes addressed:** (1) Default Cursor sandbox blocks Docker/`gh`. (2) Turbo parallel fan-out + stale agent processes exhaust user task limits (`fork: EAGAIN`) on long orchestrator runs.
 
 ```text
 CI GATE (SHELL) — MANDATORY:
@@ -100,24 +100,43 @@ CI GATE (SHELL) — MANDATORY:
 - ALWAYS invoke Shell with required_permissions: ["all"] on the FIRST attempt
 - Do NOT "try sandbox first" and retry — start outside sandbox
 - Repo root: /home/mdguggenbichler/projects/pipewatch
+- ALWAYS export TURBO_CONCURRENCY=1 (scripts set this; do not override upward)
+- ALWAYS run preflight before CI (scripts call it automatically)
+
+PARALLEL-SAFE PREFLIGHT (mandatory — do not use global pkill):
+- WORK_ROOT = agent repo/worktree absolute path (Lane S: repo root; Lane P: worktree path)
+- CI_PREFLIGHT_MODE=local — default; cleans turbo/vitest only under WORK_ROOT (Lane P parallel OK)
+- CI_PREFLIGHT_MODE=global — Lane S serial only; also prunes labeled integration containers
+- FORBIDDEN during Lane P parallel batch: CI_PREFLIGHT_MODE=global, pkill -f turbo/vitest without WORK_ROOT scoping
 
 Execution — full gate before commit (.cursor/rules/06-local-ci-before-commit.mdc):
-  pnpm lint && \
-  pnpm typecheck && \
-  pnpm test:unit && \
-  pnpm build && \
-  pnpm test:integration && \
-  pnpm audit --audit-level=high
+  WORK_ROOT=<repo-or-worktree> CI_PREFLIGHT_MODE=<local|global> pnpm ci:gate
+  (runs lint, typecheck, test:unit, build, test:integration, audit sequentially with TURBO_CONCURRENCY=1)
 
-Verifier — Layer 2 minimum (also required_permissions: ["all"]):
-  pnpm lint && pnpm typecheck && pnpm test:unit
+Verifier — Layer 2 scoped (execution already ran full gate; do NOT rerun whole monorepo):
+  WORK_ROOT=<repo-or-worktree> TURBO_FILTER=<filter> pnpm ci:verify-scoped
+  (preflight + turbo lint/typecheck/test:unit for filter cone only)
+
+TURBO_FILTER — derive from primary WRITE SCOPE package (orchestrator fills in prompt):
+| Primary path prefix        | TURBO_FILTER          |
+| apps/api/                  | @pipewatch/api...     |
+| apps/worker/               | @pipewatch/worker...  |
+| apps/web/                  | @pipewatch/web...     |
+| apps/marketing/            | @pipewatch/marketing... |
+| packages/ui/               | @pipewatch/ui...      |
+| packages/db/               | @pipewatch/db...      |
+| packages/types/            | @pipewatch/types...   |
+| packages/utils/            | @pipewatch/utils...   |
+| packages/config/           | @pipewatch/config...  |
+| Multiple packages touched  | filter of primary app + ... (dependency cone) |
 
 Also use required_permissions: ["all"] for:
-- pnpm install
+- pnpm install / pnpm ci:gate / pnpm ci:verify-scoped / pnpm ci:preflight
 - gh api graphql (board Status mutations)
 - phase run --env=Development -- …
 - Any command that starts containers, binds ports, or calls GitHub
 
+If fork/EAGAIN or "Resource temporarily unavailable" after ["all"]: report blocked with user pids.current; do not retry in a loop.
 If a command fails with sandbox/network/Docker errors after using ["all"], report blocked — do not loop sandbox retries.
 ```
 
@@ -170,7 +189,7 @@ WORK:
 1. Status → In Progress (GITHUB SYNC)
 2. pnpm install if needed (Shell required_permissions: ["all"])
 3. Implement per AC
-4. Full CI gate before commit (CI GATE block — Shell required_permissions: ["all"], never sandbox)
+4. Full CI gate before commit: WORK_ROOT=<repo-or-worktree> CI_PREFLIGHT_MODE=<local|global> pnpm ci:gate
 5. Pre-handoff: In Review → single commit with [#N] + fixes lines
 
 REQUIRED OUTPUT:
@@ -195,9 +214,11 @@ GITHUB SYNC — VERIFIER: (see github-board.md verifier variant)
 
 CI GATE (SHELL): (see prompt-templates.md — required_permissions: ["all"], never sandbox)
 
+TURBO_FILTER: <from WRITE SCOPE — see CI GATE table>
+
 VERIFY:
 - Layer 1: scope audit
-- Layer 2: pnpm lint, typecheck, test:unit (from repo root; CI GATE block — Shell required_permissions: ["all"], never sandbox)
+- Layer 2: WORK_ROOT=<repo-or-worktree> TURBO_FILTER=<filter> pnpm ci:verify-scoped (scoped; do NOT rerun full monorepo)
 - Layer 3: AC, PRD contract, security, env vars, commit linking, migration policy (`15-db-migrations-schema.mdc`)
 - Layer 3c3 (mandatory): `git log staging --grep='fixes #<N>'` must return at least one commit for task #<N> (combined commits must list every covered issue on separate `fixes #N` lines)
 
@@ -227,4 +248,7 @@ STAGING_BASE_SHA: <sha at batch start>
 
 FORBIDDEN: checkout staging, merge, push during execution
 FIRST ACTION: pnpm install in worktree
+WORK_ROOT: <worktree absolute path> — use for all ci:preflight / ci:gate / ci:verify-scoped
+CI_PREFLIGHT_MODE: local — mandatory during Lane P parallel (never global while siblings run)
+TURBO_FILTER: <from WRITE SCOPE — per-task filter; each parallel agent uses its own>
 ```
