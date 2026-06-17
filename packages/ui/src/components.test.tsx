@@ -67,6 +67,24 @@ import {
   barChartClassName,
   buildTimeSeriesGeometry,
   buildBarChartGeometry,
+  Pagination,
+  paginationClassName,
+  DataTable,
+  dataTableClassName,
+  StatCard,
+  statCardClassName,
+  FilterBar,
+  FilterChip,
+  filterBarClassName,
+  filterChipClassName,
+  DangerZone,
+  dangerZoneClassName,
+  WizardProgress,
+  wizardProgressClassName,
+  DEFAULT_ONBOARDING_STEPS,
+  UsageMeter,
+  usageMeterClassName,
+  TypedConfirmDialog,
 } from "./index.js";
 
 const componentsDir = join(dirname(fileURLToPath(import.meta.url)), "components");
@@ -90,6 +108,14 @@ describe("component styles", () => {
     expect(styles).toContain("@import './components/table.css'");
     expect(styles).toContain("@import './components/logo.css'");
     expect(styles).toContain("@import './components/charts.css'");
+    expect(styles).toContain("@import './components/pagination.css'");
+    expect(styles).toContain("@import './components/data-table.css'");
+    expect(styles).toContain("@import './components/stat-card.css'");
+    expect(styles).toContain("@import './components/filter-bar.css'");
+    expect(styles).toContain("@import './components/danger-zone.css'");
+    expect(styles).toContain("@import './components/wizard-progress.css'");
+    expect(styles).toContain("@import './components/typed-confirm-dialog.css'");
+    expect(styles).toContain("@import './components/usage-meter.css'");
   });
 
   it("uses semantic CSS variables in component stylesheets", () => {
@@ -116,6 +142,14 @@ describe("component styles", () => {
       "table.css",
       "logo.css",
       "charts.css",
+      "pagination.css",
+      "data-table.css",
+      "stat-card.css",
+      "filter-bar.css",
+      "danger-zone.css",
+      "wizard-progress.css",
+      "typed-confirm-dialog.css",
+      "usage-meter.css",
     ];
 
     for (const file of cssFiles) {
@@ -695,5 +729,112 @@ describe("BarChart", () => {
     expect(html).toContain('fill="var(--pw-chart-1)"');
     expect(html).toContain("pw-chart-bar-grow");
     expect(barChartClassName()).toBe("pw-chart");
+  });
+});
+
+describe("composite components", () => {
+  it("renders pagination controls", () => {
+    const html = renderToStaticMarkup(
+      <Pagination page={2} totalItems={47} onPageChange={() => undefined} />,
+    );
+
+    expect(html).toContain('class="pw-pagination"');
+    expect(html).toContain("Showing 21–40 of 47");
+    expect(paginationClassName()).toBe("pw-pagination");
+  });
+
+  it("renders data table rows with mono cells", () => {
+    const html = renderToStaticMarkup(
+      <DataTable
+        columns={[
+          { id: "sha", header: "SHA", mono: true, render: () => "a1b2c3d" },
+          { id: "duration", header: "Duration", mono: true, align: "right", render: () => "2m 14s" },
+        ]}
+        rows={[{ id: "1" }]}
+        getRowKey={(row) => row.id}
+      />,
+    );
+
+    expect(html).toContain("pw-table-td-mono");
+    expect(html).toContain("a1b2c3d");
+    expect(dataTableClassName()).toBe("pw-data-table");
+  });
+
+  it("renders stat card with trend slot", () => {
+    const html = renderToStaticMarkup(
+      <StatCard
+        label="Total runs"
+        value="1,247"
+        trend={<span className="pw-stat-trend-up">↑ 12%</span>}
+      />,
+    );
+
+    expect(html).toContain("pw-stat-card");
+    expect(html).toContain("pw-stat-card-trend");
+    expect(statCardClassName()).toBe("pw-stat-card");
+  });
+
+  it("renders filter bar chips", () => {
+    const html = renderToStaticMarkup(
+      <FilterBar>
+        <FilterChip label="All" active tone="accent" />
+        <FilterChip label="Failing" tone="failure" count={1} />
+      </FilterBar>,
+    );
+
+    expect(html).toContain("pw-filter-bar");
+    expect(html).toContain("pw-filter-chip-active");
+    expect(filterBarClassName()).toBe("pw-filter-bar");
+    expect(filterChipClassName({ active: true, tone: "failure" })).toContain(
+      "pw-filter-chip-failure",
+    );
+  });
+
+  it("renders danger zone section", () => {
+    const html = renderToStaticMarkup(
+      <DangerZone>
+        <div>Delete workspace</div>
+      </DangerZone>,
+    );
+
+    expect(html).toContain("pw-danger-zone");
+    expect(dangerZoneClassName()).toBe("pw-danger-zone");
+  });
+
+  it("renders wizard progress steps", () => {
+    const html = renderToStaticMarkup(
+      <WizardProgress steps={DEFAULT_ONBOARDING_STEPS} currentStepId="github" />,
+    );
+
+    expect(html).toContain("pw-wizard-progress");
+    expect(html).toContain("Connect GitHub");
+    expect(wizardProgressClassName()).toBe("pw-wizard-progress");
+  });
+
+  it("renders usage meter", () => {
+    const html = renderToStaticMarkup(
+      <UsageMeter label="Repositories" used={23} limit={50} />,
+    );
+
+    expect(html).toContain("pw-usage-meter");
+    expect(html).toContain("23 / 50");
+    expect(usageMeterClassName({ tone: "warning" })).toBe(
+      "pw-usage-meter pw-usage-meter-warning",
+    );
+  });
+
+  it("does not render typed confirm dialog when closed", () => {
+    const html = renderToStaticMarkup(
+      <TypedConfirmDialog
+        open={false}
+        title="Delete repository data"
+        confirmLabel="Delete"
+        expectedPhrase="DELETE"
+        onClose={() => undefined}
+        onConfirm={() => undefined}
+      />,
+    );
+
+    expect(html).toBe("");
   });
 });

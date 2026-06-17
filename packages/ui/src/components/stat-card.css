@@ -1,0 +1,51 @@
+.pw-stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+
+.pw-stat-card-label {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-tertiary);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-2);
+}
+
+.pw-stat-card-value {
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text-primary);
+  font-feature-settings: "tnum";
+  margin-bottom: var(--space-1-5);
+}
+
+.pw-stat-card-value-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  letter-spacing: -0.02em;
+}
+
+.pw-stat-card-trend {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-2xs);
+  color: var(--text-secondary);
+}
+
+.pw-stat-card-trend .pw-stat-trend-up {
+  color: var(--status-success);
+}
+
+.pw-stat-card-trend .pw-stat-trend-down {
+  color: var(--status-failure);
+}
+
+.pw-stat-card-trend .pw-stat-trend-neutral {
+  color: var(--text-tertiary);
+}

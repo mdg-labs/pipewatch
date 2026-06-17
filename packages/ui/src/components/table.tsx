@@ -195,6 +195,7 @@ export interface TableCellProps {
   children: ReactNode;
   mono?: boolean;
   align?: "left" | "right";
+  colSpan?: number;
   className?: string;
   style?: CSSProperties;
 }
@@ -220,12 +221,14 @@ export function TableCell({
   children,
   mono = false,
   align = "left",
+  colSpan,
   className,
   style,
 }: TableCellProps) {
   return (
     <td
       className={tableCellClassName({ mono, align, className })}
+      colSpan={colSpan}
       style={style}
     >
       {children}

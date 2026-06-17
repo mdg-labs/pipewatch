@@ -1,0 +1,29 @@
+.pw-typed-confirm-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pw-typed-confirm-label {
+  display: block;
+  margin-bottom: var(--space-1-5);
+}
+
+.pw-typed-confirm-phrase {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+}
+
+.pw-typed-confirm-footer {
+  display: flex;
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.pw-typed-confirm-footer .pw-btn:first-child {
+  flex: 2;
+}
+
+.pw-typed-confirm-footer .pw-btn:last-child {
+  flex: 1;
+}

@@ -1,0 +1,60 @@
+.pw-usage-meter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.pw-usage-meter-label {
+  min-width: 180px;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.pw-usage-meter-track {
+  flex: 1;
+  height: 5px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.pw-usage-meter-fill {
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--status-success);
+  transition: width var(--duration-normal) var(--ease-out);
+}
+
+.pw-usage-meter-warning .pw-usage-meter-fill {
+  background: var(--pw-amber-500);
+}
+
+.pw-usage-meter-critical .pw-usage-meter-fill {
+  background: var(--status-failure);
+}
+
+.pw-usage-meter-value {
+  min-width: 56px;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  font-feature-settings: "tnum";
+}
+
+.pw-usage-meter-static {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.pw-usage-meter-warning .pw-usage-meter-value,
+.pw-usage-meter-critical .pw-usage-meter-value {
+  color: var(--text-primary);
+}
+
+.pw-usage-meter-critical .pw-usage-meter-value {
+  color: var(--status-failure);
+}
