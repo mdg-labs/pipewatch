@@ -2,6 +2,12 @@ import type { WorkerEnv } from "@pipewatch/config/env";
 import { getDb } from "@pipewatch/db";
 import { Worker, type Processor } from "bullmq";
 
+import { backfillIntegration } from "./handlers/backfill-integration.js";
+import { backfillRepo } from "./handlers/backfill-repo.js";
+import {
+  BACKFILL_INTEGRATION_JOB_NAME,
+  BACKFILL_REPO_JOB_NAME,
+} from "./queues/backfill.js";
 import {
   PROCESS_PIPELINE_JOB_JOB_NAME,
   processPipelineJob,
@@ -49,16 +55,40 @@ function createStubProcessor(queueName: string): Processor {
   });
 }
 
+function createBackfillProcessor(env: WorkerEnv): Processor {
+  const db = getDb();
+
+  return async (job) => {
+    switch (job.name) {
+      case BACKFILL_INTEGRATION_JOB_NAME:
+        return backfillIntegration(job, { db, env });
+      case BACKFILL_REPO_JOB_NAME:
+        return backfillRepo(job, { db, env });
+      default:
+        throw new Error(`Unknown backfill job: ${job.name}`);
+    }
+  };
+}
+
+function resolveProcessor(queueName: string, env: WorkerEnv): Processor {
+  if (queueName === QUEUE_NAMES.WEBHOOK_EVENTS) {
+    return createWebhookEventsProcessor();
+  }
+
+  if (queueName === QUEUE_NAMES.BACKFILL) {
+    return createBackfillProcessor(env);
+  }
+
+  return createStubProcessor(queueName);
+}
+
 /** Bootstrap BullMQ workers for all processor queues. */
 export function startWorkers(env: WorkerEnv): WorkerRuntime {
   const redisUrl = resolveRedisUrl(env.REDIS_URL);
   const connection = createRedisConnection(redisUrl);
 
   const workers = PROCESSOR_QUEUES.map((queueName) => {
-    const processor =
-      queueName === QUEUE_NAMES.WEBHOOK_EVENTS
-        ? createWebhookEventsProcessor()
-        : createStubProcessor(queueName);
+    const processor = resolveProcessor(queueName, env);
 
     const worker = new Worker(queueName, processor, {
       connection,
