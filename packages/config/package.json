@@ -12,6 +12,10 @@
       "types": "./dist/edition.d.ts",
       "default": "./dist/edition.js"
     },
+    "./env": {
+      "types": "./dist/env.d.ts",
+      "default": "./dist/env.js"
+    },
     "./typescript": "./typescript/tsconfig.base.json",
     "./eslint": "./eslint/base.mjs"
   },

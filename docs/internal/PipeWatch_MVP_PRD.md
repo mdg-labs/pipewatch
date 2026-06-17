@@ -1520,6 +1520,7 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `REDIS_URL` | staging, production | api, worker | Redis on Fly.io |
 | `JWT_SECRET` | staging, production | api | HS256 signing secret for access tokens |
 | `JWT_REFRESH_SECRET` | staging, production | api | Separate secret for refresh tokens |
+| `ENCRYPTION_KEY` | staging, production | api, worker | AES-256-GCM key for encrypting sensitive values at rest (e.g. integration tokens); min 32 chars |
 | `GITHUB_APP_ID` | staging, production | api, worker | GitHub App numeric ID |
 | `GITHUB_APP_PRIVATE_KEY` | staging, production | api, worker | PEM key (base64 encoded in Phase) |
 | `GITHUB_WEBHOOK_SECRET` | staging, production | api | For HMAC-SHA256 signature validation |
