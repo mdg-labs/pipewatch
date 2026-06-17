@@ -17,7 +17,7 @@ Session-end DMs go to this user unless the run overrides (see below).
 
 | Field | Value |
 |---|---|
-| Display name | Markus (operator) |
+| Display name | Michael (operator) |
 | Email | *(set your @mdg-labs Slack email if using search fallback)* |
 | **user_id** | `U0ARDEK75UJ` |
 

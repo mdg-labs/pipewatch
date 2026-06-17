@@ -1,5 +1,86 @@
 # PipeWatch workspace notes
 
+## 2026-06-17 — P11 epic #15 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #75 P11-01 Stripe checkout + portal API | Done | `b7241ed`, `19950bf` (linkage cherry-pick) |
+| #76 P11-02 Stripe webhook handler | Done | `fc76ea4` |
+| #77 P11-03 Plan enforcement middleware | Done | `5c82fb6` |
+| #15 epic parent | Done | closes via #77 `fixes #15` |
+
+**Notes:**
+- Epic order: #75 → #76 → #77 (Lane S serial)
+- **Commit-linkage fix:** #75 commit `f6a73db` was board Done but missing on `staging` (same class as P3 #41) — cherry-picked as `b7241ed` + fix `19950bf`
+- #76 verifier FAIL (3c2): `STRIPE_WEBHOOK_SECRET` missing in Phase Development — fixed without new commit; re-verify PASS
+- No new DB migrations (workspace Stripe columns from P2)
+- `pnpm audit --audit-level=high` passes on this run
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P12 epic #16 (dashboard UI shell) or P18 #22 CI scaffold
+
+## 2026-06-17 — P10 epic #14 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #72 P10-01 GitHub webhook receiver | Done | `0af9779` |
+| #73 P10-02 Waitlist API (cloud) | Done | `a25e990` |
+| #74 P10-03 Postmark webhook (cloud) | Done | `65b1d57` |
+| #14 epic parent | Done | closes via #74 `fixes #14` |
+
+**Notes:**
+- Epic order: #72 → #73 → #74 (Lane S serial)
+- #74 verifier FAIL (3c2): `POSTMARK_WEBHOOK_SECRET` missing in Phase Development — fixed without new commit; re-verify PASS
+- No new DB migrations (#41 subscribers schema reused)
+- `pnpm audit --audit-level=high` passes on this run
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P11 epic #15 (dashboard UI) or P18 #22 CI scaffold
+
+## 2026-06-17 — P9 epic #13 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #70 P9-01 SSE token endpoint | Done | `7ae001e` |
+| #71 P9-02 SSE stream + broadcaster | Done | `9821291` |
+| #13 epic parent | Done | closes via #71 `fixes #13` |
+
+**Notes:**
+- Epic order: #70 → #71 (Lane S serial; #71 depends on #70 + worker/run APIs)
+- No DB migrations (Redis token + pub/sub only)
+- `pnpm audit --audit-level=high` passes on this run
+- `staging` ~2 commits ahead of `origin/staging` from this run (not pushed)
+
+**Next suggested:** P10 epic #14 (webhooks ingest) or P18 #22 CI scaffold
+
+## 2026-06-17 — P8 epic #12 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #65 P8-01 Pipeline runs API | Done | `1f805dd` (prior run, verified this session) |
+| #66 P8-02 Pipeline jobs & steps API | Done | `f0cd0df` |
+| #67 P8-03 Workspace dashboard aggregates | Done | `2d0d038` |
+| #68 P8-04 Insights API | Done | `b2a6a2f` |
+| #69 P8-05 Sync / backfill status API | Done | `3a9458d` |
+| #12 epic parent | Done | closes via #69 `fixes #12` |
+
+**Notes:**
+- Epic order: #65 → #66 → #67 → #68 → #69 (Lane S serial; #67/#68 not parallelized due to shared apps/api hot files)
+- #65 was already In Review with commit on staging at run start — verifier-only batch 1
+- No new DB migrations in P8 (pipeline schema from P2)
+- `pnpm audit --audit-level=high` still fails on pre-existing esbuild advisory
+- `staging` ~4 commits ahead of `origin/staging` from this run (#66–#69; #65 was prior)
+
+**Next suggested:** P9 epic #13 (webhooks ingest) or P18 #22 CI scaffold
+
 ## 2026-06-17 — P7 epic #11 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON
