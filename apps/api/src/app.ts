@@ -10,6 +10,7 @@ import { registerRefreshRoute } from "./routes/auth/refresh.js";
 import { registerSwitchWorkspaceRoute } from "./routes/auth/switch-workspace.js";
 import { registerInviteAcceptRoutes } from "./routes/invite/accept.js";
 import { registerGitHubInstallCallbackRoute } from "./routes/onboarding/github-callback.js";
+import { registerGitHubWebhookRoute } from "./routes/webhooks/github.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerSseTokenRoute } from "./routes/sse-token.js";
 import { registerOpenApiRoutes } from "./routes/openapi.js";
@@ -44,6 +45,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
   registerSseTokenRoute(app);
   registerInviteAcceptRoutes(app);
   registerGitHubInstallCallbackRoute(app);
+  registerGitHubWebhookRoute(app);
   registerWorkspaceRoutes(app);
   registerCloudRoutes(app);
   registerCERoutes(app);
