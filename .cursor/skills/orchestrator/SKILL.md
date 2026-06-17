@@ -140,7 +140,32 @@ When target is one **Task** (no sub-issues): present one-batch plan → dispatch
 
 **Verifier dispatch:** Never set `readonly: true` on verifier sub-agents (they need `gh api graphql` for Status). Even when verifiers run writable, the orchestrator still performs step 1–3 — verifiers are best-effort, orchestrator is source of truth.
 
-**Orchestrator Shell use** is allowed **only** for: board Status read/write, `workspace-notes.md`, and epic progress audits — not for reading implementation code or running the CI gate.
+**Orchestrator Shell use** is allowed **only** for: board Status read/write, `workspace-notes.md`, epic progress audits, and **commit-linkage audits** (`git log --grep`) — not for reading implementation code or running the CI gate.
+
+### Commit linkage audit (mandatory, orchestrator-owned)
+
+**Root cause (P3/P4 run):** #41 was board **Done** but `6080f19` never landed on `staging`; P2-05 schema arrived later via #47's fix commit with only `fixes #47` — no `fixes #41` anywhere in `staging` history.
+
+**Rule:** Board **Done** is insufficient. Every issue marked **Done** in a run must have `fixes #N` (or `fixes #<parent>` when appropriate) in **at least one commit on `staging`** that is part of the run's commit range (the task commit, a combined commit, or an explicit linkage commit).
+
+**After every verifier PASS** and **before epic close**, the orchestrator **must** audit linkage:
+
+```bash
+# For each issue N marked Done in this run (leaves + parents per CLOSE_PARENTS):
+git log <base>..staging --grep='fixes #N'
+# base = commit before the orchestrator run started, or merge-base with origin/staging
+```
+
+| Result | Action |
+|---|---|
+| `fixes #N` found in run commits | OK |
+| Work landed in another issue's commit | That commit body **must** also include `fixes #N` — or cherry-pick `--empty=keep` the original task commit |
+| No `fixes #N` anywhere | **FAIL** — do not leave Done; dispatch fix agent or `chore(repo)[#N]: record issue linkage` with `fixes #N` |
+| Board Done but commit only on orphan branch | **FAIL** — cherry-pick or re-dispatch; never advance queue |
+
+**Verifier Layer 3c3 (mandatory):** For task `#N`, confirm `git log` on `staging` contains `fixes #N` in the task commit SHA **or** a documented combined/linkage commit. Missing → **FAIL** even if AC and CI pass.
+
+**Combined commits:** When one commit implements multiple issues (e.g. migration fix covers #41 + #47), the commit body lists **every** issue: `fixes #47` and `fixes #41` on separate lines.
 
 ## Dispatching sub-agents
 
@@ -185,7 +210,7 @@ For each leaf in queue (until all Done or blocked):
 
 ```
 dispatch execution → dispatch verifier (readonly: false)
-→ on PASS: orchestrator board sync (Done + re-query)
+→ on PASS: commit-linkage audit (fixes #N on staging) → board sync (Done + re-query)
 → on FAIL: stop or re-dispatch fix per user policy; do not advance queue
 → update workspace-notes.md
 ```
@@ -217,14 +242,14 @@ pnpm lint && pnpm typecheck && pnpm test:unit
 - 3b. PRD `§` deviations with file:line + fix hint
 - 3c. Security baseline (`03-security-baseline.mdc`)
 - 3c2. Env vars fully registered (`05-env-vars.mdc`)
-- 3c3. Commit linking (`07-issue-commit-linking.mdc`); `CLOSE_PARENTS` alignment
+- 3c3. Commit linking (`07-issue-commit-linking.mdc`); `CLOSE_PARENTS` alignment; **`git log staging --grep='fixes #N'` must hit** for the task issue (and combined commits must list every covered `#N`)
 - 3c4. Board Status only — never GitHub issue state changes
 - 3d. Migration policy violations (`15-db-migrations-schema.mdc`) — hand-written, edited, or deleted committed migrations; schema change without generated migration → **FAIL**
 - 3e. Stubs, scattered edition checks → **FAIL**
 
 | Result | Verifier (best effort) | Orchestrator (mandatory) | Session memory |
 |---|---|---|---|
-| PASS | PASS comment + Status Done | Re-query Status; fix if not Done; parent Done per CLOSE_PARENTS | Delete or archive locally |
+| PASS | PASS comment + Status Done | Commit-linkage audit + re-query Status; fix if not Done; parent Done per CLOSE_PARENTS | Delete or archive locally |
 | FAIL | FAIL comment + Status Ready | Confirm Ready on board | Append VERIFICATION FAILED |
 
 ## Session memory template
@@ -261,3 +286,5 @@ _task: #<N> | started: <ISO> | ended: <ISO> | duration: <human> | agent: executi
 - `fixes #<epic>` on non-final subtask
 - Hand-written or edited committed DB migrations (`15-db-migrations-schema.mdc`)
 - Checking "is issue on project" — see rule `12-github-project-board.mdc`
+- Marking **Done** without `fixes #N` in `staging` git history for that issue
+- Landing another issue's work without `fixes #N` for the source task (e.g. P2-05 schema via #47 without `fixes #41`)

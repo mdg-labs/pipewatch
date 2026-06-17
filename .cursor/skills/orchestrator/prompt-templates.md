@@ -160,6 +160,7 @@ VERIFY:
 - Layer 1: scope audit
 - Layer 2: pnpm lint, typecheck, test:unit (from repo root)
 - Layer 3: AC, PRD contract, security, env vars, commit linking, migration policy (`15-db-migrations-schema.mdc`)
+- Layer 3c3 (mandatory): `git log staging --grep='fixes #<N>'` must return at least one commit for task #<N> (combined commits must list every covered issue on separate `fixes #N` lines)
 
 AFTER PASS (mandatory before returning):
 1. add_issue_comment with PASS summary

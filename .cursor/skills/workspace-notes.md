@@ -1,5 +1,54 @@
 # PipeWatch workspace notes
 
+## 2026-06-17 — P3 #7 + P4 #8 combined orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Interleaved** P3/P4 per cross-epic deps
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #42 P3-01 Hono + OpenAPI | Done | `cb7f2a5` (prior run) |
+| #44 P3-03 edition guards | Done | `8688c93` (prior run) |
+| #45 P4-01 GitHub OAuth | Done | `75b32ee` |
+| #49 P4-05 bootstrap status | Done | `1bfda41` |
+| #46 P4-02 refresh/logout/switch | Done | `04da695` |
+| #43 P3-02 workspace scoping | Done | `efa7e8b` |
+| #47 P4-03 API key auth | Done | `680fdd1` + fix `fad3151` |
+| #41 P2-05 api_keys/subscribers | Done | `1023cf8` (cherry-pick linkage; schema on staging) |
+| #48 P4-04 user profile/delete | Done | `45067f7` |
+| #7 epic parent | Done | closes via #43 |
+| #8 epic parent | Done | closes via #48 |
+
+**Notes:**
+- Cross-epic dep chain: #43 blocked on #45 → interleaved P4 before P3-02
+- #41 `6080f19` was board Done but missing on `staging` until cherry-pick `1023cf8` (`fixes #41`)
+- Commit-linkage audit: every Done issue must have `fixes #N` on `staging` (orchestrator skill updated)
+- `pnpm audit --audit-level=high` still fails on pre-existing esbuild advisory
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P5 epic #9 (workspaces API) or P18 #22 CI scaffold
+
+**Re-verify 2026-06-17:** Full batch PASS @ `fad3151` — all leaves + epics Done; migration audit clean (#41 `0003_chief_alex_wilder` on staging)
+
+## 2026-06-17 — P2 epic #6 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #37 P2-01 Drizzle setup | Done | `0ae56e0` |
+| #38 P2-02 users/auth/workspaces | Done | `9777ba5` |
+| #39 P2-03 integrations/repos | Done | `887b0d6` |
+| #40 P2-04 pipeline tables | Done | `6fa6c2c` |
+| #41 P2-05 api_keys/subscribers | Done | `6080f19` |
+| #6 epic parent | Done | closes via #41 `fixes #6` |
+
+**Notes:**
+- 4 Drizzle migrations generated (0000–0003); integration harness still stub (#114)
+- `pnpm audit --audit-level=high` still fails on pre-existing esbuild advisory
+- `staging` 11 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P3 epic #7 (API bootstrap) or P18 #22 for CI scaffold (#30 blocked on #110)
+
 ## 2026-06-17 — P0 epic #4 orchestrator run
 
 **Lane:** S on `staging` · **GitHub sync:** ON
