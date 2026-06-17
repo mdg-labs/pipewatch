@@ -1,0 +1,111 @@
+.pw-invite-accept-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background: var(--bg-base);
+}
+
+.pw-invite-accept-shell {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pw-invite-accept-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+}
+
+.pw-invite-accept-brand .pw-logo-wordmark-text {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.pw-invite-accept-card {
+  box-shadow: var(--shadow-md);
+}
+
+.pw-invite-accept-heading {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin: 0 0 var(--space-1-5);
+  text-align: center;
+}
+
+.pw-invite-accept-subtext {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  text-align: center;
+  margin: 0 0 var(--space-6);
+  line-height: var(--leading-normal);
+}
+
+.pw-invite-accept-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+}
+
+.pw-invite-accept-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-3);
+}
+
+.pw-invite-accept-detail-label {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+}
+
+.pw-invite-accept-detail-value {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.pw-invite-accept-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pw-invite-accept-error {
+  text-align: center;
+}
+
+.pw-invite-accept-error-title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  margin: 0 0 var(--space-2);
+}
+
+.pw-invite-accept-error-message {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-6);
+  line-height: var(--leading-normal);
+}
+
+.pw-invite-accept-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
