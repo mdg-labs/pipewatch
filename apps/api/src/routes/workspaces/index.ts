@@ -22,6 +22,7 @@ import {
   updateWorkspaceSafe,
   WorkspaceError,
 } from "../../services/workspaces/workspace.service.js";
+import type { ListBackfillJobs } from "../../services/sync-status.js";
 import type { ApiEnv } from "../../types.js";
 import { requireJwtSecret } from "../auth/shared.js";
 import { registerApiKeyRoutes } from "./api-keys.js";
@@ -34,6 +35,7 @@ import { registerMemberRoutes } from "./members.js";
 import { registerJobRoutes } from "./repositories/runs/jobs.js";
 import { registerRunRoutes } from "./repositories/runs.js";
 import { registerRepositoryRoutes, type EnqueueBackfillRepo } from "./repositories.js";
+import { registerSyncStatusRoutes } from "./sync-status.js";
 
 const WorkspacePlanSchema = z.enum(["free", "pro", "business"]);
 
@@ -340,6 +342,7 @@ export type WorkspaceRoutesDependencies = {
   env: ParsedApiEnv;
   db: Db;
   enqueueBackfillRepo?: EnqueueBackfillRepo;
+  listBackfillJobs?: ListBackfillJobs;
 };
 
 function resolveDatabase(deps?: Partial<WorkspaceRoutesDependencies>): Db {
@@ -389,6 +392,7 @@ export function registerWorkspaceRoutes(
     env: deps?.env ?? parseApiEnv(),
     db: resolveDatabase(deps),
     ...(deps?.enqueueBackfillRepo ? { enqueueBackfillRepo: deps.enqueueBackfillRepo } : {}),
+    ...(deps?.listBackfillJobs ? { listBackfillJobs: deps.listBackfillJobs } : {}),
   });
 
   registerCheckSlugRoute(app, deps?.db ? { db: deps.db } : undefined);
@@ -479,6 +483,20 @@ export function registerWorkspaceRoutes(
     get db() {
       return resolveDeps().db;
     },
+  });
+
+  registerSyncStatusRoutes(app, {
+    get env() {
+      return resolveDeps().env;
+    },
+    get db() {
+      return resolveDeps().db;
+    },
+    ...(deps?.listBackfillJobs
+      ? {
+          listBackfillJobs: deps.listBackfillJobs,
+        }
+      : {}),
   });
 
   registerRunRoutes(app, {

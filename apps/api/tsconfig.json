@@ -7,6 +7,7 @@
     "noEmit": false,
     "paths": {
       "@pipewatch/worker/queues/backfill.js": ["../worker/src/queues/backfill.ts"],
+      "@pipewatch/worker/queues": ["../worker/src/queues/index.ts"],
       "@pipewatch/worker/queues/polling.js": ["../worker/src/queues/polling.ts"],
       "@pipewatch/worker/services/polling/lifecycle.js": [
         "../worker/src/services/polling/lifecycle.ts"
