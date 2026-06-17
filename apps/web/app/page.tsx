@@ -1,3 +1,8 @@
+import { redirect } from "next/navigation";
+
+import { getPlaceholderSession } from "@/lib/placeholder-session";
+
 export default function HomePage() {
-  return <main>PipeWatch Dashboard</main>;
+  const session = getPlaceholderSession();
+  redirect(`/workspaces/${session.activeWorkspaceSlug}`);
 }
