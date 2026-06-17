@@ -22,6 +22,13 @@
       "when": 1781681777274,
       "tag": "0002_lucky_vindicator",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781686888218,
+      "tag": "0003_brainy_owl",
+      "breakpoints": true
     }
   ]
 }

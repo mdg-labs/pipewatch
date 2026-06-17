@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { API_KEY_PREFIX, isApiKeyToken, parseBearerToken, roleMeetsMinimum } from "./workspace-context.js";
+import { parseApiKeyBearer } from "../middleware/api-key-auth.js";
 
 describe("parseBearerToken", () => {
   it("extracts the token from a Bearer header", () => {
@@ -19,6 +20,18 @@ describe("isApiKeyToken", () => {
   it("detects pw_ API key tokens", () => {
     expect(isApiKeyToken(`${API_KEY_PREFIX}live_abc123`)).toBe(true);
     expect(isApiKeyToken("eyJhbGciOiJIUzI1NiJ9.test")).toBe(false);
+  });
+});
+
+describe("parseApiKeyBearer", () => {
+  it("extracts pw_ keys from Bearer headers", () => {
+    expect(parseApiKeyBearer(`Bearer ${API_KEY_PREFIX}live_abc123`)).toBe(
+      `${API_KEY_PREFIX}live_abc123`,
+    );
+  });
+
+  it("returns undefined for JWT bearer tokens", () => {
+    expect(parseApiKeyBearer("Bearer eyJhbGciOiJIUzI1NiJ9.test")).toBeUndefined();
   });
 });
 

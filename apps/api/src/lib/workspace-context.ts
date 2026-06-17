@@ -1,24 +1,24 @@
 import type { Context } from "hono";
-import { and, eq, isNotNull, isNull, or, gt } from "drizzle-orm";
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { and, eq, isNotNull } from "drizzle-orm";
 
 import type { Db } from "@pipewatch/db";
 import { workspaceMembers } from "@pipewatch/db/schema";
-import { sha256 } from "@pipewatch/utils";
-import type { WorkspaceRole } from "@pipewatch/types";
+import type { ApiKeyAuthIdentity, WorkspaceRole } from "@pipewatch/types";
 
+import {
+  isApiKeyToken,
+  resolveApiKeyAuthIdentity,
+  parseBearerToken,
+} from "../middleware/api-key-auth.js";
 import { verifyAccessToken } from "../services/auth/jwt.js";
 
-/** Mirrors `api_keys` for lookup until P4-03 wires full API key auth. */
-const apiKeysLookup = pgTable("api_keys", {
-  workspaceId: uuid("workspace_id").notNull(),
-  createdBy: uuid("created_by").notNull(),
-  keyHash: text("key_hash").notNull(),
-  expiresAt: timestamp("expires_at", { withTimezone: true }),
-  revokedAt: timestamp("revoked_at", { withTimezone: true }),
-});
-
-export const API_KEY_PREFIX = "pw_";
+export type { ApiKeyAuthIdentity } from "@pipewatch/types";
+export { API_KEY_PREFIX } from "@pipewatch/types";
+export {
+  isApiKeyToken,
+  parseApiKeyBearer,
+  parseBearerToken,
+} from "../middleware/api-key-auth.js";
 
 export type AuthMode = "jwt" | "api_key";
 
@@ -53,29 +53,10 @@ export function setWorkspaceContext(c: Context, context: WorkspaceContext): void
   c.set(WORKSPACE_CONTEXT_KEY, context);
 }
 
-export function parseBearerToken(authorizationHeader: string | undefined): string | undefined {
-  if (!authorizationHeader) {
-    return undefined;
-  }
-
-  const match = /^Bearer\s+(\S+)$/i.exec(authorizationHeader);
-  return match?.[1];
-}
-
-export function isApiKeyToken(token: string): boolean {
-  return token.startsWith(API_KEY_PREFIX);
-}
-
 export type JwtAuthIdentity = {
   authMode: "jwt";
   userId: string;
   workspaceId?: string;
-};
-
-export type ApiKeyAuthIdentity = {
-  authMode: "api_key";
-  userId: string;
-  workspaceId: string;
 };
 
 export type AuthIdentity = JwtAuthIdentity | ApiKeyAuthIdentity;
@@ -96,39 +77,6 @@ export async function resolveJwtAuthIdentity(
   }
 }
 
-export async function resolveApiKeyAuthIdentity(
-  database: Db,
-  rawKey: string,
-): Promise<ApiKeyAuthIdentity | null> {
-  const keyHash = sha256(rawKey);
-  const now = new Date();
-
-  const [row] = await database
-    .select({
-      workspaceId: apiKeysLookup.workspaceId,
-      createdBy: apiKeysLookup.createdBy,
-    })
-    .from(apiKeysLookup)
-    .where(
-      and(
-        eq(apiKeysLookup.keyHash, keyHash),
-        isNull(apiKeysLookup.revokedAt),
-        or(isNull(apiKeysLookup.expiresAt), gt(apiKeysLookup.expiresAt, now)),
-      ),
-    )
-    .limit(1);
-
-  if (!row) {
-    return null;
-  }
-
-  return {
-    authMode: "api_key",
-    userId: row.createdBy,
-    workspaceId: row.workspaceId,
-  };
-}
-
 export async function resolveAuthIdentity(
   database: Db,
   authorizationHeader: string | undefined,
@@ -140,7 +88,7 @@ export async function resolveAuthIdentity(
   }
 
   if (isApiKeyToken(token)) {
-    return resolveApiKeyAuthIdentity(database, token);
+    return resolveApiKeyAuthIdentity(database, authorizationHeader);
   }
 
   return resolveJwtAuthIdentity(token, jwtSecret);

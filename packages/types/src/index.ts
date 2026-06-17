@@ -24,5 +24,9 @@ export type { PipelineRun, PipelineRunSummary } from "./pipeline-run.js";
 
 export type { PipelineStep } from "./pipeline-step.js";
 
+export { API_KEY_PREFIX } from "./api-key.js";
+
+export type { ApiKeyAuthIdentity, ApiKeySummary } from "./api-key.js";
+
 /** Stub compat for app skeletons — remove when apps adopt real types. */
 export type Placeholder = Record<string, never>;

@@ -3,6 +3,7 @@
  * Run `pnpm db:generate` after schema changes.
  */
 
+export { apiKeys } from "./api-keys.js";
 export { integrations } from "./integrations.js";
 export { pipelineJobs } from "./pipeline-jobs.js";
 export { pipelineRuns } from "./pipeline-runs.js";
