@@ -5,6 +5,7 @@ const editionMock = vi.hoisted(() => ({
     BILLING_ENABLED: false,
     WAITLIST_ENABLED: false,
     BOOTSTRAP_ENABLED: true,
+    STRIPE_ENABLED: false,
     IS_CE: true,
     IS_CLOUD: false,
   },
@@ -18,12 +19,30 @@ describe("edition route registration", () => {
     editionMock.flags.BILLING_ENABLED = false;
     editionMock.flags.WAITLIST_ENABLED = false;
     editionMock.flags.BOOTSTRAP_ENABLED = true;
+    editionMock.flags.STRIPE_ENABLED = false;
     editionMock.flags.IS_CE = true;
     editionMock.flags.IS_CLOUD = false;
   });
 
   afterEach(() => {
     vi.unstubAllEnvs();
+  });
+
+  it("does not register stripe webhook when STRIPE_ENABLED is false", async () => {
+    const { createApp } = await import("./app.js");
+    const app = createApp();
+
+    expect((await app.request("/webhooks/stripe", { method: "POST" })).status).toBe(404);
+  });
+
+  it("registers stripe webhook when STRIPE_ENABLED is true", async () => {
+    editionMock.flags.STRIPE_ENABLED = true;
+
+    const { createApp } = await import("./app.js");
+    const app = createApp();
+
+    const response = await app.request("/webhooks/stripe", { method: "POST" });
+    expect(response.status).not.toBe(404);
   });
 
   it("does not register billing or waitlist routes when flags are false", async () => {

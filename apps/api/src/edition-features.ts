@@ -3,6 +3,7 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 
 import { requireCE, requireCloud } from "./middleware/edition-guards.js";
 import { registerPostmarkWebhookRoute } from "./routes/webhooks/postmark.js";
+import { registerStripeWebhookRoute } from "./routes/webhooks/stripe.js";
 import { registerWaitlistRoutes } from "./routes/waitlist.js";
 import type { ApiEnv } from "./types.js";
 
@@ -18,6 +19,10 @@ export function registerCloudRoutes(app: OpenAPIHono<ApiEnv>): void {
 
   if (flags.IS_CLOUD) {
     registerPostmarkWebhookRoute(app);
+  }
+
+  if (flags.STRIPE_ENABLED) {
+    registerStripeWebhookRoute(app);
   }
 }
 
