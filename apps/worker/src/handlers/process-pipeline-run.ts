@@ -9,8 +9,8 @@ import { upsertPipelineRun } from "../services/pipeline-upsert.js";
 import {
   publishSseEvent,
   type PublishSseEventInput,
-  type SseEventType,
-} from "../services/sse-publish.js";
+} from "../lib/sse-publish.js";
+import type { SseEventType } from "@pipewatch/types";
 
 export const PROCESS_PIPELINE_RUN_JOB_NAME = "process-pipeline-run";
 

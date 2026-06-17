@@ -80,5 +80,23 @@ export type {
   WorkspaceMember,
 } from "./workspace-member.js";
 
+export type {
+  SseDataEvent,
+  SseEvent,
+  SseEventType,
+  SseHeartbeatData,
+  SseHeartbeatEvent,
+  SseJobUpdatedEvent,
+  SseRunCompletedEvent,
+  SseRunCreatedEvent,
+  SseRunUpdatedEvent,
+} from "./sse-events.js";
+
+export {
+  getSseChannel,
+  SSE_CHANNEL_PREFIX,
+  SSE_HEARTBEAT_INTERVAL_MS,
+} from "./sse-events.js";
+
 /** Stub compat for app skeletons — remove when apps adopt real types. */
 export type Placeholder = Record<string, never>;

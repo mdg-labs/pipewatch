@@ -12,7 +12,7 @@ import {
 import {
   publishSseEvent,
   type PublishSseEventInput,
-} from "../services/sse-publish.js";
+} from "../lib/sse-publish.js";
 
 export const PROCESS_PIPELINE_JOB_JOB_NAME = "process-pipeline-job";
 
