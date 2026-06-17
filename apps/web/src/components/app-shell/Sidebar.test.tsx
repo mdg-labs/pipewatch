@@ -8,6 +8,10 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/workspaces/mdg-labs/settings/members",
 }));
 
+vi.mock("@/lib/env", () => ({
+  publicApiUrl: "https://api.example.test",
+}));
+
 vi.mock("next/link", () => ({
   default: ({
     href,
@@ -68,5 +72,15 @@ describe("Sidebar", () => {
     );
 
     expect(html).toContain('href="/workspaces/mdg-labs/settings/billing"');
+  });
+
+  it("renders API docs footer link from configured API URL", () => {
+    const html = renderToStaticMarkup(
+      <Sidebar workspaceSlug="mdg-labs" showBilling={false} />,
+    );
+
+    expect(html).toContain('href="https://api.example.test/api/docs"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain("API Docs");
   });
 });

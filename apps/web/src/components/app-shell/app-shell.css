@@ -39,6 +39,15 @@
   overflow-y: auto;
 }
 
+.pw-app-sidebar-footer {
+  padding: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pw-app-sidebar-footer-link {
+  color: var(--text-tertiary);
+}
+
 .pw-app-nav-item,
 .pw-app-nav-toggle {
   display: flex;

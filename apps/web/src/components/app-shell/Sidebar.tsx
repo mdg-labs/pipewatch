@@ -2,6 +2,7 @@
 
 import {
   BarChart3,
+  BookOpen,
   ChevronDown,
   KeyRound,
   LayoutDashboard,
@@ -15,6 +16,9 @@ import { usePathname } from "next/navigation";
 import { useMemo, useState, type ReactNode } from "react";
 
 import { classNames } from "@pipewatch/ui";
+
+import { getApiDocsUrl } from "@/lib/api-docs";
+import { publicApiUrl } from "@/lib/env";
 
 export type SidebarNavItem = {
   id: string;
@@ -117,75 +121,95 @@ export function Sidebar({ workspaceSlug, showBilling }: SidebarProps) {
     },
   ];
 
+  const apiDocsUrl = getApiDocsUrl();
+
   return (
-    <nav className="pw-app-sidebar-nav" aria-label="Workspace">
-      {primaryNav.map((item) => {
-        const active = isActivePath(pathname, item.href);
+    <>
+      <nav className="pw-app-sidebar-nav" aria-label="Workspace">
+        {primaryNav.map((item) => {
+          const active = isActivePath(pathname, item.href);
 
-        return (
-          <Link
-            key={item.id}
-            href={item.href}
+          return (
+            <Link
+              key={item.id}
+              href={item.href}
+              className={classNames(
+                "pw-app-nav-item",
+                active && "pw-app-nav-item-active",
+              )}
+              aria-current={active ? "page" : undefined}
+            >
+              <span className="pw-app-nav-icon">{item.icon}</span>
+              {item.label}
+            </Link>
+          );
+        })}
+
+        <div>
+          <button
+            type="button"
             className={classNames(
-              "pw-app-nav-item",
-              active && "pw-app-nav-item-active",
+              "pw-app-nav-toggle",
+              settingsActive && "pw-app-nav-item-active",
             )}
-            aria-current={active ? "page" : undefined}
+            aria-expanded={settingsOpen}
+            aria-controls="pw-settings-subnav"
+            onClick={() => setSettingsOpen((open) => !open)}
           >
-            <span className="pw-app-nav-icon">{item.icon}</span>
-            {item.label}
-          </Link>
-        );
-      })}
+            <span className="pw-app-nav-icon">
+              <Settings size={14} aria-hidden />
+            </span>
+            Settings
+            <ChevronDown
+              size={12}
+              aria-hidden
+              className={classNames(
+                "pw-app-nav-chevron",
+                settingsOpen && "pw-app-nav-chevron-open",
+              )}
+            />
+          </button>
 
-      <div>
-        <button
-          type="button"
-          className={classNames(
-            "pw-app-nav-toggle",
-            settingsActive && "pw-app-nav-item-active",
-          )}
-          aria-expanded={settingsOpen}
-          aria-controls="pw-settings-subnav"
-          onClick={() => setSettingsOpen((open) => !open)}
-        >
-          <span className="pw-app-nav-icon">
-            <Settings size={14} aria-hidden />
-          </span>
-          Settings
-          <ChevronDown
-            size={12}
-            aria-hidden
-            className={classNames(
-              "pw-app-nav-chevron",
-              settingsOpen && "pw-app-nav-chevron-open",
-            )}
-          />
-        </button>
+          {settingsOpen ? (
+            <div id="pw-settings-subnav" className="pw-app-nav-sub">
+              {settingsItems.map((item) => {
+                const active = isActivePath(pathname, item.href);
 
-        {settingsOpen ? (
-          <div id="pw-settings-subnav" className="pw-app-nav-sub">
-            {settingsItems.map((item) => {
-              const active = isActivePath(pathname, item.href);
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className={classNames(
+                      "pw-app-nav-item",
+                      active && "pw-app-nav-item-active",
+                    )}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    <span className="pw-app-nav-icon">{item.icon}</span>
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          ) : null}
+        </div>
+      </nav>
 
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={classNames(
-                    "pw-app-nav-item",
-                    active && "pw-app-nav-item-active",
-                  )}
-                  aria-current={active ? "page" : undefined}
-                >
-                  <span className="pw-app-nav-icon">{item.icon}</span>
-                  {item.label}
-                </Link>
-              );
-            })}
-          </div>
-        ) : null}
-      </div>
-    </nav>
+      {publicApiUrl ? (
+        <div className="pw-app-sidebar-footer">
+          <a
+            href={apiDocsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pw-app-nav-item pw-app-sidebar-footer-link"
+          >
+            <span className="pw-app-nav-icon">
+              <BookOpen size={14} aria-hidden />
+            </span>
+            API Docs
+          </a>
+        </div>
+      ) : null}
+    </>
   );
 }
