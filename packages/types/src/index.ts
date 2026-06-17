@@ -26,7 +26,12 @@ export type {
   PipelineJobSummary,
 } from "./pipeline-job.js";
 
-export type { PipelineRun, PipelineRunSummary } from "./pipeline-run.js";
+export type {
+  ListPipelineRunsQuery,
+  PaginatedPipelineRuns,
+  PipelineRun,
+  PipelineRunSummary,
+} from "./pipeline-run.js";
 
 export type { PipelineStep } from "./pipeline-step.js";
 

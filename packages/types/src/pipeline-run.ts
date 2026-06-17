@@ -1,27 +1,28 @@
-import type { PipelineConclusion, PipelineStatus } from "./common.js";
+import type { PaginatedResponse, PipelineConclusion, PipelineStatus } from "./common.js";
 
-/** Pipeline run API resource — placeholder; Zod schemas added in P2/P3. */
-export interface PipelineRun {
+/** Pipeline run API resource (PRD §7 — pages B4/B6). */
+export type PipelineRun = {
   id: string;
-  workspaceId: string;
-  repoId: string;
-  externalRunId: string;
-  pipelineName: string;
-  pipelineDefinitionRef: string;
+  workspace_id: string;
+  repo_id: string;
+  external_run_id: string;
+  pipeline_name: string;
+  pipeline_definition_ref: string;
   status: PipelineStatus;
   conclusion: PipelineConclusion;
   branch: string;
-  commitSha: string;
-  actorLogin: string;
-  triggerType: string;
-  sourceUrl: string;
-  startedAt: string | null;
-  completedAt: string | null;
-  durationMs: number | null;
-  createdAt: string;
-}
+  commit_sha: string;
+  commit_message: string | null;
+  actor_login: string | null;
+  trigger_type: string;
+  source_url: string;
+  started_at: string;
+  completed_at: string | null;
+  duration_ms: number | null;
+  created_at: string;
+};
 
-/** SSE / list summary variant — fields finalized in P2/P3. */
+/** SSE / list summary variant — camelCase for worker SSE payloads. */
 export interface PipelineRunSummary {
   id: string;
   pipelineName: string;
@@ -31,3 +32,17 @@ export interface PipelineRunSummary {
   startedAt: string | null;
   durationMs: number | null;
 }
+
+/** Query filters for `GET /api/v1/workspaces/:workspaceId/repositories/:repoId/runs`. */
+export type ListPipelineRunsQuery = {
+  branch?: string | undefined;
+  workflow?: string | undefined;
+  status?: PipelineStatus | undefined;
+  trigger?: string | undefined;
+  started_from?: string | undefined;
+  started_to?: string | undefined;
+  page_size?: number | undefined;
+  cursor?: string | undefined;
+};
+
+export type PaginatedPipelineRuns = PaginatedResponse<PipelineRun>;

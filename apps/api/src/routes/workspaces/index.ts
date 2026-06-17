@@ -29,6 +29,7 @@ import { registerCheckSlugRoute } from "./check-slug.js";
 import { registerIntegrationRoutes } from "./integrations.js";
 import { registerInviteRoutes } from "./invites.js";
 import { registerMemberRoutes } from "./members.js";
+import { registerRunRoutes } from "./repositories/runs.js";
 import { registerRepositoryRoutes, type EnqueueBackfillRepo } from "./repositories.js";
 
 const WorkspacePlanSchema = z.enum(["free", "pro", "business"]);
@@ -463,6 +464,12 @@ export function registerWorkspaceRoutes(
           enqueueBackfillRepo: deps.enqueueBackfillRepo,
         }
       : {}),
+  });
+
+  registerRunRoutes(app, {
+    get db() {
+      return resolveDeps().db;
+    },
   });
 
   app.openapi(getWorkspaceRoute, async (c) => {
