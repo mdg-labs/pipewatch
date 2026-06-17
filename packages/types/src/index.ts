@@ -30,5 +30,14 @@ export type { ApiKeyAuthIdentity, ApiKeySummary } from "./api-key.js";
 
 export type { UpdateUserProfileInput, UserProfile } from "./user.js";
 
+export type {
+  CreateWorkspaceInput,
+  SlugAvailability,
+  UpdateWorkspaceInput,
+  Workspace,
+  WorkspaceListItem,
+  WorkspacePlan,
+} from "./workspace.js";
+
 /** Stub compat for app skeletons — remove when apps adopt real types. */
 export type Placeholder = Record<string, never>;

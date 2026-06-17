@@ -12,6 +12,7 @@ import { registerHealthRoute } from "./routes/health.js";
 import { registerOpenApiRoutes } from "./routes/openapi.js";
 import { registerBootstrapStatusRoute } from "./routes/public/bootstrap-status.js";
 import { registerUserMeRoutes } from "./routes/users/me.js";
+import { registerWorkspaceRoutes } from "./routes/workspaces/index.js";
 import type { ApiEnv } from "./types.js";
 
 export function createApp(): OpenAPIHono<ApiEnv> {
@@ -37,6 +38,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
   registerLogoutRoutes(app);
   registerSwitchWorkspaceRoute(app);
   registerUserMeRoutes(app);
+  registerWorkspaceRoutes(app);
   registerCloudRoutes(app);
   registerCERoutes(app);
 
