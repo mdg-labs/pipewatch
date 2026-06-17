@@ -25,6 +25,7 @@ import {
 import type { ApiEnv } from "../../types.js";
 import { requireJwtSecret } from "../auth/shared.js";
 import { registerCheckSlugRoute } from "./check-slug.js";
+import { registerMemberRoutes } from "./members.js";
 
 const WorkspacePlanSchema = z.enum(["free", "pro", "business"]);
 
@@ -410,7 +411,15 @@ export function registerWorkspaceRoutes(
     },
   };
 
-  app.use("/api/v1/workspaces/:workspaceId", workspaceScope(scopeDeps));
+  const scopeMiddleware = workspaceScope(scopeDeps);
+  app.use("/api/v1/workspaces/:workspaceId", scopeMiddleware);
+  app.use("/api/v1/workspaces/:workspaceId/*", scopeMiddleware);
+
+  registerMemberRoutes(app, {
+    get db() {
+      return resolveDeps().db;
+    },
+  });
 
   app.openapi(getWorkspaceRoute, async (c) => {
     const resolved = resolveDeps();

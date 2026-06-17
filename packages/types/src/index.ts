@@ -39,5 +39,10 @@ export type {
   WorkspacePlan,
 } from "./workspace.js";
 
+export type {
+  UpdateWorkspaceMemberInput,
+  WorkspaceMember,
+} from "./workspace-member.js";
+
 /** Stub compat for app skeletons — remove when apps adopt real types. */
 export type Placeholder = Record<string, never>;
