@@ -129,3 +129,38 @@ export {
   type TabItem,
   type TabsProps,
 } from "./components/tabs.js";
+
+export {
+  Sparkline,
+  buildSparklineGeometry,
+  type BuildSparklineGeometryOptions,
+  type SparklineGeometry,
+  type SparklinePoint,
+  type SparklineProps,
+} from "./components/sparkline.js";
+
+export {
+  RepoCard,
+  repoCardClassName,
+  type RepoCardProps,
+} from "./components/repo-card.js";
+
+export {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  tableCellClassName,
+  tableClassName,
+  tableHeadClassName,
+  tableRowClassName,
+  type SortDirection,
+  type TableBodyProps,
+  type TableCellProps,
+  type TableHeadProps,
+  type TableHeaderProps,
+  type TableProps,
+  type TableRowProps,
+} from "./components/table.js";

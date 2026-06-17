@@ -43,6 +43,20 @@ import {
   Tooltip,
   tooltipBoxClassName,
   toInitials,
+  Sparkline,
+  buildSparklineGeometry,
+  RepoCard,
+  repoCardClassName,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  tableCellClassName,
+  tableClassName,
+  tableHeadClassName,
+  tableRowClassName,
 } from "./index.js";
 
 const componentsDir = join(dirname(fileURLToPath(import.meta.url)), "components");
@@ -62,6 +76,8 @@ describe("component styles", () => {
     expect(styles).toContain("@import './components/select.css'");
     expect(styles).toContain("@import './components/dialog.css'");
     expect(styles).toContain("@import './components/tabs.css'");
+    expect(styles).toContain("@import './components/repo-card.css'");
+    expect(styles).toContain("@import './components/table.css'");
   });
 
   it("uses semantic CSS variables in component stylesheets", () => {
@@ -84,6 +100,8 @@ describe("component styles", () => {
       "toast.css",
       "tooltip.css",
       "tabs.css",
+      "repo-card.css",
+      "table.css",
     ];
 
     for (const file of cssFiles) {
@@ -455,5 +473,104 @@ describe("Tabs", () => {
     expect(html).toContain('aria-selected="true"');
     expect(html).toContain("pw-tab-count");
     expect(html).toContain("Panel");
+  });
+});
+
+describe("Sparkline", () => {
+  it("renders placeholder line for insufficient data", () => {
+    const html = renderToStaticMarkup(<Sparkline data={[1]} />);
+
+    expect(html).toContain('stroke-dasharray="3 3"');
+  });
+
+  it("renders path geometry for multi-point series", () => {
+    const geometry = buildSparklineGeometry({
+      data: [2, 4, 3, 6],
+      width: 80,
+      height: 24,
+    });
+
+    const html = renderToStaticMarkup(
+      <Sparkline data={[2, 4, 3, 6]} showArea showDot />,
+    );
+
+    expect(geometry?.linePath).toBeTruthy();
+    expect(html).toContain('d="');
+    expect(html).toContain("<circle");
+  });
+});
+
+describe("RepoCard", () => {
+  it("renders repo metadata and embedded sparkline from trend", () => {
+    const html = renderToStaticMarkup(
+      <RepoCard
+        org="mdg-labs"
+        name="pipewatch"
+        branch="main"
+        status="failure"
+        lastRunTime="3 min ago"
+        duration="2m 14s"
+        trend={[1, 2, 4, 3, 5]}
+      />,
+    );
+
+    expect(html).toContain("pw-repo-card");
+    expect(html).toContain("mdg-labs/");
+    expect(html).toContain("pipewatch");
+    expect(html).toContain("main");
+    expect(html).toContain("3 min ago");
+    expect(html).toContain("2m 14s");
+    expect(html).toContain("Failed");
+    expect(html).toContain("<path");
+  });
+
+  it("applies repo card class name helper", () => {
+    expect(repoCardClassName({ className: "extra" })).toBe(
+      "pw-repo-card extra",
+    );
+  });
+});
+
+describe("Table", () => {
+  it("renders sortable header and monospace cells", () => {
+    const html = renderToStaticMarkup(
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead sortable sortDirection="asc">
+              Duration
+            </TableHead>
+            <TableHead>Repository</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          <TableRow hover interactive>
+            <TableCell mono>2m 14s</TableCell>
+            <TableCell mono>a4f92c1</TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    );
+
+    expect(html).toContain("pw-table-wrap");
+    expect(html).toContain('aria-sort="ascending"');
+    expect(html).toContain("pw-table-sort-btn");
+    expect(html).toContain("pw-table-td-mono");
+    expect(html).toContain("pw-table-row-hover");
+    expect(html).toContain("2m 14s");
+    expect(html).toContain("a4f92c1");
+  });
+
+  it("applies table class name helpers", () => {
+    expect(tableClassName({ className: "extra" })).toBe("pw-table-wrap extra");
+    expect(
+      tableRowClassName({ hover: true, interactive: true, className: "row" }),
+    ).toBe("pw-table-row pw-table-row-hover pw-table-row-interactive row");
+    expect(tableHeadClassName({ sortable: true })).toBe(
+      "pw-table-th pw-table-th-sortable",
+    );
+    expect(tableCellClassName({ mono: true })).toBe(
+      "pw-table-td pw-table-td-mono",
+    );
   });
 });

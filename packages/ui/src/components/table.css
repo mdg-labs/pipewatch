@@ -1,0 +1,108 @@
+.pw-table-wrap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.pw-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pw-table-head .pw-table-row {
+  border-bottom: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+}
+
+.pw-table-th {
+  padding: var(--space-2) var(--space-4);
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+  color: var(--text-tertiary);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.pw-table-th-right {
+  text-align: right;
+}
+
+.pw-table-th-sortable {
+  padding: 0;
+}
+
+.pw-table-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  padding: var(--space-2) var(--space-4);
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pw-table-th-right .pw-table-sort-btn {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.pw-table-sort-btn:hover {
+  color: var(--text-secondary);
+}
+
+.pw-table-sort-btn:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--focus-ring);
+}
+
+.pw-table-sort-icon {
+  display: inline-flex;
+  color: var(--text-tertiary);
+}
+
+.pw-table-body .pw-table-row {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.pw-table-body .pw-table-row:last-child {
+  border-bottom: none;
+}
+
+.pw-table-row-hover:hover {
+  background: var(--bg-elevated);
+}
+
+.pw-table-row-interactive {
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.pw-table-td {
+  padding: var(--space-2-5) var(--space-4);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+
+.pw-table-td-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-feature-settings: "tnum";
+}
+
+.pw-table-td-right {
+  text-align: right;
+}
