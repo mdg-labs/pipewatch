@@ -12,5 +12,6 @@
     { "path": "../../packages/types" },
     { "path": "../../packages/utils" }
   ],
-  "include": ["src"]
+  "include": ["src"],
+  "exclude": ["src/**/*.integration.test.ts"]
 }

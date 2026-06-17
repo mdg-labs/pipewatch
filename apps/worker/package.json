@@ -8,6 +8,10 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./queues": {
+      "types": "./dist/queues/index.d.ts",
+      "default": "./dist/queues/index.js"
+    },
     "./queues/backfill": {
       "types": "./dist/queues/backfill.d.ts",
       "default": "./dist/queues/backfill.js"
@@ -22,6 +26,7 @@
     "dev": "node --watch dist/index.js",
     "lint": "eslint .",
     "start": "node dist/index.js",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --build",
     "deploy:worker": "node -e \"process.exit(0)\""
   },
@@ -36,6 +41,7 @@
   "devDependencies": {
     "@types/node": "^22.13.4",
     "eslint": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^3.0.5"
   }
 }

@@ -1,6 +1,8 @@
-import { Queue } from "bullmq";
+import type { Queue } from "bullmq";
 
-export const BACKFILL_QUEUE_NAME = "backfill";
+import { closeAllQueues, defaultJobOptionsFor, getQueue, QUEUE_NAMES } from "./index.js";
+
+export const BACKFILL_QUEUE_NAME = QUEUE_NAMES.BACKFILL;
 export const BACKFILL_INTEGRATION_JOB_NAME = "backfill-integration";
 export const BACKFILL_REPO_JOB_NAME = "backfill-repo";
 
@@ -17,19 +19,8 @@ export type BackfillRepoJobPayload = {
 
 type BackfillJobPayload = BackfillIntegrationJobPayload | BackfillRepoJobPayload;
 
-let backfillQueue: Queue<BackfillJobPayload> | null = null;
-
 function resolveBackfillQueue(redisUrl: string): Queue<BackfillJobPayload> {
-  if (!backfillQueue) {
-    backfillQueue = new Queue<BackfillJobPayload>(BACKFILL_QUEUE_NAME, {
-      connection: {
-        url: redisUrl,
-        maxRetriesPerRequest: null,
-      },
-    });
-  }
-
-  return backfillQueue;
+  return getQueue(QUEUE_NAMES.BACKFILL, redisUrl);
 }
 
 /** Enqueue repo discovery for a new integration — full handler lands in P7-03 (#62). */
@@ -38,9 +29,7 @@ export async function enqueueBackfillIntegration(
   payload: BackfillIntegrationJobPayload,
 ): Promise<void> {
   const queue = resolveBackfillQueue(redisUrl);
-  await queue.add(BACKFILL_INTEGRATION_JOB_NAME, payload, {
-    attempts: 5,
-  });
+  await queue.add(BACKFILL_INTEGRATION_JOB_NAME, payload, defaultJobOptionsFor(QUEUE_NAMES.BACKFILL));
 }
 
 /** Enqueue paginated run history fetch for a single repo — handler lands in P7-03 (#62). */
@@ -49,15 +38,10 @@ export async function enqueueBackfillRepo(
   payload: BackfillRepoJobPayload,
 ): Promise<void> {
   const queue = resolveBackfillQueue(redisUrl);
-  await queue.add(BACKFILL_REPO_JOB_NAME, payload, {
-    attempts: 5,
-  });
+  await queue.add(BACKFILL_REPO_JOB_NAME, payload, defaultJobOptionsFor(QUEUE_NAMES.BACKFILL));
 }
 
 /** Reset cached queue — test helper. */
 export async function closeBackfillQueue(): Promise<void> {
-  if (backfillQueue) {
-    await backfillQueue.close();
-    backfillQueue = null;
-  }
+  await closeAllQueues();
 }

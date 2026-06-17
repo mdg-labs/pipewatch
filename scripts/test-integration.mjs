@@ -5,9 +5,17 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const result = spawnSync("pnpm", ["--filter", "@pipewatch/api", "test:integration"], {
-  cwd: root,
-  stdio: "inherit",
-});
+const packages = ["@pipewatch/api", "@pipewatch/worker"];
 
-process.exit(result.status ?? 1);
+for (const pkg of packages) {
+  const result = spawnSync("pnpm", ["--filter", pkg, "test:integration"], {
+    cwd: root,
+    stdio: "inherit",
+  });
+
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+}
+
+process.exit(0);

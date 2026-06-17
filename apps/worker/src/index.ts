@@ -1,27 +1,24 @@
 import { parseWorkerEnv } from "@pipewatch/config/env";
-import { Worker } from "bullmq";
 
 import { registerCloudWorkers } from "./edition-features.js";
 import { initSentry } from "./sentry.js";
+import { startWorkers } from "./worker.js";
 
 const env = parseWorkerEnv();
 
 initSentry();
 
-const redisUrl = env.REDIS_URL ?? "redis://127.0.0.1:6379";
-
-const stubWorker = new Worker(
-  "stub",
-  async () => ({ ok: true }),
-  {
-    connection: {
-      url: redisUrl,
-      maxRetriesPerRequest: null,
-    },
-  },
-);
+const runtime = startWorkers(env);
 
 registerCloudWorkers();
 
-await stubWorker.waitUntilReady();
+await Promise.all(runtime.workers.map((worker) => worker.waitUntilReady()));
 process.stdout.write("worker ready\n");
+
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, () => {
+    void runtime.close().then(() => {
+      process.exit(0);
+    });
+  });
+}
