@@ -65,3 +65,57 @@ docker build -f apps/api/Dockerfile -t pipewatch-api:local .
 docker build -f apps/worker/Dockerfile -t pipewatch-worker:local .
 docker build -f apps/web/Dockerfile -t pipewatch-web:local .
 ```
+
+## PipeWatch CE — quickstart (Docker Compose)
+
+Self-hosted CE runs five services: **api**, **worker**, **web**, **postgres**, and **redis**. The API applies Drizzle migrations automatically on startup (Decision #36).
+
+### 1. Create a GitHub App
+
+Follow [PRD §16](docs/internal/PipeWatch_MVP_PRD.md) — set the webhook URL to `https://<your-host>/webhooks/github` (or use `PIPEWATCH_MODE=polling` when you cannot expose a public webhook endpoint).
+
+### 2. Configure environment
+
+```bash
+cp .env.example .env
+```
+
+Fill in `.env` with your GitHub App credentials, `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `ENCRYPTION_KEY` (each at least 32 characters). See [PRD §23](docs/internal/PipeWatch_MVP_PRD.md) for the full variable reference.
+
+| Variable | Required | Notes |
+|---|---|---|
+| `GITHUB_APP_*`, `GITHUB_CLIENT_*`, `GITHUB_WEBHOOK_SECRET` | Yes | From your GitHub App |
+| `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ENCRYPTION_KEY` | Yes | Generate random strings (≥32 chars) |
+| `APP_URL`, `MARKETING_URL` | Production | Defaults to `http://localhost:3001` in Compose |
+| `NEXT_PUBLIC_API_URL` | Production | Defaults to `http://localhost:3000` in Compose |
+| `SMTP_*` | No | Email features degrade gracefully when unset |
+| `PIPEWATCH_MODE` | No | `webhook` (default) or `polling` |
+| `RETENTION_DAYS` | No | Default `30` |
+| `SENTRY_DSN` | No | Optional error monitoring |
+
+### 3. Start the stack
+
+```bash
+docker compose up -d
+```
+
+| Service | URL / port |
+|---|---|
+| Dashboard (web) | http://localhost:3001 |
+| API | http://localhost:3000 |
+| Health check | http://localhost:3000/health |
+
+Postgres and Redis data persist in named Docker volumes (`postgres_data`, `redis_data`).
+
+### 4. First-time setup
+
+Open http://localhost:3001 — when no users exist, CE redirects to `/setup` for GitHub OAuth bootstrap (PRD §26).
+
+### Upgrades
+
+Pull the latest images and restart — migrations run automatically when the API container starts:
+
+```bash
+docker compose pull
+docker compose up -d
+```
