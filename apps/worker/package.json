@@ -36,7 +36,8 @@
     "@pipewatch/types": "workspace:*",
     "@pipewatch/utils": "workspace:*",
     "@sentry/node": "^9.15.0",
-    "bullmq": "^5.41.0"
+    "bullmq": "^5.41.0",
+    "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
