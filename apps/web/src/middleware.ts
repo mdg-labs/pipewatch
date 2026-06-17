@@ -16,6 +16,10 @@ const PUBLIC_PREFIXES = [
   "/favicon",
 ];
 
+function isOnboardingPath(pathname: string): boolean {
+  return pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+}
+
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -23,7 +27,11 @@ function isPublicPath(pathname: string): boolean {
 }
 
 function isProtectedAppPath(pathname: string): boolean {
-  return pathname === "/" || pathname.startsWith("/workspaces");
+  return (
+    pathname === "/" ||
+    pathname.startsWith("/workspaces") ||
+    isOnboardingPath(pathname)
+  );
 }
 
 function isSetupPath(pathname: string): boolean {
@@ -100,5 +108,5 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
-  matcher: ["/", "/setup", "/sign-in", "/workspaces/:path*"],
+  matcher: ["/", "/setup", "/sign-in", "/onboarding", "/workspaces/:path*"],
 };
