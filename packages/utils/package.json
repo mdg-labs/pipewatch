@@ -15,6 +15,9 @@
     "typecheck": "tsc --build",
     "test:unit": "vitest run"
   },
+  "dependencies": {
+    "@pipewatch/types": "workspace:*"
+  },
   "devDependencies": {
     "@pipewatch/config": "workspace:*",
     "@types/node": "^22.13.4",

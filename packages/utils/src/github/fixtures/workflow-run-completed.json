@@ -1,0 +1,23 @@
+{
+  "action": "completed",
+  "workflow_run": {
+    "id": 2891501295,
+    "name": "CI",
+    "path": ".github/workflows/ci.yml",
+    "status": "completed",
+    "conclusion": "success",
+    "head_branch": "main",
+    "head_sha": "b5e8e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2e2",
+    "event": "push",
+    "html_url": "https://github.com/octocat/Hello-World/actions/runs/2891501295",
+    "created_at": "2022-10-11T14:22:25Z",
+    "updated_at": "2022-10-11T14:23:45Z",
+    "run_started_at": "2022-10-11T14:22:30Z",
+    "head_commit": {
+      "message": "Fix typo in README"
+    },
+    "actor": {
+      "login": "octocat"
+    }
+  }
+}
