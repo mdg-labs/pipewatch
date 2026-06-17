@@ -1,0 +1,69 @@
+.pw-workspace-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 24px);
+  max-width: 640px;
+}
+
+.pw-workspace-settings-header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.pw-workspace-settings-header p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.pw-workspace-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+.pw-workspace-settings-section-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pw-workspace-slug-status {
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.pw-workspace-slug-available {
+  color: var(--status-success, #16a34a);
+}
+
+.pw-workspace-slug-unavailable {
+  color: var(--status-failure, #dc2626);
+}
+
+.pw-workspace-slug-checking {
+  color: var(--text-secondary);
+}
+
+.pw-workspace-slug-warning {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: var(--surface-muted, rgba(0, 0, 0, 0.04));
+}
+
+.pw-workspace-plan-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pw-workspace-settings-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}

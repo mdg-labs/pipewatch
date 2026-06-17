@@ -1,0 +1,468 @@
+"use client";
+
+import { flags } from "@pipewatch/config/edition";
+import { getPlanLimits } from "@pipewatch/config/plan-limits";
+import type { SlugAvailability, UpdateWorkspaceInput, Workspace, WorkspacePlan } from "@pipewatch/types";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import {
+  Badge,
+  Button,
+  Card,
+  DangerZone,
+  DangerZoneItem,
+  Input,
+  Select,
+  TypedConfirmDialog,
+} from "@pipewatch/ui";
+
+import { CardSkeleton } from "@/components/CardSkeleton";
+import { ErrorRetry } from "@/components/ErrorRetry";
+import { useApi } from "@/hooks/use-api";
+import { useWorkspaceRole } from "@/hooks/use-workspace-role";
+import { isBillingNavEnabled } from "@/lib/edition-guards";
+import { isValidWorkspaceSlug } from "@/lib/workspace-slug";
+import { useToast } from "@/providers/ToastProvider";
+
+import "./workspace-settings.css";
+
+const PLAN_LABELS: Record<WorkspacePlan, string> = {
+  free: "Free",
+  pro: "Pro",
+  business: "Business",
+};
+
+type SlugCheckState = "idle" | "checking" | "available" | "unavailable" | "invalid" | "unchanged";
+
+function buildRetentionOptions(plan: WorkspacePlan): Array<{ value: string; label: string }> {
+  const { minRetentionDays, maxRetentionDays } = getPlanLimits(plan);
+  const options: Array<{ value: string; label: string }> = [];
+
+  for (let days = minRetentionDays; days <= maxRetentionDays; days += 30) {
+    options.push({
+      value: String(days),
+      label: `${String(days)} days`,
+    });
+  }
+
+  if (options.length === 0 || options[options.length - 1]?.value !== String(maxRetentionDays)) {
+    options.push({
+      value: String(maxRetentionDays),
+      label: `${String(maxRetentionDays)} days`,
+    });
+  }
+
+  return options;
+}
+
+function isPaidPlan(plan: WorkspacePlan): boolean {
+  return plan === "pro" || plan === "business";
+}
+
+/** Workspace general settings form — name, slug, plan summary, retention, delete (B8). */
+export function WorkspaceGeneralForm() {
+  const router = useRouter();
+  const { api, workspace, workspaceId, workspaceSlug, workspaces } = useApi();
+  const { canMutate, meetsMinimum } = useWorkspaceRole();
+  const { toast } = useToast();
+
+  const [workspaceData, setWorkspaceData] = useState<Workspace | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const [name, setName] = useState("");
+  const [slug, setSlug] = useState("");
+  const [originalSlug, setOriginalSlug] = useState("");
+  const [retentionDays, setRetentionDays] = useState("30");
+  const [slugState, setSlugState] = useState<SlugCheckState>("idle");
+
+  const [saving, setSaving] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const loadWorkspace = useCallback(async () => {
+    if (!workspace) {
+      setLoading(false);
+      setLoadError(true);
+      return;
+    }
+
+    setLoading(true);
+    setLoadError(false);
+
+    try {
+      const data = await workspace.get<Workspace>("");
+      setWorkspaceData(data);
+      setName(data.name);
+      setSlug(data.slug);
+      setOriginalSlug(data.slug);
+      setRetentionDays(String(data.default_retention_days));
+      setSlugState("unchanged");
+    } catch {
+      setLoadError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [workspace]);
+
+  useEffect(() => {
+    void loadWorkspace();
+  }, [loadWorkspace]);
+
+  useEffect(() => {
+    const trimmed = slug.trim();
+
+    if (trimmed === originalSlug) {
+      setSlugState("unchanged");
+      return;
+    }
+
+    if (!isValidWorkspaceSlug(trimmed)) {
+      setSlugState("invalid");
+      return;
+    }
+
+    setSlugState("checking");
+    const handle = window.setTimeout(() => {
+      const params = new URLSearchParams({ slug: trimmed });
+      if (workspaceId) {
+        params.set("exclude", workspaceId);
+      }
+
+      void api
+        .get<SlugAvailability>(`/workspaces/check-slug?${params.toString()}`)
+        .then((result) => {
+          setSlugState(result.available ? "available" : "unavailable");
+        })
+        .catch(() => {
+          setSlugState("invalid");
+        });
+    }, 300);
+
+    return () => {
+      window.clearTimeout(handle);
+    };
+  }, [api, slug, originalSlug, workspaceId]);
+
+  const slugChanged = slug.trim() !== originalSlug;
+  const slugReady = slugState === "unchanged" || slugState === "available";
+
+  const hasChanges = useMemo(() => {
+    if (!workspaceData) {
+      return false;
+    }
+
+    const retentionChanged =
+      flags.BILLING_ENABLED &&
+      isPaidPlan(workspaceData.plan) &&
+      Number(retentionDays) !== workspaceData.default_retention_days;
+
+    return (
+      name.trim() !== workspaceData.name ||
+      slug.trim() !== workspaceData.slug ||
+      retentionChanged
+    );
+  }, [name, retentionDays, slug, workspaceData]);
+
+  const canSave = canMutate && hasChanges && name.trim().length > 0 && slugReady && !saving;
+
+  const onlyWorkspaceOnCe = flags.IS_CE && workspaces.length <= 1;
+  const canDelete = meetsMinimum("owner") && !onlyWorkspaceOnCe;
+
+  const slugHint = (() => {
+    switch (slugState) {
+      case "checking":
+        return (
+          <span className="pw-workspace-slug-status pw-workspace-slug-checking">
+            Checking availability…
+          </span>
+        );
+      case "available":
+        return (
+          <span className="pw-workspace-slug-status pw-workspace-slug-available">
+            {slug.trim()} is available
+          </span>
+        );
+      case "unavailable":
+        return (
+          <span className="pw-workspace-slug-status pw-workspace-slug-unavailable">
+            This slug is already taken
+          </span>
+        );
+      case "invalid":
+        return (
+          <span className="pw-workspace-slug-status pw-workspace-slug-unavailable">
+            Enter a valid slug (letters, numbers, hyphens)
+          </span>
+        );
+      default:
+        return null;
+    }
+  })();
+
+  const handleSave = useCallback(async () => {
+    if (!workspace || !workspaceData || !canSave) {
+      return;
+    }
+
+    const body: UpdateWorkspaceInput = {};
+    const trimmedName = name.trim();
+    const trimmedSlug = slug.trim();
+
+    if (trimmedName !== workspaceData.name) {
+      body.name = trimmedName;
+    }
+
+    if (trimmedSlug !== workspaceData.slug) {
+      body.slug = trimmedSlug;
+    }
+
+    if (
+      flags.BILLING_ENABLED &&
+      isPaidPlan(workspaceData.plan) &&
+      Number(retentionDays) !== workspaceData.default_retention_days
+    ) {
+      body.default_retention_days = Number(retentionDays);
+    }
+
+    if (Object.keys(body).length === 0) {
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const updated = await workspace.patch<Workspace>("", body);
+      setWorkspaceData(updated);
+      setOriginalSlug(updated.slug);
+      setSlugState("unchanged");
+
+      toast({
+        title: "Workspace settings saved",
+        variant: "success",
+      });
+
+      if (updated.slug !== workspaceSlug) {
+        router.replace(`/workspaces/${updated.slug}/settings`);
+      } else {
+        router.refresh();
+      }
+    } catch {
+      toast({
+        title: "Could not save settings",
+        description: "Check your inputs and try again.",
+        variant: "error",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [
+    canSave,
+    name,
+    retentionDays,
+    router,
+    slug,
+    toast,
+    workspace,
+    workspaceData,
+    workspaceSlug,
+  ]);
+
+  const handleDelete = useCallback(async () => {
+    if (!workspace || !workspaceData || !canDelete) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await workspace.delete("");
+      toast({
+        title: "Workspace deleted",
+        variant: "success",
+      });
+      setDeleteOpen(false);
+
+      const fallback = workspaces.find((item) => item.id !== workspaceData.id);
+      if (fallback) {
+        router.replace(`/workspaces/${fallback.slug}`);
+      } else {
+        router.replace("/");
+      }
+    } catch {
+      toast({
+        title: "Could not delete workspace",
+        description: onlyWorkspaceOnCe
+          ? "You cannot delete your only workspace in this edition."
+          : "Try again in a moment.",
+        variant: "error",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  }, [canDelete, onlyWorkspaceOnCe, router, toast, workspace, workspaceData, workspaces]);
+
+  if (loading) {
+    return <CardSkeleton count={2} />;
+  }
+
+  if (loadError || !workspaceData) {
+    return (
+      <ErrorRetry
+        message="We could not load workspace settings. Check your connection and try again."
+        onRetry={() => {
+          void loadWorkspace();
+        }}
+      />
+    );
+  }
+
+  const plan = workspaceData.plan;
+  const billingEnabled = isBillingNavEnabled();
+  const retentionOptions = buildRetentionOptions(plan);
+
+  return (
+    <div className="pw-workspace-settings">
+      <header className="pw-workspace-settings-header">
+        <h1>General</h1>
+        <p>Workspace name, URL, and defaults.</p>
+      </header>
+
+      <section className="pw-workspace-settings-section" aria-labelledby="pw-ws-general-title">
+        <h2 id="pw-ws-general-title" className="pw-workspace-settings-section-title">
+          General
+        </h2>
+
+        <Input
+          label="Workspace name"
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value);
+          }}
+          disabled={!canMutate}
+          autoComplete="organization"
+        />
+
+        <div>
+          <Input
+            label="URL slug"
+            value={slug}
+            onChange={(event) => {
+              setSlug(event.target.value);
+            }}
+            disabled={!canMutate}
+            mono
+            prefix={<span>/workspaces/</span>}
+          />
+          {slugHint}
+          {slugChanged ? (
+            <p className="pw-workspace-slug-warning" role="status">
+              Changing the slug updates workspace URLs. Bookmarks and shared links
+              to the old path will stop working.
+            </p>
+          ) : null}
+        </div>
+
+        <div className="pw-workspace-settings-actions">
+          <Button disabled={!canSave} loading={saving} onClick={() => void handleSave()}>
+            {saving ? "Saving…" : "Save changes"}
+          </Button>
+        </div>
+      </section>
+
+      {billingEnabled ? (
+        <Card
+          title="Plan"
+          actions={
+            <Link href={`/workspaces/${workspaceSlug}/settings/billing`}>
+              <Button variant="secondary" size="sm">
+                Manage billing
+              </Button>
+            </Link>
+          }
+        >
+          <div className="pw-workspace-plan-row">
+            <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Current plan</span>
+            <Badge variant="accent" pill>
+              {PLAN_LABELS[plan]}
+            </Badge>
+          </div>
+        </Card>
+      ) : null}
+
+      {billingEnabled && isPaidPlan(plan) ? (
+        <section
+          className="pw-workspace-settings-section"
+          aria-labelledby="pw-ws-retention-title"
+        >
+          <h2 id="pw-ws-retention-title" className="pw-workspace-settings-section-title">
+            Default retention
+          </h2>
+          <p style={{ margin: 0, fontSize: 14, color: "var(--text-secondary)" }}>
+            Used by repositories set to follow the workspace plan default.
+          </p>
+          <Select
+            label="Retention period"
+            value={retentionDays}
+            onChange={setRetentionDays}
+            options={retentionOptions}
+            disabled={!canMutate}
+          />
+        </section>
+      ) : billingEnabled && plan === "free" ? (
+        <section
+          className="pw-workspace-settings-section"
+          aria-labelledby="pw-ws-retention-title"
+        >
+          <h2 id="pw-ws-retention-title" className="pw-workspace-settings-section-title">
+            Default retention
+          </h2>
+          <p style={{ margin: 0, fontSize: 14, color: "var(--text-secondary)" }}>
+            Free plan workspaces use a fixed {getPlanLimits("free").maxRetentionDays}-day
+            retention default.
+          </p>
+        </section>
+      ) : null}
+
+      {meetsMinimum("owner") ? (
+        <DangerZone id="pw-ws-danger-zone">
+          <DangerZoneItem
+            title="Delete workspace"
+            description={
+              onlyWorkspaceOnCe
+                ? "You cannot delete your only workspace in PipeWatch CE."
+                : "Permanently delete this workspace, its integrations, and all pipeline data."
+            }
+            action={
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={!canDelete}
+                onClick={() => {
+                  setDeleteOpen(true);
+                }}
+              >
+                Delete workspace
+              </Button>
+            }
+          />
+        </DangerZone>
+      ) : null}
+
+      <TypedConfirmDialog
+        open={deleteOpen}
+        onClose={() => {
+          setDeleteOpen(false);
+        }}
+        onConfirm={() => {
+          void handleDelete();
+        }}
+        title="Delete workspace"
+        description="This action cannot be undone. All integrations, repositories, and run history will be removed."
+        confirmLabel="Delete workspace"
+        expectedPhrase={workspaceData.name}
+        loading={deleting}
+      />
+    </div>
+  );
+}
