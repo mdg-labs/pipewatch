@@ -1,0 +1,58 @@
+---
+description: Drizzle schema source of truth and migration workflow — never hand-write or edit committed migrations
+alwaysApply: true
+---
+
+# Database schema & migrations
+
+PRD §6, §17 · Epic [#6](https://github.com/mdg-labs/pipewatch/issues/6) · Decision #37 (vendor-neutral schema)
+
+## Source of truth
+
+- Drizzle schema in `packages/db/schema/` is the **only** definition of database shape.
+- If it is not in the schema, it does not exist.
+
+Table/column vocabulary: `04-naming.mdc` (vendor-neutral names, `workspace` tenant term).
+
+## Workflow (only valid path)
+
+1. Edit Drizzle schema TypeScript files in `packages/db/schema/`
+2. Generate migration: `pnpm db:generate` (Drizzle Kit / `drizzle-kit generate`)
+3. Commit schema + **new** generated migration together in the same task commit
+
+Apply at runtime/deploy: `drizzle-kit migrate` (CE: API startup; Cloud: pre-deploy with unpooled `DATABASE_URL` — PRD §17).
+
+## Migration rules (mandatory)
+
+- **Never hand-write migrations** — no hand-written SQL, no hand-created migration directories
+- **Drizzle Kit names migrations** — timestamped directory names; do not create, rename, or number folders by hand
+- **Never edit committed migrations** — once a migration file is in git, it is **immutable**; change DB shape by editing schema and generating a **new** migration
+- **Never delete** committed migration files to "fix" history
+- **Forbidden:** `drizzle-kit push`, patching existing `.sql` files, any direct SQL edits under `packages/db/drizzle/`
+- **Blocked:** if Drizzle Kit cannot run → report blocked; do **not** hand-write SQL as a workaround
+
+## Schema rules
+
+- Denormalized `workspace_id` on hot tables: `integrations`, `repositories`, `pipeline_runs`, `pipeline_jobs` (Decision #31)
+- FK cascades for workspace delete must be explicit in schema and documented
+- Orchestrator: at most **one** migration-generating task per batch (Lane S)
+
+## Verifier
+
+Hand-written migrations, edited/deleted committed migrations, or schema changes without a generated migration in the same commit → **FAIL** (Layer 3d).
+
+## Anti-patterns
+
+```typescript
+// ❌ Hand-created migration
+packages/db/drizzle/0001_add_users/migration.sql
+
+// ❌ Editing a committed migration after merge
+// patching packages/db/drizzle/20240616120000_*/migration.sql
+
+// ❌ Push bypasses migration history
+drizzle-kit push
+
+// ✅ Schema change → new generated migration
+// edit packages/db/schema/users.ts → pnpm db:generate → commit schema + new timestamped dir
+```

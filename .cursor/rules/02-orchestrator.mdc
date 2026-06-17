@@ -38,8 +38,10 @@ Load the issue via MCP `issue_read` or `gh`; read acceptance criteria from the i
 
 PipeWatch project on GitHub (`mdg-labs/pipewatch`, project **#5**). Commit subjects use issue number: `[#12]`.
 
+- **Any orchestrator target** (single leaf or epic) → present batch plan, then start immediately unless user said `plan only` / `wait`
 - **Execution agents** → set project Status **In Progress** on leaf issue(s) and parent when dispatching a child (first action, before code); set **In Review** before verifier handoff
-- **Verification agents** → set **Done** only after all layers PASS; FAIL → **Ready** + comment
+- **Verification agents** → set **Done** after all layers PASS (launch **not** `readonly`); FAIL → **Ready** + comment
+- **Orchestrator** → after every verifier PASS, re-query board Status and set **Done** if still **In Review** (source of truth)
 - Execution prompts must **not** set Done — see `.cursor/skills/orchestrator/github-board.md`
 
 ## Universal acceptance criteria (every task)
@@ -52,6 +54,7 @@ Even when not listed in an issue, the verifier applies:
 - Security defaults — JWT/refresh/API-key rules, webhook HMAC, workspace scoping (`03-security-baseline.mdc`)
 - Edition flags via `packages/config/edition.ts` — no scattered edition checks (`00-project.mdc`)
 - Vendor-neutral schema names in DB/API (`04-naming.mdc`)
+- Drizzle schema + migration workflow (`15-db-migrations-schema.mdc`)
 
 ## Explicit non-goals (MVP out of scope — PRD §2)
 

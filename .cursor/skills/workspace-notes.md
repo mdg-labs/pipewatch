@@ -20,3 +20,22 @@
 - Phase Development: confirm `REDIS_URL` / new env keys registered by operator
 
 **Next suggested:** P1 epic #5 or unblocked #30 after #110 (P18 CI scaffold).
+
+## 2026-06-17 — P1 epic #5 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #31 P1-01 design tokens | Done | `e14110d` |
+| #32 P1-02 core components | Done | `e62be4e` |
+| #33 P1-03 form & feedback | Done | `7fc2ae3` |
+| #34 P1-04 data components | Done | `201fe5f` |
+| #35 P1-05 brand + charts | Done | `3aab367` |
+| #36 P1-06 app composites | Done | `7d0d936` |
+| #5 epic parent | Done | closes via #36 `fixes #5` |
+
+**Notes:**
+- App global `import '@pipewatch/ui/styles.css'` deferred to P12-01
+- `pnpm audit --audit-level=high` still fails on pre-existing esbuild advisory
+- `staging` 6 commits ahead of `origin/staging` (not pushed)

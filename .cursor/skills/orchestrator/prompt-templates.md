@@ -6,7 +6,38 @@ Include **role-specific** GITHUB SYNC blocks from [github-board.md](github-board
 
 **Every execution and verifier prompt** must include **GITHUB TOOLS**, **NODE ENV**, and (execution only) **DB MIGRATIONS** blocks below.
 
+**Orchestrator dispatch rules:**
+
+- **Any GitHub target** (single leaf or epic) → build batch plan, **show plan to user**, then start batch 1 immediately (unless user said `plan only` / `wait` / `don't start`).
+- **Verifier Task** → `readonly: false` always (needs GraphQL Status mutations).
+- After verifier PASS → orchestrator runs [board sync](github-board.md#orchestrator--after-every-verifier-pass-mandatory) regardless of verifier output.
+
 ---
+
+## Orchestrator — batch plan + run loop
+
+```text
+TARGET: #<N> | epic #<parent> | phase P1
+PAUSE: only if user said plan only / wait / don't start
+
+1. Load issues + board Status + deps
+2. OUTPUT batch plan table (Lane S/P per batch) — BEFORE first Task dispatch
+3. Dispatch batch 1 execution agent(s)
+4. Verifier(s) — readonly: FALSE
+5. Orchestrator board sync on PASS
+6. Next batch until queue empty or FAIL
+
+EPIC example:
+| Batch | Lane | Issues |
+| 1 | S | #31 |
+| 2 | S | #32 |
+| 3 | S | #33, #34, #35 |  # serialized if shared index.ts
+| 4 | S | #36 | CLOSE_PARENTS: [#5]
+
+SINGLE LEAF example:
+| Batch | Lane | Issues |
+| 1 | S | #42 |
+```
 
 ## GITHUB TOOLS — mandatory in every GITHUB SYNC prompt
 
@@ -61,10 +92,10 @@ NODE ENV:
 ## DB MIGRATIONS — mandatory in every execution prompt
 
 ```text
-DB MIGRATIONS — MANDATORY:
-- Schema in packages/db/schema/ is source of truth
-- Workflow: edit schema → pnpm db:generate (Drizzle Kit) → commit schema + generated migration
-- FORBIDDEN: hand-written SQL, hand-created migration dirs, drizzle-kit push
+DB MIGRATIONS — MANDATORY (see .cursor/rules/15-db-migrations-schema.mdc):
+- Schema in packages/db/schema/ is source of truth — if not in schema, it does not exist
+- Workflow: edit schema → pnpm db:generate (Drizzle Kit) → commit schema + generated migration together
+- FORBIDDEN: hand-written SQL, hand-created migration dirs, editing/deleting committed migrations, drizzle-kit push
 - If Drizzle Kit cannot run → report blocked; do NOT hand-write SQL
 ```
 
@@ -121,14 +152,25 @@ TASK ID: #<N>
 SESSION ID: <same as execution>
 CLOSE_PARENTS: [#<parent>] | none
 
+DISPATCH NOTE: Orchestrator must launch this agent with readonly: FALSE.
+
 GITHUB SYNC — VERIFIER: (see github-board.md verifier variant)
 
 VERIFY:
 - Layer 1: scope audit
 - Layer 2: pnpm lint, typecheck, test:unit (from repo root)
-- Layer 3: AC, PRD contract, security, env vars, commit linking, no hand migrations
+- Layer 3: AC, PRD contract, security, env vars, commit linking, migration policy (`15-db-migrations-schema.mdc`)
 
-REQUIRED OUTPUT: PASS | FAIL with layer detail and fix hints
+AFTER PASS (mandatory before returning):
+1. add_issue_comment with PASS summary
+2. GraphQL Status → Done on leaf (#<N>)
+3. If CLOSE_PARENTS: GraphQL Status → Done on each parent
+4. Re-query Status; include actual board Status in output (not assumed)
+
+REQUIRED OUTPUT:
+- PASS | FAIL with layer detail and fix hints
+- BOARD STATUS: <actual Status after your mutation> on #<N> (and parents if applicable)
+- If GraphQL failed: report BOARD_SYNC: FAILED — orchestrator will retry
 ```
 
 ---
