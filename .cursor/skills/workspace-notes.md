@@ -1,5 +1,48 @@
 # PipeWatch workspace notes
 
+## 2026-06-17 — P7 epic #11 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #60 P7-01 Queue infrastructure | Done | `d3fccd4` |
+| #61 P7-02 Pipeline run/job handlers | Done | `b87f3d5` |
+| #62 P7-03 Backfill jobs | Done | `0712674` |
+| #63 P7-04 Polling lifecycle | Done | `01bd19d` |
+| #64 P7-05 Retention cleanup | Done | `4731c70` |
+| #11 epic parent | Done | closes via #64 `fixes #11` |
+
+**Notes:**
+- Epic order: #60 → #61 → #62 → #63 → #64 (Lane S serial)
+- #64 interrupted by turbo resource exhaustion; fixed via killing stale `@turbo/linux-64` processes + `TURBO_CONCURRENCY=1` for CI
+- No new DB migrations in P7 (BullMQ uses Redis; pipeline schema from P2)
+- `pnpm audit --audit-level=high` still fails on pre-existing esbuild advisory
+- `staging` ~10 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P8 epic #12 (webhooks ingest) or P18 #22 CI scaffold
+
+## 2026-06-17 — P6 epic #10 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #59 P6-05 Webhook payload mappers | Done | `3efc922` |
+| #55 P6-01 GitHub App auth client | Done | `dd79e2d` |
+| #56 P6-02 Integrations REST API | Done | `28158db` |
+| #57 P6-03 Install callback route | Done | `cfdb5fb` |
+| #58 P6-04 Repositories API | Done | `2eaf2d7` |
+| #10 epic parent | Done | closes via #58 `fixes #10` |
+
+**Notes:**
+- Epic order: #59 → #55 → #56 → #57 → #58 (Lane S serial per suggested deps)
+- No new DB migrations in P6 (integrations/repos schema from P2)
+- `pnpm audit --audit-level=high` still fails on pre-existing esbuild advisory
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P7 epic #11 (queue infrastructure) or P18 #22 CI scaffold
+
 ## 2026-06-17 — P5 epic #9 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON

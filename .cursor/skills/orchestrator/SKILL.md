@@ -1,6 +1,6 @@
 ---
 name: orchestrator
-description: Run a chat as a pure orchestrator for PipeWatch. Reads the GitHub Issues board (project #5), presents a Lane S/P batch plan, then dispatches sub-agents immediately (unless user says wait). Verifies each task and syncs board Status to Done after every PASS. Sends a Slack DM to the authenticated Slack user when the run ends. Epic or single issue — start without asking. Use when the user asks to orchestrate, delegate end-to-end, or implement a GitHub issue/epic.
+description: Run a chat as a pure orchestrator for PipeWatch. Reads the GitHub Issues board (project #5), presents a Lane S/P batch plan, then dispatches sub-agents immediately (unless user says wait). Verifies each task and syncs board Status to Done after every PASS. Sends a Slack DM to the configured operator (from cursor@mdg-labs.dev MCP auth) when the run ends. Epic or single issue — start without asking. Use when the user asks to orchestrate, delegate end-to-end, or implement a GitHub issue/epic.
 ---
 
 # Orchestrator (PipeWatch)
@@ -33,7 +33,7 @@ The main agent in this chat is a **dispatcher only**. It reads the **GitHub boar
 - Launch sub-agents via **Task** tool
 - **Board status sync** after verifier PASS — GraphQL `updateProjectV2ItemFieldValue` via Shell/`gh` (see [Board sync](#board-sync-mandatory-orchestrator-owned))
 - **Board status audit** — re-query project Status after each task; fix stuck **In Review**
-- **Session-end Slack DM** to the authenticated Slack MCP user (see [Session-end Slack DM](#session-end-slack-dm-mandatory))
+- **Session-end Slack DM** to the configured **operator** via service-account MCP auth (see [Session-end Slack DM](#session-end-slack-dm-mandatory), [slack-notify.md](slack-notify.md))
 - Ask clarifying questions **only** when target is ambiguous, all children are blocked, or user explicitly paused sync
 
 ### MUST NOT do
@@ -225,19 +225,20 @@ dispatch execution → dispatch verifier (readonly: false)
 
 **Skip only if:** user said `no slack` / `don't slack` / `skip slack`, or Slack MCP is unavailable.
 
-**Goal:** DM whoever **authenticated Slack MCP** in Cursor — the current Slack session user. No GitHub or git email lookup.
+**Sender vs recipient:** Slack MCP is connected as the **service account** `cursor@mdg-labs.dev` so operators receive push notifications. The authenticated MCP user is the **sender**, not the DM recipient. Full config: [slack-notify.md](slack-notify.md).
 
-**Reliability:** Works per-operator when each person connects their own Slack in Cursor. On shared machines with a shared Slack connection, the DM goes to that connection’s user (document in chat if ambiguous).
+**Goal:** DM the **operator** (personal Slack user) from the service account. **Never** DM the authenticated service account to itself.
 
 ### Steps (last action before final user-visible summary)
 
-1. **Current Slack user** — MCP `plugin-slack-slack` → `slack_read_user_profile` (omit `user_id` — defaults to authenticated user).
-   - Take `User ID` from the response (e.g. `U0ARDEK75UJ`).
-   - If lookup fails → report `SLACK_DM: SKIPPED (Slack profile unavailable)` in chat; do not fail the run.
-2. **Send DM** — MCP `plugin-slack-slack` → `slack_send_message`:
-   - `channel_id`: Slack `user_id` from step 1
+1. **Read recipient** — [slack-notify.md](slack-notify.md) **Default operator** `user_id`, unless the run override applies (`slack to <email>` / `slack to <user_id>` in the orchestrator prompt).
+   - If `user_id` missing: MCP `slack_search_users` with operator email from `slack-notify.md` only (not GitHub/git email).
+   - If still unresolved → `SLACK_DM: SKIPPED (no operator recipient)`; do not fail the run.
+2. **Sender sanity check (optional)** — MCP `slack_read_user_profile` (no `user_id`) should be `cursor@mdg-labs.dev`. If auth is a personal account, warn that notifications may not fire.
+3. **Send DM** — MCP `plugin-slack-slack` → `slack_send_message`:
+   - `channel_id`: operator **recipient** `user_id` (from step 1)
    - `message`: markdown summary (see template below)
-3. **Confirm in chat** — one line: `Slack DM sent to <real name>` + message permalink, or skip/fail reason.
+4. **Confirm in chat** — `Slack DM sent to <operator name> (from cursor@mdg-labs.dev)` + permalink, or skip/fail reason.
 
 ### Message template
 
@@ -263,10 +264,12 @@ Keep under ~500 words; link GitHub issues as `https://github.com/mdg-labs/pipewa
 
 | Step | MCP server | Tool |
 |---|---|---|
-| Authenticated Slack user | `plugin-slack-slack` | `slack_read_user_profile` (no `user_id`) |
-| Send DM | `plugin-slack-slack` | `slack_send_message` (`channel_id` = user_id) |
+| Operator recipient | [slack-notify.md](slack-notify.md) | default `user_id`; override per run |
+| Recipient search fallback | `plugin-slack-slack` | `slack_search_users` (operator email only) |
+| Sender check | `plugin-slack-slack` | `slack_read_user_profile` (no `user_id`) |
+| Send DM | `plugin-slack-slack` | `slack_send_message` (`channel_id` = **operator** `user_id`) |
 
-**Do not** use `slack_search_users` / GitHub email / `git config user.email` for recipient resolution — **authenticated Slack user only**. **Do not** post to public channels — **DM only**.
+**Do not** use GitHub email / `git config user.email` for recipient resolution. **Do not** DM the authenticated MCP user when auth is `cursor@mdg-labs.dev`. **Do not** post to public channels — **operator DM only**.
 
 ## Execution agents
 
@@ -343,6 +346,7 @@ _task: #<N> | started: <ISO> | ended: <ISO> | duration: <human> | agent: executi
 - Marking **Done** without `fixes #N` in `staging` git history for that issue
 - Landing another issue's work without `fixes #N` for the source task (e.g. P2-05 schema via #47 without `fixes #41`)
 - Running pnpm/gh/docker/CI commands in the **default sandbox** (causes spurious failures — use `required_permissions: ["all"]` first)
-- Ending an orchestrator run **without** session-end Slack DM (unless user opted out or Slack profile lookup failed)
-- Resolving Slack DM recipient via GitHub/git email instead of **authenticated Slack user**
+- Ending an orchestrator run **without** session-end Slack DM (unless user opted out or recipient unresolved)
+- DMing the **authenticated MCP user** when auth is the service account (`cursor@mdg-labs.dev`) — always DM the **operator** per [slack-notify.md](slack-notify.md)
+- Resolving Slack DM recipient via GitHub/git email instead of **slack-notify.md** / run override / operator email search
 - Posting orchestrator summaries to **public Slack channels** instead of operator DM
