@@ -1,21 +1,17 @@
 "use client";
 
-import { useWorkspaceRole } from "@/hooks/use-workspace-role";
+import { useParams } from "next/navigation";
 
+import { RepoSettingsForm } from "@/components/repos/RepoSettingsForm";
+
+/** Per-repository settings — sync mode, retention, disable/delete (B5). */
 export default function RepositorySettingsPage() {
-  const { canMutate } = useWorkspaceRole();
+  const params = useParams<{ repoId: string }>();
+  const repoId = params.repoId;
 
-  return (
-    <section>
-      <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>
-        Repository settings
-      </h1>
-      <p style={{ color: "var(--text-secondary)", marginTop: 8 }}>
-        Sync mode, retention, and repository actions will load here.
-      </p>
-      <button type="button" disabled={!canMutate}>
-        Save settings
-      </button>
-    </section>
-  );
+  if (!repoId) {
+    return null;
+  }
+
+  return <RepoSettingsForm repoId={repoId} />;
 }
