@@ -29,6 +29,27 @@ pnpm dev
 | `pnpm test:integration` | Run integration tests (requires Docker) |
 | `pnpm test:e2e` | Run Playwright end-to-end tests |
 
+## Integration tests
+
+Integration tests use **ephemeral Postgres 16 and Redis 7 containers** — not Neon, not your running `docker compose` stack, and no `DATABASE_URL` from Phase Development (PRD §11, Decision #38).
+
+`pnpm test:integration` runs `scripts/test-with-deps.sh`, which:
+
+1. Starts labeled `postgres:16-alpine` and `redis:7-alpine` containers with **random host ports** on `127.0.0.1`
+2. Exports `DATABASE_URL` and `REDIS_URL` to the Vitest suites
+3. Applies Drizzle migrations against the ephemeral database
+4. Tears down containers, volumes, and networks on success, failure, or interrupt (`Ctrl+C`)
+
+**Prerequisites:** Docker must be running locally. Node.js 22 and pnpm 9 as above.
+
+Optional ReportPortal reporting: `phase run --env=CI -- pnpm test:integration` (database and Redis still come from ephemeral containers).
+
+Verify cleanup after interrupt:
+
+```bash
+bash scripts/test-with-deps.sh --self-test
+```
+
 ## Layout
 
 ```
