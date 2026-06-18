@@ -1,7 +1,7 @@
 name: Deploy Staging
 
-# Staging deploy pipeline — reusable workflow called from orchestrator.yml after CI passes.
-# Full sync-secrets → migrate → deploy chain lands in #124.
+# Staging deploy pipeline — reusable workflow called from orchestrator.yml after CI passes (PRD §22).
+# Job chain: sync-secrets → migrate → parallel deploys → smoke.
 
 on:
   workflow_call:
@@ -14,13 +14,83 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  placeholder:
-    name: Staging deploy (pending #124)
+  sync-secrets:
+    name: Staging · 1 · Sync secrets
+    uses: ./.github/workflows/sync-secrets.yml
+    with:
+      environment: staging
+      services: all
+    secrets: inherit
+
+  migrate-staging:
+    name: Staging · 2 · Run DB migrations
     runs-on: ubuntu-latest
     environment: staging
+    needs: sync-secrets
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Placeholder
-        run: echo "Staging deploy steps (sync-secrets, migrate, deploy) land in #124"
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Run Drizzle migrations
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        run: bash .github/scripts/run-migrate.sh
+
+  deploy-api:
+    name: Staging · 3 · Deploy API
+    needs: migrate-staging
+    uses: ./.github/workflows/deploy-api.yml
+    with:
+      environment: staging
+      app: pipewatch-staging-api
+    secrets: inherit
+
+  deploy-worker:
+    name: Staging · 3 · Deploy worker
+    needs: migrate-staging
+    uses: ./.github/workflows/deploy-worker.yml
+    with:
+      environment: staging
+      app: pipewatch-staging-worker
+    secrets: inherit
+
+  deploy-web:
+    name: Staging · 3 · Deploy web
+    needs: migrate-staging
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      environment: staging
+      worker: pipewatch-staging-web
+    secrets: inherit
+
+  deploy-marketing:
+    name: Staging · 3 · Deploy marketing
+    needs: migrate-staging
+    uses: ./.github/workflows/deploy-marketing.yml
+    with:
+      environment: staging
+      worker: pipewatch-staging-marketing
+    secrets: inherit
+
+  smoke-staging:
+    name: Staging · 4 · Smoke
+    runs-on: ubuntu-latest
+    environment: staging
+    needs: [deploy-api, deploy-worker, deploy-web, deploy-marketing]
+    env:
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+      APP_URL: ${{ secrets.APP_URL }}
+      MARKETING_URL: ${{ secrets.MARKETING_URL }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Smoke deploy surfaces
+        run: bash .github/scripts/smoke-staging-health.sh
