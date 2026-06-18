@@ -587,6 +587,17 @@ All secrets are authored in **Phase Cloud** (EU region, Frankfurt/AWS eu-central
 | **Cloudflare Workers** | `sync-secrets.yml` from `staging` or `production` GitHub Actions environment |
 | **Local dev** | Phase CLI — `phase run --env=Development -- <command>` or `phase secrets export --env=Development > .env` |
 
+### Fly.io secrets staging modes
+
+`sync-secrets.sh` reads `FLY_SECRETS_MODE` from the workflow. Cloudflare Worker secrets are always applied immediately via `wrangler secret put` regardless of mode.
+
+| Mode | Trigger | Behaviour |
+|---|---|---|
+| **`stage-only`** | `workflow_call` (orchestrator deploy chains) | `flyctl secrets set --stage` — secrets staged on the Fly app but not rolled out to running Machines. The following `flyctl deploy` in the deploy chain applies them. |
+| **`stage-and-deploy`** | `workflow_dispatch` (manual operator sync) | `flyctl secrets set --stage` then `flyctl secrets deploy` — staged secrets are deployed to running Machines immediately, without a full app deploy. |
+
+Manual dispatch on `sync-secrets.yml` is the operator escape hatch for secret-only updates (no code deploy).
+
 ### Phase environments
 
 Phase app: **`pipewatch`**. Four environments in Phase Console — names are **title case**, not lowercase slugs. **Development** is local-only (no sync). **CI**, **Staging**, and **Production** sync to GitHub Actions.
@@ -639,7 +650,7 @@ jobs:
   lint:         turbo lint                    # no environment needed
   unit:         turbo test:unit               # no environment needed
   integration:  environment: ci → turbo test:integration  (ephemeral Postgres + Redis containers)
-  e2e:          environment: ci → playwright test       (staging, main only)
+  e2e:          environment: ci → playwright test       (PR advisory; required on staging/main)
 ```
 
 All test jobs that report to ReportPortal read `REPORTPORTAL_URL`, `REPORTPORTAL_API_KEY`, and `REPORTPORTAL_PROJECT` from the `ci` environment — not hardcoded in workflow YAML.
@@ -1112,72 +1123,78 @@ Infrastructure resource names use the `prod` slug for production (see §4.3).
 
 Third-party GitHub Actions are pinned to full commit SHAs (tag noted in comment) — no mutable version tags or branch refs.
 
-**Workflow structure** (Decision #34):
+**Workflow structure** (Decision #34) — **flat layout, nine files**:
 
 ```
 .github/workflows/
-├── orchestrator.yml          # Sole PR/push entry — calls reusable workflows below
-├── ci.yml                    # Reusable CI gate (workflow_call only)
-├── e2e.yml                   # Reusable Playwright E2E (workflow_call + manual dispatch)
-├── version-check.yml         # Reusable workspace semver validation (PRs)
-├── prepare-release.yml       # Reusable draft release + tag (main)
-├── deploy-staging.yml        # Reusable staging deploy chain
-├── deploy-production.yml     # Production deploy — release published only (standalone)
-├── sync-secrets.yml          # Reusable: GitHub Actions env secrets → Fly.io + CF Workers
-├── deploy-api.yml            # Reusable: build + deploy API to Fly.io
-├── deploy-worker.yml         # Reusable: build + deploy Worker to Fly.io
-├── deploy-web.yml            # Reusable: build + deploy dashboard to CF Workers
-├── deploy-marketing.yml      # Reusable: build + deploy marketing to CF Workers
-├── build-ce-image.yml        # Reusable: build + push CE Docker images to GHCR
-└── manual-sync-secrets.yml   # Manual dispatch: sync secrets without deploying
+├── orchestrator.yml              # Sole automated entry — push, PR, release published
+├── ci.yml                        # Reusable CI gate (workflow_call only)
+├── version-check.yml             # Reusable workspace semver validation (workflow_call only)
+├── e2e.yml                       # Reusable Playwright E2E (workflow_call + workflow_dispatch)
+├── prepare-release.yml           # Reusable draft release + tag (workflow_call only)
+├── sync-secrets.yml              # Reusable secret sync (workflow_call + workflow_dispatch)
+├── deploy-staging.yml            # Reusable staging deploy chain (workflow_call only)
+├── deploy-production.yml         # Reusable production deploy chain (workflow_call only)
+└── build-and-push-ce-image.yml   # Reusable CE Docker images to GHCR (workflow_call only)
 ```
 
 **Entry points:**
 
 | Trigger | Workflow | Notes |
 |---|---|---|
-| Push / PR (any branch) | `orchestrator.yml` | Only workflow with `on: push` / `on: pull_request` besides release and manual |
-| Release published | `deploy-production.yml` | Not called from orchestrator; gated by `DEPLOYED_VERSION` |
-| Manual dispatch | `manual-sync-secrets.yml` | Secrets only — unchanged operator escape hatch |
+| Push / PR / release published | `orchestrator.yml` | **Only** workflow with `on: push`, `on: pull_request`, or `on: release` |
+| Manual dispatch | `sync-secrets.yml` | Secrets only — operator escape hatch (`stage-and-deploy` Fly mode) |
+| Manual dispatch | `e2e.yml` | On-demand E2E against staging or ephemeral CE stack |
 
-All reusable workflow callers grant minimum required `permissions` at the calling job (typically `contents: read`; `packages: write` for CE image builds; `contents: write` for release prep; `actions: write` to record `DEPLOYED_VERSION`).
+**Caller rule:** Only `orchestrator.yml` invokes reusable workflows via `uses:` for automated CI/CD. `sync-secrets.yml` and `e2e.yml` additionally expose `workflow_dispatch` for manual runs (their job definitions are shared with `workflow_call`).
+
+Per-service deploy logic lives **inside** `deploy-staging.yml` and `deploy-production.yml` as parallel jobs — not as separate reusable workflow files.
+
+All orchestrator calling jobs grant minimum required `permissions` (typically `contents: read`; `packages: write` for CE image builds; `contents: write` for release prep; `actions: write` to record `DEPLOYED_VERSION`).
 
 ---
 
 ### Trigger Logic (Decision #35)
 
 ```
-Push / PR (any branch)     → orchestrator.yml
-  ├── ci.yml               lint, typecheck, unit, build, integration, audit
-  ├── version-check.yml    PRs only — workspace package.json semver parity
-  ├── deploy-staging.yml   push to staging, after CI passes
-  ├── build-ce-image.yml   push to staging — tags: dev, nightly, {short_sha}
-  ├── prepare-release.yml  push to main, after CI — draft release when version ≥ 1.0.0
-  ├── build-ce-image.yml   push to main — tags: latest, {short_sha}, main
-  └── e2e.yml              PR advisory; required on staging/main pushes
+orchestrator.yml — sole automated entry (on: push, pull_request, release published)
 
-Release published        → deploy-production.yml (standalone)
-  sync-secrets → migrate → deploy all services → smoke → CE images → record DEPLOYED_VERSION
+Pull request (any branch)
+  ci → version-check → e2e (advisory)
 
-Manual dispatch          → manual-sync-secrets.yml (secrets only, no deploy)
+Push to staging
+  ci → sync-secrets (staging, stage-only) → deploy-staging → build-and-push-ce-image → e2e (required)
+
+Push to main
+  ci → prepare-release → build-and-push-ce-image → e2e (required)
+
+Release published
+  sync-secrets (production, stage-only) → deploy-production → build-and-push-ce-image (if deployed)
+
+Manual dispatch
+  sync-secrets.yml  — secrets only (stage-and-deploy Fly mode)
+  e2e.yml           — on-demand E2E
 ```
 
-PR gates: lint + typecheck + unit + build + integration + audit must pass. E2E advisory on PRs, required on `staging`/`main` branch pushes.
+PR gates: lint + typecheck + unit + build + integration + audit must pass. E2E is advisory on PRs (`continue-on-error`), required on `staging`/`main` branch pushes.
 
 ---
 
-### `orchestrator.yml` — Sole PR/push entry
+### `orchestrator.yml` — Sole automated entry
 
 ```yaml
 on:
   push:
   pull_request:
+  release:
+    types: [published]
 
 permissions:
   contents: read
 
 jobs:
   ci:
+    if: github.event_name != 'release'
     permissions:
       contents: read
       pull-requests: write   # ReportPortal PR comments
@@ -1186,25 +1203,27 @@ jobs:
 
   version-check:
     if: github.event_name == 'pull_request'
-    permissions:
-      contents: read
     uses: ./.github/workflows/version-check.yml
 
-  deploy-staging:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging' && needs.ci.result == 'success'
+  sync-secrets-staging:
+    if: push to staging && needs.ci.result == 'success'
     needs: [ci]
-    permissions:
-      contents: read
+    uses: ./.github/workflows/sync-secrets.yml
+    with:
+      environment: staging    # FLY_SECRETS_MODE: stage-only
+
+  deploy-staging:
+    if: push to staging && ci + sync-secrets-staging succeeded
+    needs: [ci, sync-secrets-staging]
     uses: ./.github/workflows/deploy-staging.yml
     secrets: inherit
 
   build-ce-staging:
-    if: push staging && deploy-staging succeeded
+    if: push to staging && deploy-staging succeeded
     needs: [ci, deploy-staging, meta]
     permissions:
-      contents: read
       packages: write
-    uses: ./.github/workflows/build-ce-image.yml
+    uses: ./.github/workflows/build-and-push-ce-image.yml
     with:
       tags: |
         dev
@@ -1212,7 +1231,7 @@ jobs:
         ${{ needs.meta.outputs.short_sha }}
 
   prepare-release:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci.result == 'success'
+    if: push to main && needs.ci.result == 'success'
     needs: [ci]
     permissions:
       contents: write
@@ -1220,21 +1239,48 @@ jobs:
     secrets: inherit
 
   build-ce-main:
-    if: push main && CI passed
+    if: push to main && CI passed
     needs: [ci, meta]
     permissions:
-      contents: read
       packages: write
-    uses: ./.github/workflows/build-ce-image.yml
+    uses: ./.github/workflows/build-and-push-ce-image.yml
     with:
       tags: |
         latest
         ${{ needs.meta.outputs.short_sha }}
         main
 
-  e2e:
+  sync-secrets-production:
+    if: github.event_name == 'release'
+    uses: ./.github/workflows/sync-secrets.yml
+    with:
+      environment: production   # FLY_SECRETS_MODE: stage-only
+
+  deploy-production:
+    if: release && sync-secrets-production succeeded
+    needs: [sync-secrets-production]
     permissions:
-      contents: read
+      actions: write
+    uses: ./.github/workflows/deploy-production.yml
+    with:
+      release_tag: ${{ github.event.release.tag_name }}
+    secrets: inherit
+
+  build-ce-release:
+    if: release && deploy-production succeeded && deployed == 'true'
+    needs: [deploy-production]
+    permissions:
+      packages: write
+    uses: ./.github/workflows/build-and-push-ce-image.yml
+    with:
+      tags: |
+        latest
+        ${{ github.event.release.tag_name }}
+
+  e2e:
+    if: ci passed && (PR || main || (staging && deploy-staging succeeded))
+    needs: [ci, deploy-staging]
+    permissions:
       pull-requests: write
     uses: ./.github/workflows/e2e.yml
     with:
@@ -1274,22 +1320,30 @@ jobs:
 
 ### `deploy-staging.yml` — Staging deploy chain
 
-Called from `orchestrator.yml` after CI passes on `staging`. Job chain: **sync-secrets → migrate → derive Sentry release → parallel deploys → smoke**.
+Called from `orchestrator.yml` after `sync-secrets-staging` succeeds on push to `staging`. Secrets are already staged on Fly apps (`stage-only`); `flyctl deploy` in each deploy job applies them.
 
-Each deploy job calls a reusable deploy workflow with `environment: staging` and the staging Fly/CF resource names from §4.3.
+Job chain: **migrate → derive Sentry release → parallel deploys (api, worker, web, marketing) → smoke**.
 
----
+Deploy jobs are inline in this workflow — not separate reusable workflow files.
 
-### `deploy-production.yml` — Production deploy (release published)
+### `deploy-production.yml` — Production deploy chain
 
-Standalone trigger — **not** called from `orchestrator.yml`. Runs when a GitHub Release is published (draft → published). Skips if release tag matches `DEPLOYED_VERSION` var in the `production` GitHub Actions environment.
+Called from `orchestrator.yml` on `release: published`, after `sync-secrets-production` succeeds. Skips deploy when release tag matches `DEPLOYED_VERSION` var in the `production` GitHub Actions environment.
 
-Job chain: **check-not-deployed → sync-secrets → migrate → derive Sentry release → parallel deploys → smoke → CE images → record DEPLOYED_VERSION**.
+Job chain: **check-not-deployed → migrate → derive Sentry release → parallel deploys (api, worker, web, marketing) → smoke → record DEPLOYED_VERSION**.
+
+Outputs `deployed: true` when a new production deploy completed — gates `build-ce-release` in orchestrator.
 
 ```yaml
 on:
-  release:
-    types: [published]
+  workflow_call:
+    inputs:
+      release_tag:
+        type: string
+        required: true
+    outputs:
+      deployed:
+        value: ${{ jobs.record-deployed-version.result == 'success' }}
 
 permissions:
   contents: read
@@ -1297,28 +1351,15 @@ permissions:
 jobs:
   check-not-deployed:
     environment: production
-    # compares github.event.release.tag_name to vars.DEPLOYED_VERSION
+    # compares inputs.release_tag to vars.DEPLOYED_VERSION
 
-  sync-secrets:
+  migrate-production:
     needs: check-not-deployed
-    permissions:
-      contents: read
-    uses: ./.github/workflows/sync-secrets.yml
-    with:
-      environment: production
-    secrets: inherit
+    if: should_deploy
+    environment: production
+    # ... run-migrate.sh with DATABASE_URL_UNPOOLED
 
-  # migrate → derive-sentry-release → deploy-api/worker/web/marketing → smoke
-
-  build-ce-image:
-    permissions:
-      contents: read
-      packages: write
-    uses: ./.github/workflows/build-ce-image.yml
-    with:
-      tags: |
-        latest
-        ${{ github.event.release.tag_name }}
+  # derive-sentry-release → deploy-api/worker/web/marketing (parallel) → smoke
 
   record-deployed-version:
     permissions:
@@ -1326,13 +1367,13 @@ jobs:
     # gh variable set DEPLOYED_VERSION
 ```
 
-Publishing the draft release (created by `prepare-release.yml` on `main`) triggers this workflow.
+Publishing the draft release (created by `prepare-release.yml` on push to `main`) triggers orchestrator → `sync-secrets-production` → this workflow.
 
 ---
 
 ### `sync-secrets.yml` — Reusable secret sync
 
-Called at the start of every deploy chain (`deploy-staging.yml`, `deploy-production.yml`) and by `manual-sync-secrets.yml` standalone.
+Called from `orchestrator.yml` before deploy chains (`sync-secrets-staging`, `sync-secrets-production`). Also callable via `workflow_dispatch` for operator secret-only syncs.
 
 ```yaml
 on:
@@ -1344,31 +1385,6 @@ on:
       services:
         type: string
         default: all     # or comma-separated: api,worker,web,marketing
-
-permissions:
-  contents: read
-
-jobs:
-  sync:
-    runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
-    steps:
-      # Secrets already in this GitHub Actions environment (synced from Phase Console).
-      # Push them to Fly.io and CF Workers — does NOT fetch from Phase at runtime.
-      - uses: superfly/flyctl-actions/setup-flyctl@<sha> # pinned
-      - run: bash .github/scripts/sync-secrets.sh "${{ inputs.environment }}" "${{ inputs.services }}"
-```
-
-**Key behaviour:** `flyctl secrets set` updates secrets on the Fly.io app **without triggering a deploy** — new secrets take effect on the next deploy (which follows immediately in the deploy chain) or on the next restart.
-
----
-
-### `manual-sync-secrets.yml` — Manual dispatch, no deploy
-
-**Unchanged** operator escape hatch — triggerable from the GitHub Actions UI. No code change, no deploy — pushes secrets from the selected GitHub Actions environment to Fly.io + CF Workers for that environment.
-
-```yaml
-on:
   workflow_dispatch:
     inputs:
       environment:
@@ -1384,12 +1400,18 @@ permissions:
 
 jobs:
   sync:
-    uses: ./.github/workflows/sync-secrets.yml
-    with:
-      environment: ${{ inputs.environment }}
-      services: ${{ inputs.services }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      # Secrets already in this GitHub Actions environment (synced from Phase Console).
+      # Push them to Fly.io and CF Workers — does NOT fetch from Phase at runtime.
+      - uses: superfly/flyctl-actions/setup-flyctl@<sha> # pinned
+      - env:
+          FLY_SECRETS_MODE: ${{ github.event_name == 'workflow_dispatch' && 'stage-and-deploy' || 'stage-only' }}
+        run: bash .github/scripts/sync-secrets.sh "${{ inputs.environment }}" "${{ inputs.services }}"
 ```
+
+**Fly.io modes** (see §10): `stage-only` when called from orchestrator (secrets applied on next `flyctl deploy`); `stage-and-deploy` on manual dispatch (secrets rolled out to running Machines immediately).
 
 ---
 
@@ -1401,7 +1423,7 @@ jobs:
 
 ---
 
-### CE Docker Images (`build-ce-image.yml`)
+### CE Docker Images (`build-and-push-ce-image.yml`)
 
 Builds three images (`pipewatch-api`, `pipewatch-worker`, `pipewatch-web`) to GHCR. No app secrets baked in — CE users provide env at runtime via Docker Compose.
 
@@ -1409,7 +1431,7 @@ Builds three images (`pipewatch-api`, `pipewatch-worker`, `pipewatch-web`) to GH
 |---|---|
 | Push to `staging` (orchestrator) | `dev`, `nightly`, `{short_sha}` |
 | Push to `main` (orchestrator) | `latest`, `{short_sha}`, `main` |
-| Release published (`deploy-production.yml`) | `latest`, `{release_tag}` |
+| Release published + deploy succeeded (orchestrator) | `latest`, `{release_tag}` |
 
 ```yaml
 on:
@@ -1450,13 +1472,14 @@ Migrations run as a dedicated step in deploy workflows **before** any `flyctl de
 
 ### Summary: What gets deployed when
 
-| Trigger | CI | Secrets Sync | Deploy | CE Image Tags (per service) |
-|---|---|---|---|---|
-| Push / PR (any branch) | ✓ (orchestrator → ci.yml) | — | — | — |
-| Push to `staging` | ✓ | ✓ (staging) | staging all services | `dev`, `nightly`, `{short_sha}` |
-| Push to `main` | ✓ + draft release if version ≥ 1.0.0 | — | — | `latest`, `{short_sha}`, `main` |
-| Release published | — | ✓ (production) | production all services | `latest`, `{release_tag}` |
-| Manual dispatch | — | ✓ (chosen env + services) | none | — |
+| Trigger | CI | Secrets Sync | Deploy | CE Image Tags (per service) | E2E |
+|---|---|---|---|---|---|
+| Pull request (any branch) | ✓ | — | — | — | advisory |
+| Push to `staging` | ✓ | ✓ (staging, stage-only) | staging all services | `dev`, `nightly`, `{short_sha}` | required |
+| Push to `main` | ✓ + draft release if version ≥ 1.0.0 | — | — | `latest`, `{short_sha}`, `main` | required |
+| Release published | — | ✓ (production, stage-only) | production all services (if not already deployed) | `latest`, `{release_tag}` (if deployed) | — |
+| Manual `sync-secrets` dispatch | — | ✓ (chosen env, stage-and-deploy) | none | — | — |
+| Manual `e2e` dispatch | — | — | none | — | on-demand |
 
 ## 23. Environment Variables — Complete Reference
 
@@ -1741,7 +1764,7 @@ Key architectural and product decisions, rationale, and date recorded.
 | 29 | **Onboarding wizard with URL-tracked step state** | URL state enables deep-linking, back-button support, debuggability; step resumption inferred from DB state | DB-persisted wizard state (over-engineered), no wizard (poor UX) | Jun 2026 |
 | 30 | **CE bootstrap via GitHub OAuth** | PipeWatch is a developer tool — all CE users have GitHub; avoids password hashing, reset flows; OAuth already implemented | Email+password bootstrap (rejected — extra complexity, more attack surface) | Jun 2026 |
 | 33 | **Phase syncs to GitHub Actions only; Fly/CF via workflow code** | Phase Console → GitHub Actions environments (`staging`, `production`, `ci`) is the only Phase sync. `sync-secrets.yml` pushes from GHA env to Fly/CF — no Phase→Fly/CF path, no `phase-action` in workflows. `ci` holds test-tool credentials only (ReportPortal, Sentry upload) — no database URLs. | Hardcoded secrets in YAML (rejected), Phase native push to CF/Fly (rejected), `phase-action` in CI (rejected) | Jun 2026 |
-| 34 | **Orchestrator CI workflow calling reusable sub-workflows** | Central `.github/workflows/orchestrator.yml` calls reusable workflows per service; secret sync as standalone reusable workflow callable both from orchestrator and manually; clean separation of concerns; easy to add/remove services without touching orchestrator logic | Monolithic single workflow file (rejected — unmanageable at scale), per-service independent workflows (rejected — no central coordination) | Jun 2026 |
+| 34 | **Flat CI/CD layout — orchestrator sole automated entry** | Nine workflow files under `.github/workflows/`. `orchestrator.yml` is the only automated entry (`push`, `pull_request`, `release: published`) and the only caller of reusable workflows for CI/CD. Deploy chains are self-contained (`deploy-staging.yml`, `deploy-production.yml`) with inline per-service jobs — no separate `deploy-api.yml` etc. `sync-secrets.yml` supports `workflow_dispatch` for operator secret-only syncs (`stage-and-deploy` Fly mode). `e2e.yml` supports manual dispatch for on-demand testing. | Per-service reusable deploy workflows (rejected — file sprawl), monolithic single workflow (rejected — unmanageable), standalone production deploy trigger (rejected — orchestrator coordinates full release chain) | Jun 2026 |
 | 36 | **CE: auto-migrate at API startup; Cloud: explicit migrate step pre-deploy using unpooled Neon URL** | CE users need zero-friction upgrades — automatic migration on start is the right UX; Cloud needs explicit pre-deploy migration step to avoid deploying new code against old schema; unpooled URL required for Drizzle Kit DDL transactions (pooler breaks DDL) | CE: manual migration CLI (rejected — friction on upgrade), Cloud: migrate inside app startup (rejected — race condition with multiple instances) | Jun 2026 |
 | 35 | **Branch-based environment routing + release-gated production deploys** | `staging` branch → staging deploy + nightly CE image; `main` branch → version check → auto-tag + draft release if version >1.0.0 and no existing tag; published release → production deploy + versioned CE image. GitHub Actions environments: `staging` and `production`. Clean separation: staging is always live, production is intentionally gated behind a release publish action. | Auto-deploy main to production (rejected — too risky), manual production deploy only (rejected — too much friction) | Jun 2026 |
 | 32 | **Phase over Infisical for secrets management** | Phase: E2E encrypted (server never sees plaintext), SOC 2 Type II, EU/Frankfurt data residency (AWS eu-central-1), native GitHub Actions environment sync (configured in Phase Console); Infisical lacks E2E encryption. GDPR-compatible: subprocessors verified (AWS DE, Cloudflare, Google Workspace US for internal comms only, Stripe for billing). DPA available via Trust Center. | Infisical (one existing project, lacks E2E encryption), Doppler (US-only hosting) | Jun 2026 |
