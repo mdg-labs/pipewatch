@@ -46,33 +46,34 @@ jobs:
           should_deploy=false
           gha_environment=""
           ce_tags=""
+          short_sha="${GITHUB_SHA:0:7}"
 
           case "${{ github.event_name }}" in
             push)
               if [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
                 gha_environment="staging"
                 should_deploy=true
-                ce_tags=$'ghcr.io/mdg-labs/pipewatch:dev\nghcr.io/mdg-labs/pipewatch:nightly'
+                ce_tags=$"latest\n${short_sha}\ndev\nnightly"
               elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
                 gha_environment="staging"
                 should_deploy=false
-                ce_tags="ghcr.io/mdg-labs/pipewatch:main"
+                ce_tags=$"latest\n${short_sha}\nmain"
               fi
               ;;
             release)
               gha_environment="production"
               should_deploy=true
               version="$(node -p "require('./package.json').version")"
-              ce_tags=$"ghcr.io/mdg-labs/pipewatch:${version}"$'\n'"ghcr.io/mdg-labs/pipewatch:latest"
+              ce_tags=$"latest\n${short_sha}\n${version}"
               ;;
             workflow_dispatch)
               gha_environment="${{ inputs.environment }}"
               should_deploy=true
               if [[ "${{ inputs.environment }}" == "staging" ]]; then
-                ce_tags=$'ghcr.io/mdg-labs/pipewatch:dev\nghcr.io/mdg-labs/pipewatch:nightly'
+                ce_tags=$"latest\n${short_sha}\ndev\nnightly"
               else
                 version="$(node -p "require('./package.json').version")"
-                ce_tags=$"ghcr.io/mdg-labs/pipewatch:${version}"$'\n'"ghcr.io/mdg-labs/pipewatch:latest"
+                ce_tags=$"latest\n${short_sha}\n${version}"
               fi
               ;;
           esac
@@ -200,7 +201,7 @@ jobs:
     secrets: inherit
 
   build-ce-image:
-    name: Build CE image (stub)
+    name: Build CE images
     needs: [resolve, get-version, deploy-api, deploy-worker]
     if: >-
       always() &&
@@ -214,24 +215,7 @@ jobs:
         github.event_name != 'release' ||
         needs.get-version.result == 'success'
       )
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push CE API image
-        env:
-          CE_TAGS: ${{ needs.resolve.outputs.ce_tags }}
-        run: |
-          set -euo pipefail
-          mapfile -t tags <<< "$CE_TAGS"
-          bash .github/scripts/build-ce-image-stub.sh "${tags[@]}"
+    uses: ./.github/workflows/build-ce-image.yml
+    with:
+      tags: ${{ needs.resolve.outputs.ce_tags }}
+    secrets: inherit
