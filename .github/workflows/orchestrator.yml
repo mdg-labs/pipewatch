@@ -16,12 +16,17 @@ concurrency:
 jobs:
   ci:
     name: CI
+    permissions:
+      contents: read
+      pull-requests: write
     uses: ./.github/workflows/ci.yml
     secrets: inherit
 
   version-check:
     name: Version check
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
     uses: ./.github/workflows/version-check.yml
 
   meta:
@@ -46,7 +51,6 @@ jobs:
     needs: [ci]
     permissions:
       contents: read
-      packages: write
     uses: ./.github/workflows/deploy-staging.yml
     secrets: inherit
 
@@ -113,6 +117,9 @@ jobs:
         (github.ref == 'refs/heads/staging' && needs.deploy-staging.result == 'success')
       )
     needs: [ci, deploy-staging]
+    permissions:
+      contents: read
+      pull-requests: write
     uses: ./.github/workflows/e2e.yml
     with:
       advisory: ${{ github.event_name == 'pull_request' }}

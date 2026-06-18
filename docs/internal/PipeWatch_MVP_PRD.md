@@ -612,7 +612,7 @@ Three environments. Workflows declare `environment: <name>` to access that envir
 
 **`ci` environment — recommended over hardcoding:** Do not hardcode secrets or environment-specific URLs in workflow YAML. Put them in the `ci` GitHub Actions environment (synced from Phase): API keys as **secrets**, instance URLs and project names as **vars** (e.g. `REPORTPORTAL_URL`, `REPORTPORTAL_PROJECT`). Workflows reference `${{ secrets.REPORTPORTAL_API_KEY }}` and `${{ vars.REPORTPORTAL_URL }}`. Lint and pure unit jobs can run without `environment: ci`; integration, E2E, and any job touching external services must set `environment: ci`.
 
-Deploy workflows (`staging` / `production`) and CI workflows (`ci`) consume `${{ secrets.* }}` and `${{ vars.* }}` only — never fetch from Phase at runtime. Full variable list in Section 23.
+Deploy workflows (`staging` / `production`) and CI workflows (`ci`) consume `${{ secrets.* }}` and `${{ vars.* }}` only — never fetch from Phase at runtime. Third-party GitHub Actions in workflow YAML are pinned to full commit SHAs. Full variable list in Section 23.
 
 ---
 
@@ -1110,206 +1110,229 @@ All deployments go through GitHub Actions. Phase is the operator's secret store.
 
 Infrastructure resource names use the `prod` slug for production (see §4.3).
 
+Third-party GitHub Actions are pinned to full commit SHAs (tag noted in comment) — no mutable version tags or branch refs.
+
 **Workflow structure** (Decision #34):
 
 ```
 .github/workflows/
-├── orchestrator.yml          # Main entry point — calls reusable workflows
+├── orchestrator.yml          # Sole PR/push entry — calls reusable workflows below
+├── ci.yml                    # Reusable CI gate (workflow_call only)
+├── e2e.yml                   # Reusable Playwright E2E (workflow_call + manual dispatch)
+├── version-check.yml         # Reusable workspace semver validation (PRs)
+├── prepare-release.yml       # Reusable draft release + tag (main)
+├── deploy-staging.yml        # Reusable staging deploy chain
+├── deploy-production.yml     # Production deploy — release published only (standalone)
 ├── sync-secrets.yml          # Reusable: GitHub Actions env secrets → Fly.io + CF Workers
 ├── deploy-api.yml            # Reusable: build + deploy API to Fly.io
 ├── deploy-worker.yml         # Reusable: build + deploy Worker to Fly.io
 ├── deploy-web.yml            # Reusable: build + deploy dashboard to CF Workers
 ├── deploy-marketing.yml      # Reusable: build + deploy marketing to CF Workers
-├── build-ce-image.yml        # Reusable: build + push CE Docker image to GHCR
-├── ci.yml                    # PR/branch CI: lint, unit, integration tests
+├── build-ce-image.yml        # Reusable: build + push CE Docker images to GHCR
 └── manual-sync-secrets.yml   # Manual dispatch: sync secrets without deploying
 ```
+
+**Entry points:**
+
+| Trigger | Workflow | Notes |
+|---|---|---|
+| Push / PR (any branch) | `orchestrator.yml` | Only workflow with `on: push` / `on: pull_request` besides release and manual |
+| Release published | `deploy-production.yml` | Not called from orchestrator; gated by `DEPLOYED_VERSION` |
+| Manual dispatch | `manual-sync-secrets.yml` | Secrets only — unchanged operator escape hatch |
+
+All reusable workflow callers grant minimum required `permissions` at the calling job (typically `contents: read`; `packages: write` for CE image builds; `contents: write` for release prep; `actions: write` to record `DEPLOYED_VERSION`).
 
 ---
 
 ### Trigger Logic (Decision #35)
 
 ```
-Push to any branch         → ci.yml (lint + unit + integration tests)
-Push to `staging` branch   → orchestrator.yml (staging deploy + nightly CE image)
-Push to `main` branch      → version check:
-                               if version >= 1.0.0 AND no git tag exists for version
-                                 → create git tag + draft GitHub release
-                               else → no-op (CI only)
-Release published (draft→published)
-                           → orchestrator.yml (production deploy + versioned CE image)
-Manual dispatch            → manual-sync-secrets.yml (secrets only, no deploy)
+Push / PR (any branch)     → orchestrator.yml
+  ├── ci.yml               lint, typecheck, unit, build, integration, audit
+  ├── version-check.yml    PRs only — workspace package.json semver parity
+  ├── deploy-staging.yml   push to staging, after CI passes
+  ├── build-ce-image.yml   push to staging — tags: dev, nightly, {short_sha}
+  ├── prepare-release.yml  push to main, after CI — draft release when version ≥ 1.0.0
+  ├── build-ce-image.yml   push to main — tags: latest, {short_sha}, main
+  └── e2e.yml              PR advisory; required on staging/main pushes
+
+Release published        → deploy-production.yml (standalone)
+  sync-secrets → migrate → deploy all services → smoke → CE images → record DEPLOYED_VERSION
+
+Manual dispatch          → manual-sync-secrets.yml (secrets only, no deploy)
 ```
+
+PR gates: lint + typecheck + unit + build + integration + audit must pass. E2E advisory on PRs, required on `staging`/`main` branch pushes.
 
 ---
 
-### `ci.yml` — Runs on every push + PR
+### `orchestrator.yml` — Sole PR/push entry
 
 ```yaml
 on:
   push:
   pull_request:
 
-jobs:
-  lint:
-    uses: ./.github/workflows/_lint.yml
-
-  unit:
-    uses: ./.github/workflows/_test-unit.yml
-
-  integration:
-    needs: [lint, unit]
-    uses: ./.github/workflows/_test-integration.yml
-    secrets: inherit
-    # environment: ci — set inside reusable workflow (ReportPortal, Sentry — not DATABASE_URL)
-    # Ephemeral Postgres + Redis service containers; migrations + tests; GHA tears down on job end
-
-  e2e:
-    needs: [integration]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
-    uses: ./.github/workflows/_test-e2e.yml
-    secrets: inherit
-    # environment: ci — set inside reusable workflow
-    # Runs Playwright against staging deployment
-```
-
-PR gates: lint + unit + integration must pass. E2E advisory on PRs, required on staging/main.
-
----
-
-### `orchestrator.yml` — Staging deploy (push to `staging`)
-
-```yaml
-on:
-  push:
-    branches: [staging]
-  workflow_dispatch:
-    inputs:
-      environment:
-        type: choice
-        options: [staging, production]
+permissions:
+  contents: read
 
 jobs:
-  sync-secrets:
-    uses: ./.github/workflows/sync-secrets.yml
-    with:
-      environment: staging
+  ci:
+    permissions:
+      contents: read
+      pull-requests: write   # ReportPortal PR comments
+    uses: ./.github/workflows/ci.yml
     secrets: inherit
 
-  deploy-api:
-    needs: sync-secrets
-    uses: ./.github/workflows/deploy-api.yml
-    with:
-      environment: staging
-      app: pipewatch-staging-api
+  version-check:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/version-check.yml
+
+  deploy-staging:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging' && needs.ci.result == 'success'
+    needs: [ci]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy-staging.yml
     secrets: inherit
 
-  deploy-worker:
-    needs: sync-secrets
-    uses: ./.github/workflows/deploy-worker.yml
-    with:
-      environment: staging
-      app: pipewatch-staging-worker
-    secrets: inherit
-
-  deploy-web:
-    needs: sync-secrets
-    uses: ./.github/workflows/deploy-web.yml
-    with:
-      environment: staging
-      worker: pipewatch-staging-web
-    secrets: inherit
-
-  deploy-marketing:
-    needs: sync-secrets
-    uses: ./.github/workflows/deploy-marketing.yml
-    with:
-      environment: staging
-      worker: pipewatch-staging-marketing
-    secrets: inherit
-
-  build-ce-image:
-    needs: [deploy-api, deploy-worker]  # only if app builds succeed
+  build-ce-staging:
+    if: push staging && deploy-staging succeeded
+    needs: [ci, deploy-staging, meta]
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/build-ce-image.yml
     with:
       tags: |
-        ghcr.io/mdg-labs/pipewatch:dev
-        ghcr.io/mdg-labs/pipewatch:nightly
+        dev
+        nightly
+        ${{ needs.meta.outputs.short_sha }}
+
+  prepare-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.ci.result == 'success'
+    needs: [ci]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/prepare-release.yml
+    secrets: inherit
+
+  build-ce-main:
+    if: push main && CI passed
+    needs: [ci, meta]
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-ce-image.yml
+    with:
+      tags: |
+        latest
+        ${{ needs.meta.outputs.short_sha }}
+        main
+
+  e2e:
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/e2e.yml
+    with:
+      advisory: ${{ github.event_name == 'pull_request' }}
     secrets: inherit
 ```
 
 ---
 
-### `orchestrator.yml` — Production deploy (on release published)
+### `ci.yml` — Reusable CI gate (`workflow_call` only)
+
+Never triggered directly. Consolidates lint, typecheck, unit tests, build, integration tests (ephemeral Postgres + Redis service containers), dependency audit, and ReportPortal launch lifecycle.
+
+```yaml
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    environment: ci   # ReportPortal, Sentry — not DATABASE_URL (ephemeral containers)
+    # ... lint → typecheck → unit → build → integration → audit
+
+  reportportal-summary:
+    needs: ci
+    environment: ci
+    permissions:
+      contents: read
+      pull-requests: write
+    # ... job summary + PR comment
+```
+
+---
+
+### `deploy-staging.yml` — Staging deploy chain
+
+Called from `orchestrator.yml` after CI passes on `staging`. Job chain: **sync-secrets → migrate → derive Sentry release → parallel deploys → smoke**.
+
+Each deploy job calls a reusable deploy workflow with `environment: staging` and the staging Fly/CF resource names from §4.3.
+
+---
+
+### `deploy-production.yml` — Production deploy (release published)
+
+Standalone trigger — **not** called from `orchestrator.yml`. Runs when a GitHub Release is published (draft → published). Skips if release tag matches `DEPLOYED_VERSION` var in the `production` GitHub Actions environment.
+
+Job chain: **check-not-deployed → sync-secrets → migrate → derive Sentry release → parallel deploys → smoke → CE images → record DEPLOYED_VERSION**.
 
 ```yaml
 on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 jobs:
-  get-version:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get.outputs.version }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: get
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+  check-not-deployed:
+    environment: production
+    # compares github.event.release.tag_name to vars.DEPLOYED_VERSION
 
   sync-secrets:
+    needs: check-not-deployed
+    permissions:
+      contents: read
     uses: ./.github/workflows/sync-secrets.yml
     with:
       environment: production
     secrets: inherit
 
-  deploy-api:
-    needs: [sync-secrets, get-version]
-    uses: ./.github/workflows/deploy-api.yml
-    with:
-      environment: production
-      app: pipewatch-prod-api
-    secrets: inherit
-
-  deploy-worker:
-    needs: [sync-secrets, get-version]
-    uses: ./.github/workflows/deploy-worker.yml
-    with:
-      environment: production
-      app: pipewatch-prod-worker
-    secrets: inherit
-
-  deploy-web:
-    needs: [sync-secrets, get-version]
-    uses: ./.github/workflows/deploy-web.yml
-    with:
-      environment: production
-      worker: pipewatch-prod-web
-    secrets: inherit
-
-  deploy-marketing:
-    needs: [sync-secrets, get-version]
-    uses: ./.github/workflows/deploy-marketing.yml
-    with:
-      environment: production
-      worker: pipewatch-prod-marketing
-    secrets: inherit
+  # migrate → derive-sentry-release → deploy-api/worker/web/marketing → smoke
 
   build-ce-image:
-    needs: [deploy-api, deploy-worker, get-version]
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/build-ce-image.yml
     with:
       tags: |
-        ghcr.io/mdg-labs/pipewatch:${{ needs.get-version.outputs.version }}
-        ghcr.io/mdg-labs/pipewatch:latest
-    secrets: inherit
+        latest
+        ${{ github.event.release.tag_name }}
+
+  record-deployed-version:
+    permissions:
+      actions: write
+    # gh variable set DEPLOYED_VERSION
 ```
+
+Publishing the draft release (created by `prepare-release.yml` on `main`) triggers this workflow.
 
 ---
 
 ### `sync-secrets.yml` — Reusable secret sync
 
-Called by orchestrator (before every deploy) and by `manual-sync-secrets.yml` standalone.
+Called at the start of every deploy chain (`deploy-staging.yml`, `deploy-production.yml`) and by `manual-sync-secrets.yml` standalone.
 
 ```yaml
 on:
@@ -1317,69 +1340,47 @@ on:
     inputs:
       environment:
         type: string
-        required: true
+        required: true   # staging | production
       services:
         type: string
-        default: 'all'  # or 'api,worker' or 'web,marketing' etc.
+        default: all     # or comma-separated: api,worker,web,marketing
+
+permissions:
+  contents: read
 
 jobs:
   sync:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}  # GitHub environment: staging | production
+    environment: ${{ inputs.environment }}
     steps:
       # Secrets already in this GitHub Actions environment (synced from Phase Console).
       # Push them to Fly.io and CF Workers — does NOT fetch from Phase at runtime.
-
-      - name: Sync secrets to Fly.io API app
-        if: contains(inputs.services, 'all') || contains(inputs.services, 'api')
-        run: |
-          flyctl secrets set             DATABASE_URL="${{ secrets.DATABASE_URL }}"             REDIS_URL="${{ secrets.REDIS_URL }}"             JWT_SECRET="${{ secrets.JWT_SECRET }}"             # ... other API secrets
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          FLY_APP: pipewatch-${{ inputs.environment == 'production' && 'prod' || inputs.environment }}-api
-
-      - name: Sync secrets to Fly.io Worker app
-        if: contains(inputs.services, 'all') || contains(inputs.services, 'worker')
-        run: |
-          flyctl secrets set             DATABASE_URL="${{ secrets.DATABASE_URL }}"             REDIS_URL="${{ secrets.REDIS_URL }}"             # ... other Worker secrets
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-          FLY_APP: pipewatch-${{ inputs.environment == 'production' && 'prod' || inputs.environment }}-worker
-
-      - name: Sync secrets to CF Worker (web)
-        if: contains(inputs.services, 'all') || contains(inputs.services, 'web')
-        run: |
-          echo "${{ secrets.NEXT_PUBLIC_API_URL }}" | wrangler secret put NEXT_PUBLIC_API_URL             --name pipewatch-${{ inputs.environment == 'production' && 'prod' || inputs.environment }}-web
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
-
-      - name: Sync secrets to CF Worker (marketing)
-        if: contains(inputs.services, 'all') || contains(inputs.services, 'marketing')
-        run: |
-          echo "${{ secrets.UMAMI_WEBSITE_ID }}" | wrangler secret put UMAMI_WEBSITE_ID             --name pipewatch-${{ inputs.environment == 'production' && 'prod' || inputs.environment }}-marketing
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+      - uses: superfly/flyctl-actions/setup-flyctl@<sha> # pinned
+      - run: bash .github/scripts/sync-secrets.sh "${{ inputs.environment }}" "${{ inputs.services }}"
 ```
 
-**Key behaviour:** `flyctl secrets set` updates secrets on the Fly.io app **without triggering a deploy** — the new secrets take effect on the next deploy (which follows immediately in the orchestrator) or on the next restart. This is exactly the separation you want.
+**Key behaviour:** `flyctl secrets set` updates secrets on the Fly.io app **without triggering a deploy** — new secrets take effect on the next deploy (which follows immediately in the deploy chain) or on the next restart.
 
 ---
 
 ### `manual-sync-secrets.yml` — Manual dispatch, no deploy
+
+**Unchanged** operator escape hatch — triggerable from the GitHub Actions UI. No code change, no deploy — pushes secrets from the selected GitHub Actions environment to Fly.io + CF Workers for that environment.
 
 ```yaml
 on:
   workflow_dispatch:
     inputs:
       environment:
-        description: Target environment
         type: choice
         options: [staging, production]
         required: true
       services:
-        description: Services to sync (comma-separated, or "all")
         type: string
         default: all
+
+permissions:
+  contents: read
 
 jobs:
   sync:
@@ -1390,49 +1391,25 @@ jobs:
     secrets: inherit
 ```
 
-Triggerable from the GitHub Actions UI. No code change, no deploy — pushes secrets from the selected GitHub Actions environment to Fly.io + CF Workers for that environment.
+---
+
+### Version Check + Auto-tag
+
+**PR validation:** `version-check.yml` (called from orchestrator on PRs) ensures all workspace `package.json` files share the root semver.
+
+**Release preparation:** `prepare-release.yml` (called from orchestrator on push to `main`, after CI) creates a draft GitHub Release + git tag when version ≥ 1.0.0 and `v{version}` does not exist. Operator publishes the draft → triggers `deploy-production.yml`.
 
 ---
 
-### Version Check + Auto-tag (`main` branch)
+### CE Docker Images (`build-ce-image.yml`)
 
-```yaml
-# Part of ci.yml, runs after tests pass on main
-  version-check:
-    needs: [integration]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-tags: true
+Builds three images (`pipewatch-api`, `pipewatch-worker`, `pipewatch-web`) to GHCR. No app secrets baked in — CE users provide env at runtime via Docker Compose.
 
-      - name: Check version and create tag if needed
-        run: |
-          VERSION=$(node -p "require('./package.json').version")
-          echo "Version: $VERSION"
-
-          # Only tag if >= 1.0.0
-          if npx semver -r ">=1.0.0" "$VERSION"; then
-            TAG="v$VERSION"
-            if git rev-parse "$TAG" >/dev/null 2>&1; then
-              echo "Tag $TAG already exists — skipping"
-            else
-              echo "Creating tag $TAG and draft release"
-              gh release create "$TAG"                 --title "PipeWatch $TAG"                 --draft                 --generate-notes
-            fi
-          else
-            echo "Version $VERSION < 1.0.0 — no tag created"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-```
-
-Publishing the draft release in the GitHub UI triggers the production orchestrator.
-
----
-
-### CE Docker Image (`build-ce-image.yml`)
+| Trigger | Tags (per image) |
+|---|---|
+| Push to `staging` (orchestrator) | `dev`, `nightly`, `{short_sha}` |
+| Push to `main` (orchestrator) | `latest`, `{short_sha}`, `main` |
+| Release published (`deploy-production.yml`) | `latest`, `{release_tag}` |
 
 ```yaml
 on:
@@ -1440,71 +1417,46 @@ on:
     inputs:
       tags:
         type: string
-        required: true
+        required: true   # newline-separated suffixes
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ inputs.tags }}
-          # No app secrets baked in — CE users provide their own via docker-compose env
+permissions:
+  contents: read
+  packages: write
 ```
-
-CE image contains no secrets — users inject their own via `docker-compose.yml` env vars.
 
 ---
 
 ### Migrations — Cloud (Hosted Edition)
 
-Migrations run as a dedicated step in the deploy workflow **before** any `flyctl deploy` or `wrangler deploy` call. Uses the **unpooled Neon connection URL** — Drizzle Kit migrations require a direct connection, not a pooled one (PgBouncer/Neon pooler breaks DDL transactions).
+Migrations run as a dedicated step in deploy workflows **before** any `flyctl deploy` or `wrangler deploy` call. Uses the **unpooled Neon connection URL** — Drizzle Kit migrations require a direct connection, not a pooled one (PgBouncer/Neon pooler breaks DDL transactions).
 
 ```yaml
-# Part of deploy-api.yml reusable workflow, runs before flyctl deploy
+# Part of deploy-staging.yml / deploy-production.yml, before deploy jobs
   migrate:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - run: pnpm install --frozen-lockfile
+      - uses: actions/checkout@<sha> # pinned
+      - uses: ./.github/actions/setup
       - name: Run migrations
-        run: pnpm --filter @pipewatch/db drizzle-kit migrate
+        run: bash .github/scripts/run-migrate.sh
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL_UNPOOLED }}
-          # ^ Neon unpooled URL — direct connection, required for DDL
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
 ```
 
-**`DATABASE_URL_UNPOOLED`** lives in `staging` and `production` GitHub Actions environments only — used by the pre-deploy migration step. Neon direct connection string (no pooler); required for Drizzle Kit DDL. The runtime `DATABASE_URL` uses the pooled endpoint.
+**`DATABASE_URL_UNPOOLED`** lives in `staging` and `production` GitHub Actions environments only. Migration failure blocks all deploy jobs in the chain.
 
-Migration job is a dependency of all deploy jobs — if migration fails, no service deploys.
-
-```yaml
-# In orchestrator.yml
-  deploy-api:
-    needs: [sync-secrets, migrate]  # migrate must pass first
-    uses: ./.github/workflows/deploy-api.yml
-```
+---
 
 ### Summary: What gets deployed when
 
-
-| Trigger | Secrets Sync | Deploy | CE Image Tags |
-|---|---|---|---|
-| Push to `staging` | ✓ (staging) | staging all services | `dev`, `nightly` |
-| Push to `main` (version ≥1.0.0, no tag) | — | — (CI only + draft release created) | — |
-| Draft release published | ✓ (`production`) | production — all services | `{version}`, `latest` |
-| Manual dispatch | ✓ (chosen env + services) | none | — |
-| PR / any other branch | — (CI only) | — | — |
+| Trigger | CI | Secrets Sync | Deploy | CE Image Tags (per service) |
+|---|---|---|---|---|
+| Push / PR (any branch) | ✓ (orchestrator → ci.yml) | — | — | — |
+| Push to `staging` | ✓ | ✓ (staging) | staging all services | `dev`, `nightly`, `{short_sha}` |
+| Push to `main` | ✓ + draft release if version ≥ 1.0.0 | — | — | `latest`, `{short_sha}`, `main` |
+| Release published | — | ✓ (production) | production all services | `latest`, `{release_tag}` |
+| Manual dispatch | — | ✓ (chosen env + services) | none | — |
 
 ## 23. Environment Variables — Complete Reference
 

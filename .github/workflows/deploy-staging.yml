@@ -16,6 +16,8 @@ concurrency:
 jobs:
   sync-secrets:
     name: Staging · 1 · Sync secrets
+    permissions:
+      contents: read
     uses: ./.github/workflows/sync-secrets.yml
     with:
       environment: staging
@@ -29,7 +31,7 @@ jobs:
     needs: sync-secrets
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup workspace
         uses: ./.github/actions/setup
@@ -49,7 +51,7 @@ jobs:
       release: ${{ steps.release.outputs.release }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Derive Sentry release
         id: release
@@ -58,6 +60,8 @@ jobs:
   deploy-api:
     name: Staging · 3 · Deploy API
     needs: derive-sentry-release
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy-api.yml
     with:
       environment: staging
@@ -68,6 +72,8 @@ jobs:
   deploy-worker:
     name: Staging · 3 · Deploy worker
     needs: derive-sentry-release
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy-worker.yml
     with:
       environment: staging
@@ -78,6 +84,8 @@ jobs:
   deploy-web:
     name: Staging · 3 · Deploy web
     needs: derive-sentry-release
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy-web.yml
     with:
       environment: staging
@@ -88,6 +96,8 @@ jobs:
   deploy-marketing:
     name: Staging · 3 · Deploy marketing
     needs: derive-sentry-release
+    permissions:
+      contents: read
     uses: ./.github/workflows/deploy-marketing.yml
     with:
       environment: staging
@@ -108,7 +118,7 @@ jobs:
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Smoke deploy surfaces
         run: bash .github/scripts/smoke-staging-health.sh
