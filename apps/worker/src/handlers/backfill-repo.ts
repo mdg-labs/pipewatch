@@ -13,6 +13,7 @@ import {
   bisectBackfillWindow,
   buildInitialBackfillWindow,
   canSubdivideBackfillWindow,
+  collectWorkflowRunExternalIds,
   fetchWorkflowRunsPage,
   formatCreatedRangeFilter,
   gitHubAppConfigFromWorkerEnv,
@@ -24,7 +25,9 @@ import {
   logBackfillHistoryTruncated,
   markRepositorySynced,
   resolveEffectiveRetentionDays,
+  retentionWindowStart,
 } from "../services/github/backfill.js";
+import { reconcileDeletedPipelineRuns } from "../services/pipeline-upsert.js";
 
 export { BACKFILL_REPO_JOB_NAME };
 
@@ -44,6 +47,7 @@ export type BackfillRepoDeps = {
 
 export type BackfillRepoResult = {
   runsIngested: number;
+  runsDeleted: number;
   historyTruncated: boolean;
 };
 
@@ -61,7 +65,7 @@ export async function backfillRepo(
 
   const repository = await loadRepositoryRecord(deps.db, repoId, workspaceId);
   if (!repository.enabled) {
-    return { runsIngested: 0, historyTruncated: false };
+    return { runsIngested: 0, runsDeleted: 0, historyTruncated: false };
   }
 
   const integration = await loadIntegrationRecord(deps.db, integrationId, workspaceId);
@@ -203,8 +207,25 @@ export async function backfillRepo(
     });
   }
 
+  const retentionCutoff = retentionWindowStart(retentionDays);
+  const { externalRunIds, complete } = await collectWorkflowRunExternalIds(
+    repository.fullName,
+    retentionDays,
+    fetchDeps,
+  );
+
+  let runsDeleted = 0;
+  if (complete) {
+    runsDeleted = await reconcileDeletedPipelineRuns(deps.db, {
+      workspaceId,
+      repoId,
+      githubExternalRunIds: externalRunIds,
+      retentionCutoff,
+    });
+  }
+
   await markRepositorySynced(deps.db, repoId, new Date());
   await job.updateData({ repoId, workspaceId, integrationId, historyTruncated });
 
-  return { runsIngested, historyTruncated };
+  return { runsIngested, runsDeleted, historyTruncated };
 }

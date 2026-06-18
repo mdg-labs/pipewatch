@@ -590,6 +590,78 @@ export async function upsertDiscoveredRepository(
   return row;
 }
 
+export type CollectWorkflowRunExternalIdsResult = {
+  externalRunIds: Set<string>;
+  complete: boolean;
+};
+
+/** Paginated GitHub run ids in the retention window — bisects on the 1,000-result search cap. */
+export async function collectWorkflowRunExternalIds(
+  fullName: string,
+  retentionDays: number,
+  fetchDeps: GitHubFetchDeps,
+): Promise<CollectWorkflowRunExternalIdsResult> {
+  const externalRunIds = new Set<string>();
+  let complete = true;
+  const pendingWindows: BackfillTimeWindow[] = [buildInitialBackfillWindow(retentionDays)];
+
+  while (pendingWindows.length > 0) {
+    const window = pendingWindows.shift();
+    if (!window) {
+      break;
+    }
+
+    const createdFilter = formatCreatedRangeFilter(
+      new Date(window.start),
+      new Date(window.end),
+    );
+    let page = 1;
+
+    while (true) {
+      const response = await fetchWorkflowRunsPage(
+        fullName,
+        page,
+        createdFilter,
+        fetchDeps,
+      );
+
+      if (
+        page === 1 &&
+        isWindowAtSearchCap(response.total_count) &&
+        canSubdivideBackfillWindow(window)
+      ) {
+        const [left, right] = bisectBackfillWindow(window);
+        pendingWindows.unshift(right, left);
+        break;
+      }
+
+      if (page === 1 && isWindowAtSearchCap(response.total_count)) {
+        complete = false;
+        logBackfillHistoryTruncated(fullName, window, response.total_count);
+        break;
+      }
+
+      for (const run of response.workflow_runs) {
+        externalRunIds.add(String(run.id));
+      }
+
+      if (response.workflow_runs.length < RUNS_PER_PAGE) {
+        break;
+      }
+
+      if (page >= GITHUB_RUNS_MAX_PAGES) {
+        complete = false;
+        logBackfillHistoryTruncated(fullName, window, response.total_count);
+        break;
+      }
+
+      page += 1;
+    }
+  }
+
+  return { externalRunIds, complete };
+}
+
 export async function fetchWorkflowRunsPage(
   fullName: string,
   page: number,

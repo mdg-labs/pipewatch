@@ -9,7 +9,7 @@ import type {
   PipelineRunUpsert,
   PipelineStepUpsert,
 } from "@pipewatch/utils";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq, gte, inArray, ne } from "drizzle-orm";
 
 type PipelineRunRow = typeof pipelineRuns.$inferSelect;
 type PipelineJobRow = typeof pipelineJobs.$inferSelect;
@@ -89,6 +89,51 @@ async function purgeSupersededJobsByName(
         ne(pipelineJobs.externalJobId, keepExternalJobId),
       ),
     );
+}
+
+/**
+ * Remove PipeWatch runs absent from GitHub's retention-window list (audit §20).
+ * Scoped by `workspace_id` + `repo_id` — no cross-workspace deletes.
+ */
+export async function reconcileDeletedPipelineRuns(
+  database: Db,
+  params: {
+    workspaceId: string;
+    repoId: string;
+    githubExternalRunIds: ReadonlySet<string>;
+    retentionCutoff: Date;
+  },
+): Promise<number> {
+  const rows = await database
+    .select({ id: pipelineRuns.id, externalRunId: pipelineRuns.externalRunId })
+    .from(pipelineRuns)
+    .where(
+      and(
+        eq(pipelineRuns.workspaceId, params.workspaceId),
+        eq(pipelineRuns.repoId, params.repoId),
+        gte(pipelineRuns.startedAt, params.retentionCutoff),
+      ),
+    );
+
+  const orphanIds = rows
+    .filter((row) => !params.githubExternalRunIds.has(row.externalRunId))
+    .map((row) => row.id);
+
+  if (orphanIds.length === 0) {
+    return 0;
+  }
+
+  await database
+    .delete(pipelineRuns)
+    .where(
+      and(
+        eq(pipelineRuns.workspaceId, params.workspaceId),
+        eq(pipelineRuns.repoId, params.repoId),
+        inArray(pipelineRuns.id, orphanIds),
+      ),
+    );
+
+  return orphanIds.length;
 }
 
 /** Upsert a pipeline run by `(repo_id, external_run_id)`. */

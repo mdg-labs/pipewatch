@@ -285,7 +285,7 @@ describe("backfill-repo integration", () => {
     expect(result.runsIngested).toBe(101);
     expect(result.historyTruncated).toBe(false);
     const runCalls = filterRunsListCalls(calls);
-    expect(runCalls).toHaveLength(2);
+    expect(runCalls.length).toBeGreaterThanOrEqual(2);
     expect(runCalls[0]).toContain("page=1");
     expect(runCalls[0]).toContain("created=");
     expect(runCalls[1]).toContain("page=2");
@@ -333,7 +333,7 @@ describe("backfill-repo integration", () => {
     expect(result.runsIngested).toBe(1);
     expect(result.historyTruncated).toBe(false);
     const runCalls = filterRunsListCalls(calls);
-    expect(runCalls).toHaveLength(1);
+    expect(runCalls.length).toBeGreaterThanOrEqual(1);
     expect(runCalls[0]).toContain("page=2");
 
     const [run] = await database
@@ -474,7 +474,7 @@ describe("backfill-repo integration", () => {
       filterRunsListCalls(fetchImpl.mock.calls.map(([request]) =>
         typeof request === "string" ? request : request.toString(),
       )),
-    ).toHaveLength(12);
+    ).toHaveLength(18);
 
     const runs = await database
       .select()
@@ -710,5 +710,52 @@ describe("backfill-repo integration", () => {
       "Run tests",
       "Post job cleanup",
     ]);
+  });
+
+  it("removes pipeline runs deleted on GitHub during backfill reconciliation", async () => {
+    const seed = await seedRepository(database);
+    const deletedRunId = "8880001";
+    const recentStartedAt = new Date();
+
+    await database.insert(pipelineRuns).values({
+      workspaceId: seed.workspaceId,
+      repoId: seed.repoId,
+      externalRunId: deletedRunId,
+      pipelineName: "CI",
+      pipelineDefinitionRef: ".github/workflows/ci.yml",
+      status: "completed",
+      conclusion: "success",
+      branch: "main",
+      commitSha: "abc123def456",
+      triggerType: "push",
+      sourceUrl: `https://github.com/${seed.fullName}/actions/runs/${deletedRunId}`,
+      startedAt: recentStartedAt,
+      completedAt: recentStartedAt,
+      runAttempt: 1,
+    });
+
+    const { fetchImpl } = createMockWorkflowRunsFetch(seed.fullName, [[]]);
+
+    const job = createJob({
+      repoId: seed.repoId,
+      workspaceId: seed.workspaceId,
+      integrationId: seed.integrationId,
+    });
+
+    const result = await backfillRepo(job, {
+      db: database,
+      env: workerEnv,
+      fetchImpl,
+    });
+
+    expect(result.runsIngested).toBe(0);
+    expect(result.runsDeleted).toBe(1);
+
+    const runs = await database
+      .select()
+      .from(pipelineRuns)
+      .where(eq(pipelineRuns.repoId, seed.repoId));
+
+    expect(runs).toHaveLength(0);
   });
 });

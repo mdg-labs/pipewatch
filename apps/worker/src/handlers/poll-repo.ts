@@ -8,6 +8,7 @@ import {
   type PollRepoJobPayload,
 } from "../queues/polling.js";
 import {
+  collectWorkflowRunExternalIds,
   fetchWorkflowRunsPage,
   formatCreatedSinceFilter,
   gitHubAppConfigFromWorkerEnv,
@@ -18,7 +19,9 @@ import {
   markRepositorySynced,
   resolveEffectiveRetentionDays,
   retentionCreatedSince,
+  retentionWindowStart,
 } from "../services/github/backfill.js";
+import { reconcileDeletedPipelineRuns } from "../services/pipeline-upsert.js";
 import { resolveEffectivePollingIntervalSeconds } from "../services/polling/lifecycle.js";
 
 export { POLL_REPO_JOB_NAME };
@@ -47,12 +50,12 @@ export function resolvePollCreatedSince(
 export async function pollRepo(
   job: Job<PollRepoJobPayload>,
   deps: PollRepoDeps,
-): Promise<{ runsIngested: number }> {
+): Promise<{ runsIngested: number; runsDeleted: number }> {
   const { repoId, workspaceId, integrationId } = job.data;
 
   const repository = await loadRepositoryRecord(deps.db, repoId, workspaceId);
   if (!repository.enabled) {
-    return { runsIngested: 0 };
+    return { runsIngested: 0, runsDeleted: 0 };
   }
 
   const interval = resolveEffectivePollingIntervalSeconds(
@@ -60,7 +63,7 @@ export async function pollRepo(
     deps.env.PIPEWATCH_MODE,
   );
   if (interval === null) {
-    return { runsIngested: 0 };
+    return { runsIngested: 0, runsDeleted: 0 };
   }
 
   const integration = await loadIntegrationRecord(deps.db, integrationId, workspaceId);
@@ -110,7 +113,24 @@ export async function pollRepo(
     page += 1;
   }
 
+  const retentionCutoff = retentionWindowStart(retentionDays);
+  const { externalRunIds, complete } = await collectWorkflowRunExternalIds(
+    repository.fullName,
+    retentionDays,
+    fetchDeps,
+  );
+
+  let runsDeleted = 0;
+  if (complete) {
+    runsDeleted = await reconcileDeletedPipelineRuns(deps.db, {
+      workspaceId,
+      repoId,
+      githubExternalRunIds: externalRunIds,
+      retentionCutoff,
+    });
+  }
+
   await markRepositorySynced(deps.db, repoId, new Date());
 
-  return { runsIngested };
+  return { runsIngested, runsDeleted };
 }
