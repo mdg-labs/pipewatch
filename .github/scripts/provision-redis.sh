@@ -52,11 +52,9 @@ warn_legacy_fly_app redis "$INFRA_SLUG"
 
 count_machines() {
   local app="$1"
-  local -a org_args=()
-  with_org_args org_args
 
   local output
-  if ! output="$(flyctl machines list -a "$app" "${org_args[@]}" --json 2>&1)"; then
+  if ! output="$(flyctl machines list -a "$app" --json 2>&1)"; then
     if echo "$output" | grep -qi 'could not find app'; then
       echo -1
       return 0
@@ -81,9 +79,7 @@ count_running_machines() {
     return 0
   fi
 
-  local -a org_args=()
-  with_org_args org_args
-  flyctl machines list -a "$app" "${org_args[@]}" --json 2>/dev/null \
+  flyctl machines list -a "$app" --json 2>/dev/null \
     | jq '[.[] | select(.state == "started" or .state == "running")] | length' 2>/dev/null \
     || echo 0
 }
@@ -112,16 +108,13 @@ ensure_fly_app() {
 }
 
 ensure_redis_volume() {
-  local -a org_args=()
-  with_org_args org_args
-
   if ! fly_app_exists "$FLY_REDIS_APP"; then
     echo "provision-redis: ${FLY_REDIS_APP} missing before volume create — registering app"
     ensure_fly_app
   fi
 
   local existing
-  existing="$(flyctl volumes list -a "$FLY_REDIS_APP" "${org_args[@]}" --json 2>/dev/null \
+  existing="$(flyctl volumes list -a "$FLY_REDIS_APP" --json 2>/dev/null \
     | jq '[.[] | select(.name == "'"${REDIS_VOLUME_NAME}"'")] | length' 2>/dev/null \
     || echo 0)"
 
@@ -134,7 +127,6 @@ ensure_redis_volume() {
   local create_output
   if create_output="$(flyctl volumes create "$REDIS_VOLUME_NAME" \
     -a "$FLY_REDIS_APP" \
-    "${org_args[@]}" \
     --region "$FLY_REGION" \
     --yes 2>&1)"; then
     return 0
@@ -142,6 +134,8 @@ ensure_redis_volume() {
 
   if echo "$create_output" | grep -qi 'could not find app'; then
     echo "provision-redis: volume API could not resolve ${FLY_REDIS_APP} — re-registering app and retrying"
+    local -a org_args=()
+    with_org_args org_args
     if ! flyctl apps create "$FLY_REDIS_APP" "${org_args[@]}" 2>/dev/null; then
       : # may already exist in another visibility window
     fi
@@ -152,7 +146,6 @@ ensure_redis_volume() {
     fi
     if ! flyctl volumes create "$REDIS_VOLUME_NAME" \
       -a "$FLY_REDIS_APP" \
-      "${org_args[@]}" \
       --region "$FLY_REGION" \
       --yes; then
       echo "provision-redis: failed to create volume ${REDIS_VOLUME_NAME} after app retry" >&2
@@ -174,8 +167,6 @@ deploy_redis_workload() {
 
   ensure_redis_volume
 
-  local -a org_args=()
-  with_org_args org_args
   local deploy_config
   deploy_config="$(mktemp)"
   # fly.toml app name must match --app or deploy/volume APIs disagree (static file uses placeholder).
@@ -184,7 +175,6 @@ deploy_redis_workload() {
   echo "provision-redis: deploying first-time Redis workload to ${FLY_REDIS_APP}"
   if ! flyctl deploy \
     -a "$FLY_REDIS_APP" \
-    "${org_args[@]}" \
     --config "$deploy_config" \
     --remote-only \
     --ha=false \

@@ -4,6 +4,8 @@
 
 set -euo pipefail
 
+# Adds --org when FLY_ORG is set. Only valid for `flyctl apps` subcommands (list, create).
+# App-scoped commands (machines, volumes, deploy) use -a / --app — do not pass org args.
 with_org_args() {
   local -n _out=$1
   _out=()
