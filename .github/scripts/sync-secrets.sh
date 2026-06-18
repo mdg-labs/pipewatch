@@ -115,8 +115,13 @@ export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
 
 API_APP="pipewatch-${INFRA_SLUG}-api"
 WORKER_APP="pipewatch-${INFRA_SLUG}-worker"
+REDIS_APP="pipewatch-${INFRA_SLUG}-redis"
 WEB_WORKER="pipewatch-${INFRA_SLUG}-web"
 MARKETING_WORKER="pipewatch-${INFRA_SLUG}-marketing"
+
+# Internal Fly 6PN — not a Phase/GHA secret (PRD §4.3, Decision #13).
+export REDIS_URL="redis://${REDIS_APP}.internal:6379"
+echo "sync-secrets: derived REDIS_URL from Fly app name (${REDIS_APP}.internal:6379)"
 
 API_FLY_KEYS=(
   NODE_ENV

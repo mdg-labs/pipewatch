@@ -1,0 +1,8 @@
+{
+  "version": "2",
+  "phaseApp": "PipeWatch",
+  "appId": "c95b439e-cce7-49f9-8fde-b2ac37b53a35",
+  "defaultEnv": "Development",
+  "envId": "9909965e-2bd9-4c50-a345-0af7d89beafa",
+  "monorepoSupport": true
+}
