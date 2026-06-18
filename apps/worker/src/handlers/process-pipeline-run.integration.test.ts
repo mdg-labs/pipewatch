@@ -22,6 +22,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { processPipelineJob, ParentRunNotFoundError } from "./process-pipeline-job.js";
 import { processPipelineRun } from "./process-pipeline-run.js";
+import { findPipelineRunByExternalId } from "../services/pipeline-upsert.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 const fixturesDir = join(
@@ -255,6 +256,201 @@ describe("process-pipeline-run integration", () => {
     expect(run?.completedAt).toBeNull();
     expect(run?.durationMs).toBeNull();
   });
+
+  it("purges stale jobs when run_attempt increases on full workflow re-run", async () => {
+    const seed = await seedRepository(database);
+    const runPayload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
+    const buildJobPayload = loadFixture<GitHubWorkflowJobWebhookPayload>(
+      "workflow-job-completed.json",
+    );
+    const testJobPayload = structuredClone(buildJobPayload);
+    testJobPayload.workflow_job.id = 2891501298;
+    testJobPayload.workflow_job.name = "test";
+    testJobPayload.workflow_job.html_url =
+      "https://github.com/octocat/Hello-World/actions/runs/2891501295/jobs/2891501298";
+
+    await processPipelineRun(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: runPayload.action,
+        payload: runPayload,
+      },
+      { db: database },
+    );
+
+    const run = await findPipelineRunByExternalId(
+      database,
+      seed.repoId,
+      "2891501295",
+    );
+    if (!run) {
+      throw new Error("Expected parent run");
+    }
+
+    await processPipelineJob(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: buildJobPayload.action,
+        payload: buildJobPayload,
+      },
+      { db: database },
+    );
+    await processPipelineJob(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: testJobPayload.action,
+        payload: testJobPayload,
+      },
+      { db: database },
+    );
+
+    expect(
+      await database.select().from(pipelineJobs).where(eq(pipelineJobs.runId, run.id)),
+    ).toHaveLength(2);
+
+    const rerunPayload = structuredClone(runPayload);
+    rerunPayload.workflow_run.run_attempt = 2;
+    rerunPayload.workflow_run.status = "in_progress";
+    rerunPayload.workflow_run.conclusion = null;
+    rerunPayload.workflow_run.updated_at = "2022-10-11T14:24:00Z";
+
+    await processPipelineRun(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: "in_progress",
+        payload: rerunPayload,
+      },
+      { db: database },
+    );
+
+    const rerunBuildPayload = structuredClone(buildJobPayload);
+    rerunBuildPayload.workflow_job.id = 2891501400;
+    rerunBuildPayload.workflow_job.html_url =
+      "https://github.com/octocat/Hello-World/actions/runs/2891501295/jobs/2891501400";
+
+    const rerunTestPayload = structuredClone(testJobPayload);
+    rerunTestPayload.workflow_job.id = 2891501401;
+    rerunTestPayload.workflow_job.html_url =
+      "https://github.com/octocat/Hello-World/actions/runs/2891501295/jobs/2891501401";
+
+    await processPipelineJob(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: rerunBuildPayload.action,
+        payload: rerunBuildPayload,
+      },
+      { db: database },
+    );
+    await processPipelineJob(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: rerunTestPayload.action,
+        payload: rerunTestPayload,
+      },
+      { db: database },
+    );
+
+    const [updatedRun] = await database
+      .select()
+      .from(pipelineRuns)
+      .where(eq(pipelineRuns.id, run.id));
+
+    expect(updatedRun?.runAttempt).toBe(2);
+
+    const jobs = await database
+      .select()
+      .from(pipelineJobs)
+      .where(eq(pipelineJobs.runId, run.id));
+
+    expect(jobs).toHaveLength(2);
+    expect(jobs.map((job) => job.externalJobId).sort()).toEqual([
+      "2891501400",
+      "2891501401",
+    ]);
+    expect(jobs.map((job) => job.externalJobId)).not.toContain("2891501297");
+    expect(jobs.map((job) => job.externalJobId)).not.toContain("2891501298");
+  });
+
+  it("updates the same job row when single-job re-run reuses external_job_id", async () => {
+    const seed = await seedRepository(database);
+    const runPayload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
+    const jobPayload = loadFixture<GitHubWorkflowJobWebhookPayload>(
+      "workflow-job-completed.json",
+    );
+
+    await processPipelineRun(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: runPayload.action,
+        payload: runPayload,
+      },
+      { db: database },
+    );
+
+    await processPipelineJob(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: jobPayload.action,
+        payload: jobPayload,
+      },
+      { db: database },
+    );
+
+    const rerunPayload = structuredClone(runPayload);
+    rerunPayload.workflow_run.run_attempt = 2;
+    rerunPayload.workflow_run.status = "in_progress";
+    rerunPayload.workflow_run.conclusion = null;
+
+    await processPipelineRun(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: "in_progress",
+        payload: rerunPayload,
+      },
+      { db: database },
+    );
+
+    jobPayload.workflow_job.name = "build (re-run)";
+    jobPayload.workflow_job.conclusion = "failure";
+    jobPayload.workflow_job.completed_at = "2022-10-11T14:25:00Z";
+
+    const secondJob = await processPipelineJob(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: jobPayload.action,
+        payload: jobPayload,
+      },
+      { db: database },
+    );
+
+    expect(secondJob.jobId).toBeTruthy();
+
+    const [job] = await database
+      .select()
+      .from(pipelineJobs)
+      .where(eq(pipelineJobs.externalJobId, "2891501297"));
+
+    expect(job?.id).toBe(secondJob.jobId);
+    expect(job?.name).toBe("build (re-run)");
+    expect(job?.conclusion).toBe("failure");
+    expect(
+      await database.select().from(pipelineJobs).where(eq(pipelineJobs.externalJobId, "2891501297")),
+    ).toHaveLength(1);
+  });
 });
 
 describe("process-pipeline-job integration", () => {
@@ -278,6 +474,15 @@ describe("process-pipeline-job integration", () => {
       { db: database },
     );
 
+    const parentRun = await findPipelineRunByExternalId(
+      database,
+      seed.repoId,
+      String(runPayload.workflow_run.id),
+    );
+    if (!parentRun) {
+      throw new Error("Expected parent run");
+    }
+
     const result = await processPipelineJob(
       {
         workspaceId: seed.workspaceId,
@@ -291,7 +496,12 @@ describe("process-pipeline-job integration", () => {
     const [job] = await database
       .select()
       .from(pipelineJobs)
-      .where(eq(pipelineJobs.externalJobId, "2891501297"));
+      .where(
+        and(
+          eq(pipelineJobs.runId, parentRun.id),
+          eq(pipelineJobs.externalJobId, "2891501297"),
+        ),
+      );
 
     expect(job).toBeDefined();
     expect(job?.id).toBe(result.jobId);
@@ -334,7 +544,12 @@ describe("process-pipeline-job integration", () => {
     const jobs = await database
       .select()
       .from(pipelineJobs)
-      .where(eq(pipelineJobs.externalJobId, "2891501297"));
+      .where(
+        and(
+          eq(pipelineJobs.runId, parentRun.id),
+          eq(pipelineJobs.externalJobId, "2891501297"),
+        ),
+      );
 
     expect(jobs).toHaveLength(1);
     expect(jobs[0]?.name).toBe("build (updated)");

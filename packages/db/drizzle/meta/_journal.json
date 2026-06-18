@@ -29,6 +29,13 @@
       "when": 1781682012505,
       "tag": "0003_chief_alex_wilder",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1781815217908,
+      "tag": "0004_strong_outlaw_kid",
+      "breakpoints": true
     }
   ]
 }

@@ -54,6 +54,7 @@ describe("mapWorkflowRunPayload", () => {
       startedAt: new Date("2022-10-11T14:22:30Z"),
       completedAt: new Date("2022-10-11T14:23:45Z"),
       durationMs: 75_000,
+      runAttempt: 1,
     });
   });
 
@@ -113,5 +114,16 @@ describe("mapWorkflowRunPayload", () => {
     );
     expect(resolveBranch(null)).toBe(PIPELINE_NO_BRANCH_LABEL);
     expect(resolveBranch("  ")).toBe(PIPELINE_NO_BRANCH_LABEL);
+  });
+
+  it("maps workflow_run.run_attempt with default 1 when absent", () => {
+    const payload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
+
+    expect(mapWorkflowRunPayload(payload, context).runAttempt).toBe(1);
+
+    payload.workflow_run.run_attempt = 3;
+    expect(mapWorkflowRunPayload(payload, context).runAttempt).toBe(3);
   });
 });

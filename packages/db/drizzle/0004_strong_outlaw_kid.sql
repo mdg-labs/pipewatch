@@ -1,0 +1,1 @@
+ALTER TABLE "pipeline_runs" ADD COLUMN "run_attempt" integer DEFAULT 1 NOT NULL;

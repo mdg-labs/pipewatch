@@ -40,6 +40,8 @@ export const pipelineRuns = pgTable(
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     durationMs: integer("duration_ms"),
+    /** GitHub `workflow_run.run_attempt` — increments on each re-run (default 1). */
+    runAttempt: integer("run_attempt").notNull().default(1),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

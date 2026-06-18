@@ -21,6 +21,8 @@ export const PIPELINE_UNKNOWN_WORKFLOW_LABEL = "(unknown workflow)" as const;
 
 export interface GitHubWorkflowRun {
   id: number;
+  /** GitHub `workflow_run.run_attempt` — stable `id`, incrementing attempt (default 1). */
+  run_attempt?: number;
   name: string | null;
   path: string;
   status: string;
@@ -58,6 +60,7 @@ export interface PipelineRunUpsert {
   startedAt: Date;
   completedAt: Date | null;
   durationMs: number | null;
+  runAttempt: number;
 }
 
 export interface MapWorkflowRunContext {
@@ -134,5 +137,6 @@ export function mapWorkflowRunPayload(
     startedAt,
     completedAt,
     durationMs: computeDurationMs(startedAt, completedAt),
+    runAttempt: run.run_attempt ?? 1,
   };
 }
