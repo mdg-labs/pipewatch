@@ -1,21 +1,25 @@
 name: Orchestrator
 
-# Sole PR/push entry — CI gate, then branch-specific deploy/release/CE image builds (PRD §22, Decision #34–#35).
+# Sole entry point — CI, deploy, release, and CE image builds (PRD §22, Decision #34–#35).
+# Only this workflow calls reusable workflows under .github/workflows/.
 
 on:
   push:
   pull_request:
+  release:
+    types: [published]
 
 permissions:
   contents: read
 
 concurrency:
-  group: orchestrator-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: orchestrator-${{ github.workflow }}-${{ github.event.pull_request.number || github.event.release.tag_name || github.ref }}
   cancel-in-progress: true
 
 jobs:
   ci:
     name: CI
+    if: github.event_name != 'release'
     permissions:
       contents: read
       pull-requests: write
@@ -41,14 +45,30 @@ jobs:
       - id: sha
         run: echo "short_sha=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
 
-  deploy-staging:
-    name: Deploy staging
+  sync-secrets-staging:
+    name: Sync secrets (staging)
     if: >-
       always() &&
       needs.ci.result == 'success' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/staging'
     needs: [ci]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/sync-secrets.yml
+    with:
+      environment: staging
+    secrets: inherit
+
+  deploy-staging:
+    name: Deploy staging
+    if: >-
+      always() &&
+      needs.ci.result == 'success' &&
+      needs.sync-secrets-staging.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/staging'
+    needs: [ci, sync-secrets-staging]
     permissions:
       contents: read
     uses: ./.github/workflows/deploy-staging.yml
@@ -66,7 +86,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: ./.github/workflows/build-ce-image.yml
+    uses: ./.github/workflows/build-and-push-ce-image.yml
     with:
       tags: |
         dev
@@ -98,12 +118,55 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: ./.github/workflows/build-ce-image.yml
+    uses: ./.github/workflows/build-and-push-ce-image.yml
     with:
       tags: |
         latest
         ${{ needs.meta.outputs.short_sha }}
         main
+    secrets: inherit
+
+  sync-secrets-production:
+    name: Sync secrets (production)
+    if: github.event_name == 'release'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/sync-secrets.yml
+    with:
+      environment: production
+    secrets: inherit
+
+  deploy-production:
+    name: Deploy production
+    if: >-
+      always() &&
+      needs.sync-secrets-production.result == 'success' &&
+      github.event_name == 'release'
+    needs: [sync-secrets-production]
+    permissions:
+      contents: read
+      actions: write
+    uses: ./.github/workflows/deploy-production.yml
+    with:
+      release_tag: ${{ github.event.release.tag_name }}
+    secrets: inherit
+
+  build-ce-release:
+    name: Build CE images (release)
+    if: >-
+      always() &&
+      needs.deploy-production.result == 'success' &&
+      needs.deploy-production.outputs.deployed == 'true' &&
+      github.event_name == 'release'
+    needs: [deploy-production]
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-and-push-ce-image.yml
+    with:
+      tags: |
+        latest
+        ${{ github.event.release.tag_name }}
     secrets: inherit
 
   e2e:

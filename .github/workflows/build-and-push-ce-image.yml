@@ -1,4 +1,4 @@
-name: Build CE images
+name: Build and push CE images
 
 on:
   workflow_call:
