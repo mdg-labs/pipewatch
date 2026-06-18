@@ -1,0 +1,12 @@
+{
+  "extends": "@pipewatch/config/typescript",
+  "compilerOptions": {
+    "rootDir": "schema",
+    "outDir": "dist/schema",
+    "noEmit": false,
+    "composite": false,
+    "declaration": true,
+    "declarationMap": true
+  },
+  "include": ["schema/**/*.ts"]
+}

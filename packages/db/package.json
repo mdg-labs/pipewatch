@@ -9,8 +9,8 @@
       "default": "./dist/index.js"
     },
     "./schema": {
-      "types": "./schema/index.ts",
-      "default": "./schema/index.ts"
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
     },
     "./neon": {
       "types": "./dist/neon.d.ts",
@@ -18,7 +18,7 @@
     }
   },
   "scripts": {
-    "build": "tsc --build",
+    "build": "tsc --build && tsc -p tsconfig.schema.json",
     "lint": "eslint .",
     "typecheck": "tsc --build",
     "test:unit": "vitest run",
