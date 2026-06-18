@@ -9,6 +9,7 @@ import type { AppSession } from "@/lib/placeholder-session";
 
 import "./app-shell.css";
 
+import { useLiveStreamOverride } from "@/contexts/live-stream-override-context";
 import { useRepoStream } from "@/hooks/use-repo-stream";
 
 import { Breadcrumbs } from "./Breadcrumbs";
@@ -35,7 +36,11 @@ export function AppShell({ session, children }: AppShellProps) {
   );
   const showBilling = isBillingNavEnabled();
   const showWorkspaceSwitcher = isWorkspaceSwitcherEnabled();
-  const { status: liveStatus } = useRepoStream();
+  const liveStreamOverride = useLiveStreamOverride();
+  const { status: repoLiveStatus } = useRepoStream({
+    enabled: liveStreamOverride === null,
+  });
+  const liveStatus = liveStreamOverride ?? repoLiveStatus;
 
   return (
     <div className="pw-app-shell">

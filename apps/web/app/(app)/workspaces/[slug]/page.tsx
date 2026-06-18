@@ -1,10 +1,14 @@
-export default function WorkspaceDashboardPage() {
-  return (
-    <section>
-      <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Dashboard</h1>
-      <p style={{ color: "var(--text-secondary)", marginTop: 8 }}>
-        Workspace dashboard content will load here.
-      </p>
-    </section>
-  );
+import { DashboardView } from "@/components/dashboard/DashboardView";
+
+export type WorkspaceDashboardPageProps = {
+  params: Promise<{ slug: string }>;
+};
+
+/** Workspace dashboard — bird's-eye view of all connected repos (pages B3). */
+export default async function WorkspaceDashboardPage({
+  params,
+}: WorkspaceDashboardPageProps) {
+  const { slug } = await params;
+
+  return <DashboardView workspaceSlug={slug} />;
 }
