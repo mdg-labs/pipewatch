@@ -7,7 +7,7 @@ export function getMarketingEnv() {
 
 /** Cloud app origin for Sign in / Get started links. */
 export function getAppUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_APP_URL;
+  const raw = getMarketingEnv().NEXT_PUBLIC_APP_URL;
   if (typeof raw === "string" && raw.length > 0) {
     return raw.replace(/\/$/, "");
   }

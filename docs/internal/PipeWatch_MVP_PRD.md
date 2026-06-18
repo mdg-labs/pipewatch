@@ -1556,6 +1556,7 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `PIPEWATCH_MODE` | staging, production | api, worker | `webhook` (default) \| `polling` — CE self-hosted global override: use polling when no public webhook endpoint; per-repo interval still from `polling_interval_seconds` (default 60s when unset in polling mode) |
 | `RETENTION_DAYS` | staging, production | worker | Self-hosted default retention override (default: 30) |
 | `LAUNCH_MODE` | staging, production | marketing | `waitlist` \| `live` — controls CTA behaviour |
+| `NEXT_PUBLIC_APP_URL` | staging, production | marketing | Cloud app origin for Sign in / Get started CTA links (`https://cloud.pipewatch.app`; staging: `https://staging-cloud.pipewatch.app`) |
 
 ---
 
