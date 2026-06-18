@@ -17,6 +17,7 @@
     "@pipewatch/utils": "workspace:*",
     "@sentry/nextjs": "^9.15.0",
     "next": "catalog:",
+    "next-mdx-remote": "^6.0.0",
     "react": "catalog:",
     "react-dom": "catalog:"
   },
