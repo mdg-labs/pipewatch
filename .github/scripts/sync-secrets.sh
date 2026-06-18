@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Push GitHub Actions environment secrets to Fly.io apps and Cloudflare Workers.
 # Reads from process env (workflow maps secrets.* → env). No Phase CLI (PRD §10, Decision #33).
+#
+# FLY_SECRETS_MODE (from workflow):
+#   stage-only       — flyctl secrets set --stage; no deploy (workflow_call / deploy chain)
+#   stage-and-deploy — flyctl secrets set --stage then flyctl secrets deploy (workflow_dispatch)
 
 set -euo pipefail
 
@@ -11,6 +15,10 @@ usage() {
 Usage: sync-secrets.sh <staging|production> [services]
 
 services: all (default) | api | worker | web | marketing | comma-separated list
+
+FLY_SECRETS_MODE env:
+  stage-only       — stage Fly secrets only (default for deploy pipeline)
+  stage-and-deploy — stage then deploy Fly secrets to running Machines
 EOF
 }
 
@@ -21,6 +29,12 @@ fi
 
 GHA_ENV="$1"
 SERVICES="${2:-all}"
+FLY_SECRETS_MODE="${FLY_SECRETS_MODE:-stage-only}"
+
+if [[ "$FLY_SECRETS_MODE" != "stage-only" && "$FLY_SECRETS_MODE" != "stage-and-deploy" ]]; then
+  echo "sync-secrets: invalid FLY_SECRETS_MODE: ${FLY_SECRETS_MODE} (expected stage-only or stage-and-deploy)" >&2
+  exit 1
+fi
 
 INFRA_SLUG="$("$SCRIPT_DIR/infra-slug.sh" "$GHA_ENV")"
 
@@ -62,8 +76,13 @@ sync_fly_secrets() {
     return 0
   fi
 
-  echo "sync-secrets: syncing ${#pairs[@]} secrets to Fly app ${app}"
-  flyctl secrets set "${pairs[@]}" --app "$app"
+  echo "sync-secrets: staging ${#pairs[@]} secrets on Fly app ${app}"
+  flyctl secrets set "${pairs[@]}" --app "$app" --stage
+
+  if [[ "$FLY_SECRETS_MODE" == "stage-and-deploy" ]]; then
+    echo "sync-secrets: deploying staged secrets to Fly app ${app}"
+    flyctl secrets deploy --app "$app"
+  fi
 }
 
 sync_wrangler_secret() {
@@ -160,6 +179,8 @@ MARKETING_WRANGLER_KEYS=(
   UMAMI_SCRIPT_URL
   UMAMI_WEBSITE_ID
 )
+
+echo "sync-secrets: Fly mode ${FLY_SECRETS_MODE}"
 
 if service_selected api; then
   sync_fly_secrets "$API_APP" "${API_FLY_KEYS[@]}"
