@@ -84,7 +84,8 @@ function summaryToPipelineRun(
     source_url: existing?.source_url ?? "",
     started_at: startedAt,
     completed_at:
-      summary.status === "completed" ? startedAt : existing?.completed_at ?? null,
+      summary.completedAt ??
+      (summary.status === "completed" ? existing?.completed_at ?? null : null),
     duration_ms: summary.durationMs ?? existing?.duration_ms ?? null,
     created_at: existing?.created_at ?? startedAt,
   };

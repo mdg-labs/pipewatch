@@ -106,6 +106,7 @@ describe("createRepoSseClient", () => {
         conclusion: null,
         branch: "main",
         startedAt: "2026-06-17T10:00:00.000Z",
+        completedAt: null,
         durationMs: null,
       },
     };

@@ -36,6 +36,7 @@ function toRunSummary(run: {
   conclusion: string | null;
   branch: string;
   startedAt: Date;
+  completedAt: Date | null;
   durationMs: number | null;
 }): PipelineRunSummary {
   return {
@@ -45,6 +46,7 @@ function toRunSummary(run: {
     conclusion: run.conclusion as PipelineConclusion,
     branch: run.branch,
     startedAt: run.startedAt.toISOString(),
+    completedAt: run.completedAt?.toISOString() ?? null,
     durationMs: run.durationMs,
   };
 }

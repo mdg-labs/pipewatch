@@ -30,6 +30,7 @@ export interface PipelineRunSummary {
   conclusion: PipelineConclusion;
   branch: string;
   startedAt: string | null;
+  completedAt: string | null;
   durationMs: number | null;
 }
 

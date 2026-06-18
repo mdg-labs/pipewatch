@@ -61,9 +61,8 @@ function summaryToRunPatch(
     started_at: summary.startedAt ?? existing.started_at,
     duration_ms: summary.durationMs ?? existing.duration_ms,
     completed_at:
-      summary.status === "completed"
-        ? summary.startedAt ?? existing.completed_at ?? new Date().toISOString()
-        : existing.completed_at,
+      summary.completedAt ??
+      (summary.status === "completed" ? existing.completed_at : null),
   };
 }
 

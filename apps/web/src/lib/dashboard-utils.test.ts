@@ -142,6 +142,7 @@ describe("applySseEventToDashboard", () => {
         conclusion: null,
         branch: "main",
         startedAt: "2026-06-18T11:00:00.000Z",
+        completedAt: null,
         durationMs: null,
       },
     });
