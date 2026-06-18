@@ -1,3 +1,3 @@
-export default function HomePage() {
-  return <main>PipeWatch</main>;
-}
+import { HomePage } from "@/components/home";
+
+export default HomePage;
