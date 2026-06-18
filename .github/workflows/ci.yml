@@ -18,31 +18,6 @@ jobs:
       REPORTPORTAL_URL: ${{ vars.REPORTPORTAL_URL }}
       REPORTPORTAL_API_KEY: ${{ secrets.REPORTPORTAL_API_KEY }}
       REPORTPORTAL_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
-      DATABASE_URL: postgresql://pipewatch:pipewatch@postgres:5432/pipewatch
-      REDIS_URL: redis://redis:6379
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_DB: pipewatch
-          POSTGRES_USER: pipewatch
-          POSTGRES_PASSWORD: pipewatch
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U pipewatch -d pipewatch"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
