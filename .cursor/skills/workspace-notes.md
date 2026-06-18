@@ -1,5 +1,192 @@
 # PipeWatch workspace notes
 
+## 2026-06-18 — P19 epic #23 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #116 P19-01 Playwright E2E suite | Done | `b693804` |
+| #117 P19-02 OpenAPI completeness audit | Done | `4e6d6cc` |
+| #118 P19-03 CE smoke docs | Done | `fd35b2c` |
+| #119 P19-04 Page inventory regression checklist | Done | `835c97d` |
+| #23 epic parent | Done | closes via #119 `fixes #23` |
+
+**Notes:**
+- Epic order: #116 → #117 → #118 → #119 (Lane S serial; #117 serialized vs #116 due to shared e2e/ hot files)
+- #116: Playwright E2E (mock OAuth, onboarding, dashboard, run detail), ReportPortal agent, `pnpm test:e2e` wrapper, dev-only API mocks
+- #117: Full PRD §7 OpenAPI audit, Scalar x-tagGroups, openapi.json snapshot + integration test
+- #118: CE/cloud quickstart + GitHub App setup docs aligned with compose; `scripts/ce-smoke-test.sh`
+- #119: page-inventory.spec.ts, checklist doc, release PR template; role/edition gating tests
+- No new DB migrations
+- `staging` ~42 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** #30 P0-06 Sentry CI (unblocked since #110 Done) or push `staging` to origin
+
+## 2026-06-18 — P18 epic #22 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #114 P21-01 Ephemeral test deps (prereq) | Done | `6571dfd` |
+| #110 P18-01 CI workflows | Done | `c022727` |
+| #111 P18-02 Deploy orchestrator | Done | `f62b4ab` |
+| #112 P18-03 manual-sync + version-check | Done | `02fdc24` |
+| #113 P18-04 build-ce-image GHCR | Done | `f6f3713` |
+| #22 epic parent | Done | closes via #113 `fixes #22` |
+
+**Notes:**
+- Epic order: #114 (prereq blocker) → #110 → #111 → #112 → #113 (Lane S serial)
+- #110 blocked on #114 until prereq dispatched first
+- CI: reusable lint/unit/integration; GHA Postgres+Redis services; e2e advisory on PR
+- Deploy: staging push → staging; release → production; sync-secrets GHA→Fly/CF; migrate via DATABASE_URL_UNPOOLED
+- CE images: reusable build-ce-image.yml (api/worker/web → GHCR)
+- No new DB migrations
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P19 epic #23 or unblocked #30 (Sentry CI — was blocked on #110)
+
+## 2026-06-18 — P16 epic #20 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #101 P16-01 Marketing layout + nav/footer | Done | `33612f9`, `b8e5a1b` (env fix) |
+| #102 P16-02 Homepage (A1) | Done | `6f9e55d` |
+| #103 P16-03 Pricing page (A2) | Done | `3573f8f` |
+| #105 P16-05 Changelog page (A4) | Done | `80469b3` |
+| #107 P16-07 Legal pages (A6) | Done | `3ecd5eb` |
+| #104 P16-04 Docs site (A3) | Done | `0276ea1` |
+| #106 P16-06 Waitlist pages (A5, A7) | Done | `1508f42` |
+| #20 epic parent | Done | closes via #106 `fixes #20` |
+
+**Notes:**
+- Epic order: #101 → #102 → #103 → #105 → #107 → #104 → #106 (Lane S serial)
+- #101 verifier FAIL (3c2): `NEXT_PUBLIC_APP_URL` missing from `marketingEnvSchema` — fixed `b8e5a1b`
+- All `apps/marketing`; MDX via `next-mdx-remote` (#107 legal, #104 docs)
+- Waitlist pages integrate #73 API; middleware guards `WAITLIST_ENABLED` / `LAUNCH_MODE=live`
+- No new DB migrations
+- `pnpm audit --audit-level=high` passes on this run
+- `staging` ~33 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P18 epic #22 (CI scaffold) or P19 epic #23
+
+## 2026-06-18 — P14 epic #18 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #90 P14-01 Dashboard page (B3) | Done | `bcc25f7` |
+| #91 P14-02 Repository detail / run list (B4) | Done | `c7db407` |
+| #92 P14-03 Run detail page (B6) | Done | `1021f69` |
+| #93 P14-04 Repository settings (B5) | Done | `03897a7` |
+| #94 P14-05 Insights page (B7) | Done | `213676c` |
+| #18 epic parent | Done | closes via #94 `fixes #18` |
+
+**Notes:**
+- Epic order: #90 → #91 → #92 → #93 → #94 (Lane S serial)
+- All frontend (apps/web); no DB migrations
+- #91: conclusion filters client-side; cursor pagination
+- #92: wave-based DAG layout with SVG connectors
+- #93: admin/owner gate via RequireRole + canMutate
+- #94: insights API + @pipewatch/ui charts/StatCards
+- `pnpm audit --audit-level=high` passes on this run
+- `staging` ~25 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P16 epic #20 (runs UI — check if superseded by P14) or P18 epic #22 (CI scaffold)
+
+## 2026-06-17 — P17 epic #21 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #108 P17-01 Production Dockerfiles | Done | `9926bb8` |
+| #109 P17-02 docker-compose.yml + .env.example | Done | `46feb25` |
+| #21 epic parent | Done | closes via #109 `fixes #21` |
+
+**Notes:**
+- Epic order: #108 → #109 (Lane S serial)
+- #108: multi-stage Dockerfiles (api/worker/web), API entrypoint migrate-then-start, GHCR docs in README, web `output: standalone`
+- #109: CE compose stack (api, worker, web, postgres, redis); healthchecks + volumes; `PIPEWATCH_EDITION=ce`
+- No new DB migrations (runtime migrate via API entrypoint)
+- `pnpm audit --audit-level=high` passes on this run
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P18 epic #22 (CI scaffold) or P16 epic #20 (runs UI)
+
+## 2026-06-17 — P15 epic #19 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #95 P15-01 Workspace settings general (B8) | Done | `dc860d5` |
+| #96 P15-02 Members settings (B9) | Done | `97677a4` |
+| #97 P15-03 Integrations settings (B10) | Done | `72d02ed` |
+| #98 P15-04 API keys settings (B11) | Done | `38f0436` |
+| #99 P15-05 Billing settings (B12) | Done | `375ac0c` |
+| #100 P15-06 Account settings (B13) | Done | `c52280f` |
+| #19 epic parent | Done | closes via #100 `fixes #19` |
+
+**Notes:**
+- Epic order: #95 → #96 → #97 → #98 → #99 → #100 (Lane S serial)
+- Board sync fix: #97 was stuck In Progress after verify — orchestrator set Done
+- Follow-ups flagged (non-blocking): member self-leave may 403 (#96); API keys `created_by` not in list API (#98)
+- No new DB migrations
+- `pnpm audit --audit-level=high` passes on this run
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P16 epic #20 (runs UI) or P18 #22 CI scaffold
+
+## 2026-06-17 — P13 epic #17 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #86 P13-01 Sign in page (B1) | Done | `c5f9f2d` |
+| #87 P13-02 CE bootstrap page (B0) | Done | `5d398f2` |
+| #88 P13-03 Onboarding wizard (B2) | Done | `3c89cb9` |
+| #89 P13-04 Invite accept page (B18) | Done | `c36cf3d` |
+| #17 epic parent | Done | closes via #89 `fixes #17` |
+
+**Notes:**
+- Epic order: #86 → #87 → #88 → #89 (Lane S serial)
+- No new DB migrations
+- `pnpm audit --audit-level=high` passes on this run
+- `staging` 12 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P14 epic #18 (dashboard pages) or P18 #22 CI scaffold
+
+## 2026-06-17 — P12 epic #16 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #78 P12-01 App layout, theme, fonts | Done | `8bd018d` |
+| #80 P12-03 Shared UX primitives | Done | `3d7aa2d` |
+| #79 P12-02 App shell (sidebar, top bar) | Done | `163b60a` |
+| #81 P12-04 API client + auth cookies | Done | `3692a81` |
+| #82 P12-05 Role gating + edition guards | Done | `a4c0e39` |
+| #83 P12-06 SSE client hook | Done | `dc73380` |
+| #84 P12-07 API docs link in shell | Done | `ef17152` |
+| #85 P12-08 CE bootstrap middleware | Done | `895bb50` |
+| #16 epic parent | Done | closes via #85 `fixes #16` |
+
+**Notes:**
+- Epic order: #78 → #80 → #79 → #81 → #82 → #83 → #84 → #85 (Lane S serial)
+- #83 execution left uncommitted once — resumed agent committed `dc73380`
+- No new DB migrations
+- `pnpm audit --audit-level=high` passes on this run
+- `staging` 8 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** P13 epic #17 (dashboard pages) or P18 #22 CI scaffold
+
 ## 2026-06-17 — P11 epic #15 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON
