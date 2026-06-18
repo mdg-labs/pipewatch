@@ -7,5 +7,13 @@ export function initSentry(): void {
     return;
   }
 
-  Sentry.init({ dsn });
+  const release = process.env.SENTRY_RELEASE;
+  const environment =
+    process.env.SENTRY_ENVIRONMENT ?? process.env.NODE_ENV;
+
+  Sentry.init({
+    dsn,
+    ...(release ? { release } : {}),
+    ...(environment ? { environment } : {}),
+  });
 }

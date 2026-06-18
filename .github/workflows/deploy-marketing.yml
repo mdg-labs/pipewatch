@@ -11,6 +11,10 @@ on:
         description: Cloudflare Worker name (e.g. pipewatch-staging-marketing)
         type: string
         required: true
+      sentry_release:
+        description: Sentry release identifier (pipewatch@version+sha)
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -39,4 +43,9 @@ jobs:
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_WORKER_NAME: ${{ inputs.worker }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: pipewatch-marketing
+          SENTRY_RELEASE: ${{ inputs.sentry_release }}
+          SENTRY_ENVIRONMENT: ${{ inputs.environment }}
         run: bash .github/scripts/deploy-cf-worker.sh marketing

@@ -1,7 +1,7 @@
 name: Deploy Staging
 
 # Staging deploy pipeline — reusable workflow called from orchestrator.yml after CI passes (PRD §22).
-# Job chain: sync-secrets → migrate → parallel deploys → smoke.
+# Job chain: sync-secrets → migrate → derive Sentry release → parallel deploys → smoke.
 
 on:
   workflow_call:
@@ -41,40 +41,58 @@ jobs:
           DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
         run: bash .github/scripts/run-migrate.sh
 
+  derive-sentry-release:
+    name: Staging · 2b · Derive Sentry release
+    runs-on: ubuntu-latest
+    needs: migrate-staging
+    outputs:
+      release: ${{ steps.release.outputs.release }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Derive Sentry release
+        id: release
+        run: bash .github/scripts/derive-sentry-release.sh
+
   deploy-api:
     name: Staging · 3 · Deploy API
-    needs: migrate-staging
+    needs: derive-sentry-release
     uses: ./.github/workflows/deploy-api.yml
     with:
       environment: staging
       app: pipewatch-staging-api
+      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
     secrets: inherit
 
   deploy-worker:
     name: Staging · 3 · Deploy worker
-    needs: migrate-staging
+    needs: derive-sentry-release
     uses: ./.github/workflows/deploy-worker.yml
     with:
       environment: staging
       app: pipewatch-staging-worker
+      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
     secrets: inherit
 
   deploy-web:
     name: Staging · 3 · Deploy web
-    needs: migrate-staging
+    needs: derive-sentry-release
     uses: ./.github/workflows/deploy-web.yml
     with:
       environment: staging
       worker: pipewatch-staging-web
+      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
     secrets: inherit
 
   deploy-marketing:
     name: Staging · 3 · Deploy marketing
-    needs: migrate-staging
+    needs: derive-sentry-release
     uses: ./.github/workflows/deploy-marketing.yml
     with:
       environment: staging
       worker: pipewatch-staging-marketing
+      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
     secrets: inherit
 
   smoke-staging:

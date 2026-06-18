@@ -11,6 +11,10 @@ on:
         description: Fly.io app name (e.g. pipewatch-staging-worker)
         type: string
         required: true
+      sentry_release:
+        description: Sentry release identifier (pipewatch@version+sha)
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -23,6 +27,25 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Build worker
+        env:
+          NODE_ENV: production
+        run: pnpm exec turbo run build --filter=@pipewatch/worker...
+
+      - name: Create Sentry release and upload worker source maps
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: pipewatch-worker
+        run: >-
+          bash .github/scripts/sentry-release.sh worker apps/worker/dist
+          "${{ inputs.sentry_release }}" "${{ inputs.environment }}"
 
       - name: Setup Flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master

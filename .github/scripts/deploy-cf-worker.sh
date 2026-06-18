@@ -37,7 +37,13 @@ esac
 pnpm install --frozen-lockfile
 
 echo "deploy-cf-worker: building ${FILTER}"
-pnpm --filter "$FILTER" build
+NODE_ENV=production \
+  SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN:-}" \
+  SENTRY_ORG="${SENTRY_ORG:-}" \
+  SENTRY_PROJECT="${SENTRY_PROJECT:-}" \
+  SENTRY_RELEASE="${SENTRY_RELEASE:-}" \
+  SENTRY_ENVIRONMENT="${SENTRY_ENVIRONMENT:-}" \
+  pnpm --filter "$FILTER" build
 
 if pnpm --filter "$FILTER" exec sh -c 'command -v opennextjs-cloudflare >/dev/null 2>&1'; then
   echo "deploy-cf-worker: OpenNext build"

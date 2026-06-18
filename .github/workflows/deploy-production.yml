@@ -2,7 +2,7 @@ name: Deploy Production
 
 # Production deploy pipeline — runs on release published only (PRD §22).
 # Not called from orchestrator.yml; gated by DEPLOYED_VERSION vs release tag.
-# Job chain: check-not-deployed → sync-secrets → migrate → parallel deploys → smoke → CE images → record.
+# Job chain: check-not-deployed → sync-secrets → migrate → derive Sentry release → parallel deploys → smoke → CE images → record.
 
 on:
   release:
@@ -69,40 +69,62 @@ jobs:
           DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
         run: bash .github/scripts/run-migrate.sh
 
+  derive-sentry-release:
+    name: Production · 2b · Derive Sentry release
+    runs-on: ubuntu-latest
+    needs: migrate-production
+    outputs:
+      release: ${{ steps.release.outputs.release }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Derive Sentry release
+        id: release
+        env:
+          RELEASE_VERSION: ${{ github.event.release.tag_name }}
+        run: bash .github/scripts/derive-sentry-release.sh
+
   deploy-api:
     name: Production · 3 · Deploy API
-    needs: migrate-production
+    needs: derive-sentry-release
     uses: ./.github/workflows/deploy-api.yml
     with:
       environment: production
       app: pipewatch-prod-api
+      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
     secrets: inherit
 
   deploy-worker:
     name: Production · 3 · Deploy worker
-    needs: migrate-production
+    needs: derive-sentry-release
     uses: ./.github/workflows/deploy-worker.yml
     with:
       environment: production
       app: pipewatch-prod-worker
+      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
     secrets: inherit
 
   deploy-web:
     name: Production · 3 · Deploy web
-    needs: migrate-production
+    needs: derive-sentry-release
     uses: ./.github/workflows/deploy-web.yml
     with:
       environment: production
       worker: pipewatch-prod-web
+      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
     secrets: inherit
 
   deploy-marketing:
     name: Production · 3 · Deploy marketing
-    needs: migrate-production
+    needs: derive-sentry-release
     uses: ./.github/workflows/deploy-marketing.yml
     with:
       environment: production
       worker: pipewatch-prod-marketing
+      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
     secrets: inherit
 
   smoke-production:
