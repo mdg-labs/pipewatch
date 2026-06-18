@@ -39,9 +39,11 @@ Load the issue via MCP `issue_read` or `gh`; read acceptance criteria from the i
 PipeWatch project on GitHub (`mdg-labs/pipewatch`, project **#5**). Commit subjects use issue number: `[#12]`.
 
 - **Any orchestrator target** (single leaf or epic) → present batch plan, then start immediately unless user said `plan only` / `wait`
-- **Execution agents** → set project Status **In Progress** on leaf issue(s) and parent when dispatching a child (first action, before code); set **In Review** before verifier handoff
+- **Execution prompts** → paste **STATUS FIRST** block (filled GraphQL) as the **first lines** of every Task prompt — see `.cursor/skills/orchestrator/prompt-templates.md`
+- **Execution agents** → first Shell command sets **In Progress** (leaf + parent); **In Review** before verifier handoff; output must include `BOARD STATUS: …` lines
 - **Verification agents** → set **Done** after all layers PASS (launch **not** `readonly`); FAIL → **Ready** + comment
 - **Orchestrator** → after every verifier PASS, re-query board Status and set **Done** if still **In Review** (source of truth)
+- **Forbidden:** condensed `GITHUB SYNC: In Progress → In Review` one-liners — use full blocks from `prompt-templates.md`
 - Execution prompts must **not** set Done — see `.cursor/skills/orchestrator/github-board.md`
 
 ## Universal acceptance criteria (every task)

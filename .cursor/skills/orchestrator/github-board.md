@@ -274,9 +274,20 @@ gh api /repos/mdg-labs/pipewatch/milestones --jq '.[] | {number, title, state, d
 
 ## Status sync — sub-agent duties + orchestrator guarantee
 
-### Execution — first action
+**Root cause (2026-06):** Orchestrators compressed GITHUB SYNC into one-line shorthands (`In Progress #143+#141 → In Review`). Execution agents treated that as informational, skipped GraphQL, and started coding. **Fix:** orchestrator must paste the **STATUS FIRST** block ([prompt-templates.md](prompt-templates.md#status-first--mandatory-header-execution-only-paste-at-top-of-every-execution-task-prompt)) at the top of every execution Task prompt with issue numbers filled in.
 
-Set Status → **In Progress** on every listed issue (leaf + parent epic).
+### Execution — first action (non-negotiable)
+
+**Before** session memory, **before** `Read`/`Grep`/`Glob`, **before** any implementation:
+
+1. Shell with `required_permissions: ["all"]`
+2. GraphQL: get project item ID(s) for project **#5**
+3. GraphQL: `updateProjectV2ItemFieldValue` → **In Progress** (`47fc9ee4`) on **leaf + parent epic**
+4. Report `BOARD STATUS: In Progress on #N` in agent output
+
+If step 3 fails → `BOARD_SYNC: FAILED` and **stop** (do not implement).
+
+Orchestrator **must inline** these commands in the Task prompt (sub-agents do not reliably open this file).
 
 ### Execution — last actions
 
@@ -349,19 +360,21 @@ Layer 3 (logic): PASS
 
 ### Execution variant
 
+Paste into every execution Task prompt (after **STATUS FIRST** block — see [prompt-templates.md](prompt-templates.md)):
+
 ```text
 GITHUB SYNC — EXECUTION:
 - MCP server: user-github
 - owner: mdg-labs
 - repo: pipewatch
 - project: 5 (PipeWatch Roadmap)
-- issues: [{ number: 12 }, { number: 8 }]  # leaf + parent if subtask
-- CLOSE_PARENTS: [#8] | none
-- FIRST ACTION: Status → In Progress (all listed) BEFORE session memory
-- LAST ACTIONS: session ended → Status → In Review (leaf) → commit
-- FORBIDDEN: Status → Done; verification comments; committing session memory
-- COMMIT: [#<leaf>] in subject; fixes #<leaf> in body; fixes parents per CLOSE_PARENTS
-- Reference: .cursor/skills/orchestrator/github-board.md
+- issues: [{ number: <LEAF> }, { number: <PARENT> }]  # omit parent object if none
+- CLOSE_PARENTS: [#<PARENT>] | none
+- FIRST ACTION: GraphQL Status → In Progress (all listed) BEFORE session memory or any code
+- LAST ACTIONS: session ended → GraphQL Status → In Review (leaf only) → commit
+- FORBIDDEN: Status → Done; verification comments; committing session memory; skipping In Progress
+- COMMIT: [#<LEAF>] in subject; fixes #<LEAF> in body; fixes parents per CLOSE_PARENTS
+- OUTPUT: must include BOARD STATUS lines (In Progress at start, In Review at handoff)
 ```
 
 ### Verifier variant

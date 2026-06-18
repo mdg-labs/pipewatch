@@ -171,18 +171,23 @@ git log <base>..staging --grep='fixes #N'
 
 ## Dispatching sub-agents
 
-Each prompt includes:
+Each prompt includes (execution: **STATUS FIRST block must be the first lines** — see [prompt-templates.md](prompt-templates.md#status-first--mandatory-header-execution-only-paste-at-top-of-every-execution-task-prompt)):
 
-1. **Task ID** — GitHub `#N`
-2. **Acceptance criteria** — from issue body
-3. **Doc references** — `prd §N`, `pages B*` from issue or [doc-index.md](doc-index.md)
-4. READ / WRITE scope with absolute paths
-5. Session ID: `<TASK-ID>-<YYYYMMDD>-<4hex>`
-6. Lane (`S` or `P`) and git context
-7. Epic context: `PARENT`, `CLOSE_PARENTS`
-8. **GITHUB TOOLS** + **GITHUB SYNC** blocks from [prompt-templates.md](prompt-templates.md)
-9. **CI GATE (SHELL)** block in every execution and verifier prompt — include `WORK_ROOT`, `TURBO_FILTER` (verifier), `CI_PREFLIGHT_MODE`; `required_permissions: ["all"]` on first Shell attempt
-10. **DB MIGRATIONS** block in every execution prompt
+1. **STATUS FIRST** (execution only) — filled GraphQL for In Progress on leaf (+ parent); pasted verbatim at top
+2. **Task ID** — GitHub `#N`
+3. **Acceptance criteria** — from issue body
+4. **Doc references** — `prd §N`, `pages B*` from issue or [doc-index.md](doc-index.md)
+5. READ / WRITE scope with absolute paths
+6. Session ID: `<TASK-ID>-<YYYYMMDD>-<4hex>`
+7. Lane (`S` or `P`) and git context
+8. Epic context: `PARENT`, `CLOSE_PARENTS`
+9. **GITHUB TOOLS** + **GITHUB SYNC** blocks — **full blocks, never one-line shorthand** ([prompt-templates.md](prompt-templates.md#prompt-compression-policy-mandatory))
+10. **CI GATE (SHELL)** block in every execution and verifier prompt — include `WORK_ROOT`, `TURBO_FILTER` (verifier), `CI_PREFLIGHT_MODE`; `required_permissions: ["all"]` on first Shell attempt
+11. **DB MIGRATIONS** block in every execution prompt
+
+**After execution returns:** If output lacks `BOARD STATUS: In Progress` → treat as FAIL; re-dispatch with STATUS FIRST block or orchestrator sets In Progress before verifier.
+
+**After verifier returns:** If output lacks `BOARD STATUS: Done` (on PASS) → orchestrator still runs board sync (existing rule).
 
 ## Resource management (CI preflight)
 
@@ -293,11 +298,11 @@ Keep under ~500 words; link GitHub issues as `https://github.com/mdg-labs/pipewa
 
 ## Execution agents
 
-1. **GitHub (first):** Status → In Progress (leaf + parent)
+1. **Board Status (first Shell command):** GraphQL → **In Progress** on leaf + parent — paste **STATUS FIRST** block from [prompt-templates.md](prompt-templates.md); confirm `BOARD STATUS: In Progress` in output
 2. **Session memory** in `active/<SESSION-ID>.md`
 3. **Implementation**
 4. **CI gate** — `WORK_ROOT=<path> CI_PREFLIGHT_MODE=<local|global> pnpm ci:gate` via Shell with `required_permissions: ["all"]` (see [CI GATE block](prompt-templates.md#ci-gate-shell--mandatory-in-every-execution-and-verifier-prompt))
-5. **Pre-handoff:** Status → In Review; one implementation commit
+5. **Pre-handoff:** Status → **In Review** (leaf); confirm `BOARD STATUS: In Review`; one implementation commit
 
 Commit format: `[#N]` in subject; `fixes #N` in body; `fixes #<parent>` per `CLOSE_PARENTS`.
 
@@ -354,6 +359,9 @@ _task: #<N> | started: <ISO> | ended: <ISO> | duration: <human> | agent: executi
 - Orchestrator reading spec docs or implementation files
 - **Dispatching sub-agents before presenting the batch plan**
 - **Asking “go?” or waiting for confirmation** — present plan, then start (unless user said `plan only` / `wait`)
+- **Condensed GITHUB SYNC one-liners** (`In Progress #N → In Review → commit …`) — sub-agents skip board updates; use **STATUS FIRST** + full GITHUB SYNC blocks
+- **Execution prompts without STATUS FIRST as the first section** — In Progress must be the agent's first Shell command
+- **Accepting execution output without `BOARD STATUS: In Progress`** — re-dispatch or orchestrator sets status before verifier
 - **Trusting verifier PASS text** without orchestrator board re-query (leaves stuck In Review)
 - **Verifier sub-agents with `readonly: true`** — they cannot set Status
 - Execution setting Done or closing GitHub issues
