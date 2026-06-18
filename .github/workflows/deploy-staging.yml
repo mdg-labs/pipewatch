@@ -1,7 +1,8 @@
 name: Deploy Staging
 
 # Staging deploy pipeline — reusable workflow called from orchestrator.yml after CI passes (PRD §22).
-# Job chain: sync-secrets → migrate → derive Sentry release → parallel deploys → smoke.
+# Job chain: migrate → derive Sentry release → parallel deploys → smoke.
+# Secrets sync runs in orchestrator before this workflow (#132); flyctl deploy applies staged Fly secrets.
 
 on:
   workflow_call:
@@ -14,21 +15,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sync-secrets:
-    name: Staging · 1 · Sync secrets
-    permissions:
-      contents: read
-    uses: ./.github/workflows/sync-secrets.yml
-    with:
-      environment: staging
-      services: all
-    secrets: inherit
-
   migrate-staging:
-    name: Staging · 2 · Run DB migrations
+    name: Staging · 1 · Run DB migrations
     runs-on: ubuntu-latest
     environment: staging
-    needs: sync-secrets
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -44,8 +34,9 @@ jobs:
         run: bash .github/scripts/run-migrate.sh
 
   derive-sentry-release:
-    name: Staging · 2b · Derive Sentry release
+    name: Staging · 2 · Derive Sentry release
     runs-on: ubuntu-latest
+    environment: staging
     needs: migrate-staging
     outputs:
       release: ${{ steps.release.outputs.release }}
@@ -59,51 +50,139 @@ jobs:
 
   deploy-api:
     name: Staging · 3 · Deploy API
+    runs-on: ubuntu-latest
+    environment: staging
     needs: derive-sentry-release
-    permissions:
-      contents: read
-    uses: ./.github/workflows/deploy-api.yml
-    with:
-      environment: staging
-      app: pipewatch-staging-api
-      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
-    secrets: inherit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Build API
+        env:
+          NODE_ENV: production
+        run: pnpm exec turbo run build --filter=@pipewatch/api...
+
+      - name: Create Sentry release and upload API source maps
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: pipewatch-api
+        run: >-
+          bash .github/scripts/sentry-release.sh api apps/api/dist
+          "${{ needs.derive-sentry-release.outputs.release }}" staging
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # master
+
+      - name: Deploy API to Fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_APP: pipewatch-staging-api
+        run: bash .github/scripts/deploy-fly.sh api
 
   deploy-worker:
     name: Staging · 3 · Deploy worker
+    runs-on: ubuntu-latest
+    environment: staging
     needs: derive-sentry-release
-    permissions:
-      contents: read
-    uses: ./.github/workflows/deploy-worker.yml
-    with:
-      environment: staging
-      app: pipewatch-staging-worker
-      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
-    secrets: inherit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Build worker
+        env:
+          NODE_ENV: production
+        run: pnpm exec turbo run build --filter=@pipewatch/worker...
+
+      - name: Create Sentry release and upload worker source maps
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: pipewatch-worker
+        run: >-
+          bash .github/scripts/sentry-release.sh worker apps/worker/dist
+          "${{ needs.derive-sentry-release.outputs.release }}" staging
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # master
+
+      - name: Deploy worker to Fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_APP: pipewatch-staging-worker
+        run: bash .github/scripts/deploy-fly.sh worker
 
   deploy-web:
     name: Staging · 3 · Deploy web
+    runs-on: ubuntu-latest
+    environment: staging
     needs: derive-sentry-release
-    permissions:
-      contents: read
-    uses: ./.github/workflows/deploy-web.yml
-    with:
-      environment: staging
-      worker: pipewatch-staging-web
-      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
-    secrets: inherit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Deploy web to Cloudflare Workers (OpenNext)
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_WORKER_NAME: pipewatch-staging-web
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: pipewatch-web
+          SENTRY_RELEASE: ${{ needs.derive-sentry-release.outputs.release }}
+          SENTRY_ENVIRONMENT: staging
+        run: bash .github/scripts/deploy-cf-worker.sh web
 
   deploy-marketing:
     name: Staging · 3 · Deploy marketing
+    runs-on: ubuntu-latest
+    environment: staging
     needs: derive-sentry-release
-    permissions:
-      contents: read
-    uses: ./.github/workflows/deploy-marketing.yml
-    with:
-      environment: staging
-      worker: pipewatch-staging-marketing
-      sentry_release: ${{ needs.derive-sentry-release.outputs.release }}
-    secrets: inherit
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Deploy marketing to Cloudflare Workers (OpenNext)
+        env:
+          CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_WORKER_NAME: pipewatch-staging-marketing
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: pipewatch-marketing
+          SENTRY_RELEASE: ${{ needs.derive-sentry-release.outputs.release }}
+          SENTRY_ENVIRONMENT: staging
+        run: bash .github/scripts/deploy-cf-worker.sh marketing
 
   smoke-staging:
     name: Staging · 4 · Smoke
