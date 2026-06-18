@@ -12,9 +12,10 @@ import {
   reportPortalCiAttributes,
   reportPortalEndpoint,
   reportPortalLaunchName,
+  reportPortalMissingKeys,
   reportPortalMode,
   type ReportPortalLayer,
-} from "./reportportal-config.ts";
+} from "./reportportal-ci.js";
 
 type LaunchStatus = "passed" | "failed";
 
@@ -105,6 +106,12 @@ async function main(): Promise<void> {
   if (command === "start") {
     const uuid = await startCiLaunch(layer);
     if (!uuid) {
+      const missing = reportPortalMissingKeys();
+      if (missing.length > 0) {
+        console.error(
+          `reportportal-ci-launch: skipping ${layer} launch — missing env: ${missing.join(", ")}`,
+        );
+      }
       process.exit(0);
     }
     process.stdout.write(uuid);

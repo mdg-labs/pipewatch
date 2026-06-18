@@ -1,7 +1,11 @@
 import { defineConfig } from "vitest/config";
 
-export default defineConfig({
-  test: {
-    environment: "node",
-  },
-});
+import { withReportPortal } from "./vitest-reportportal.js";
+
+export default defineConfig(
+  withReportPortal("unit", "@pipewatch/config", {
+    test: {
+      environment: "node",
+    },
+  }),
+);

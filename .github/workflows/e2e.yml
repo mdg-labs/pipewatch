@@ -51,9 +51,9 @@ jobs:
     permissions:
       contents: read
     env:
-      REPORTPORTAL_URL: ${{ vars.REPORTPORTAL_URL }}
+      REPORTPORTAL_URL: ${{ secrets.REPORTPORTAL_URL }}
       REPORTPORTAL_API_KEY: ${{ secrets.REPORTPORTAL_API_KEY }}
-      REPORTPORTAL_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
+      REPORTPORTAL_PROJECT: ${{ secrets.REPORTPORTAL_PROJECT }}
       E2E_APP_URL: ${{ secrets.APP_URL }}
       E2E_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
       E2E_MARKETING_URL: ${{ secrets.MARKETING_URL }}
@@ -100,9 +100,9 @@ jobs:
     permissions:
       contents: read
     env:
-      REPORTPORTAL_URL: ${{ vars.REPORTPORTAL_URL }}
+      REPORTPORTAL_URL: ${{ secrets.REPORTPORTAL_URL }}
       REPORTPORTAL_API_KEY: ${{ secrets.REPORTPORTAL_API_KEY }}
-      REPORTPORTAL_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
+      REPORTPORTAL_PROJECT: ${{ secrets.REPORTPORTAL_PROJECT }}
       CI: "true"
     steps:
       - name: Checkout
@@ -140,8 +140,8 @@ jobs:
       contents: read
       pull-requests: write
     env:
-      REPORTPORTAL_SUMMARY_URL: ${{ vars.REPORTPORTAL_URL }}
-      REPORTPORTAL_SUMMARY_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
+      REPORTPORTAL_SUMMARY_URL: ${{ secrets.REPORTPORTAL_URL }}
+      REPORTPORTAL_SUMMARY_PROJECT: ${{ secrets.REPORTPORTAL_PROJECT }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

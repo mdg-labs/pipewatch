@@ -2,6 +2,9 @@
  * Single source of truth for hosted secret sync — per-service keys, GHA storage
  * names, and derived values. Validated against env.ts strict fields,
  * sync-secrets.yml, and sync-secrets.sh (PRD §10, §23).
+ *
+ * Phase → GHA: every Phase key syncs as a GitHub Actions **secret**
+ * (`${{ secrets.KEY }}`). See `github-actions-secrets.ts`.
  */
 
 /** Phase / GHA storage key → Fly / runtime key (sync boundary only). */

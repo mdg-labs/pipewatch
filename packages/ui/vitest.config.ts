@@ -1,10 +1,14 @@
 import { defineConfig } from "vitest/config";
 
-export default defineConfig({
-  esbuild: {
-    jsx: "automatic",
-  },
-  test: {
-    environment: "node",
-  },
-});
+import { withReportPortal } from "@pipewatch/config/vitest-reportportal";
+
+export default defineConfig(
+  withReportPortal("unit", "@pipewatch/ui", {
+    esbuild: {
+      jsx: "automatic",
+    },
+    test: {
+      environment: "node",
+    },
+  }),
+);

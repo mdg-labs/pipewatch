@@ -582,7 +582,7 @@ All secrets are authored in **Phase Cloud** (EU region, Frankfurt/AWS eu-central
 
 | Target | How secrets get there |
 |---|---|
-| **GitHub Actions** | Phase Console native sync → environment secrets/vars (`staging`, `production`, `ci`) |
+| **GitHub Actions** | Phase Console native sync → environment **secrets** (`staging`, `production`, `ci`) — all Phase keys, including URLs and slugs |
 | **Fly.io** | `sync-secrets.yml` from `staging` or `production` GitHub Actions environment |
 | **Cloudflare Workers** | `sync-secrets.yml` from `staging` or `production` GitHub Actions environment |
 | **Local dev** | Phase CLI — `phase run --env=Development -- <command>` or `phase secrets export --env=Development > .env` |
@@ -613,17 +613,19 @@ Phase Console native sync is configured per pair (e.g. Phase **CI** → GitHub A
 
 ### GitHub Actions environments
 
-Three environments. Workflows declare `environment: <name>` to access that environment's secrets and vars.
+Three environments. Workflows declare `environment: <name>` to access that environment's secrets.
 
 | Environment | Purpose | Typical contents |
 |---|---|---|
 | `staging` | Staging deploys (`staging` branch) | All runtime secrets for staging Fly/CF apps (`DATABASE_URL`, `JWT_*`, `GH_*` GitHub App keys, etc.) |
 | `production` | Production deploys (release published) | All runtime secrets for production Fly/CF apps |
-| `ci` | PR/branch CI — lint gates don't need it; jobs that need credentials do | ReportPortal (`REPORTPORTAL_*`), `SENTRY_AUTH_TOKEN` / org / project for source maps on CI builds. **No `DATABASE_URL`** — Postgres, Redis, and other dependencies are ephemeral GHA service containers. **Provisioned** — Phase **CI** ↔ GitHub Actions `ci` sync configured. |
+| `ci` | PR/branch CI — lint gates don't need it; jobs that need credentials do | ReportPortal (`REPORTPORTAL_*`), `SENTRY_AUTH_TOKEN` / `SENTRY_ORG` for source maps on CI builds. **No `DATABASE_URL`** — Postgres, Redis, and other dependencies are ephemeral GHA service containers. **Provisioned** — Phase **CI** ↔ GitHub Actions `ci` sync configured. |
 
-**`ci` environment — recommended over hardcoding:** Do not hardcode secrets or environment-specific URLs in workflow YAML. Put them in the `ci` GitHub Actions environment (synced from Phase): API keys as **secrets**, instance URLs and project names as **vars** (e.g. `REPORTPORTAL_URL`, `REPORTPORTAL_PROJECT`). Workflows reference `${{ secrets.REPORTPORTAL_API_KEY }}` and `${{ vars.REPORTPORTAL_URL }}`. Lint and pure unit jobs can run without `environment: ci`; integration, E2E, and any job touching external services must set `environment: ci`.
+**Phase → GHA sync:** Phase Console syncs **every** key to GitHub Actions as a **secret** — including URLs and project slugs. Workflows reference `${{ secrets.KEY }}` only. Do not use `${{ vars.KEY }}` for Phase-synced values.
 
-Deploy workflows (`staging` / `production`) and CI workflows (`ci`) consume `${{ secrets.* }}` and `${{ vars.* }}` only — never fetch from Phase at runtime. Third-party GitHub Actions in workflow YAML are pinned to full commit SHAs. Full variable list in Section 23.
+**Workflow-managed variables (exception):** `DEPLOYED_VERSION` in `production` — written by the deploy workflow via `gh variable set`; use `${{ vars.DEPLOYED_VERSION }}`.
+
+Deploy workflows (`staging` / `production`) and CI workflows (`ci`) consume `${{ secrets.* }}` only (plus `vars.DEPLOYED_VERSION` where noted) — never fetch from Phase at runtime. Third-party GitHub Actions in workflow YAML are pinned to full commit SHAs. Full variable list in Section 23.
 
 ---
 
@@ -641,7 +643,7 @@ Testing is a first-class concern from day one. All test results reported to self
 
 ### CI Pipeline
 
-High-level overview — full workflow definitions in Section 22 (CI/CD Pipeline). Jobs that need credentials use GitHub Actions environment **`ci`** (secrets/vars synced from Phase — see §10).
+High-level overview — full workflow definitions in Section 22 (CI/CD Pipeline). Jobs that need credentials use GitHub Actions environment **`ci`** (secrets synced from Phase — see §10).
 
 ```
 on: push / pull_request
@@ -653,7 +655,7 @@ jobs:
   e2e:          environment: ci → playwright test       (staging→main PR after CI; manual dispatch)
 ```
 
-All test jobs that report to ReportPortal read `REPORTPORTAL_URL`, `REPORTPORTAL_API_KEY`, and `REPORTPORTAL_PROJECT` from the `ci` environment — not hardcoded in workflow YAML.
+All test jobs that report to ReportPortal read `REPORTPORTAL_URL`, `REPORTPORTAL_API_KEY`, and `REPORTPORTAL_PROJECT` from `${{ secrets.* }}` in the `ci` environment — not hardcoded in workflow YAML.
 
 ### Local test runs
 
@@ -1536,10 +1538,10 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `SENTRY_DSN` | staging, production | api, worker, web, marketing | Per-service DSN from Sentry |
 | `SENTRY_AUTH_TOKEN` | ci | CI builds | Source map upload |
 | `SENTRY_ORG` | ci | CI builds | Sentry org slug |
-| `SENTRY_PROJECT` | ci | CI builds | Sentry project slug |
-| `REPORTPORTAL_URL` | ci (var) | CI test jobs | e.g. `https://reportportal.mdg-labs.dev` — use GHA **var**, not hardcoded |
+| `SENTRY_PROJECT` | ci (secret) | CI builds | Sentry project slug |
+| `REPORTPORTAL_URL` | ci (secret) | CI test jobs | e.g. `https://reportportal.mdg-labs.dev` |
 | `REPORTPORTAL_API_KEY` | ci (secret) | CI test jobs | ReportPortal API key |
-| `REPORTPORTAL_PROJECT` | ci (var) | CI test jobs | ReportPortal project name |
+| `REPORTPORTAL_PROJECT` | ci (secret) | CI test jobs | ReportPortal project name |
 | `FLY_API_TOKEN` | staging, production | deploy workflows | Fly.io deploy + `flyctl secrets set` |
 | `CF_API_TOKEN` | staging, production | deploy workflows | Cloudflare Workers deploy + `wrangler secret put` |
 | `CF_ACCOUNT_ID` | staging, production | deploy workflows | Cloudflare account ID for Wrangler (`CLOUDFLARE_ACCOUNT_ID`) |
@@ -1809,7 +1811,7 @@ Key architectural and product decisions, rationale, and date recorded.
 | 9 | Waitlist tool | Marketing | — | **Resolved:** Postmark + own `subscribers` table — Decision #10 ✓ |
 | 10 | Insights time range | Product | — | **Resolved:** fixed toggle (7d/30d) for MVP, date picker post-MVP — Decision #19 ✓ |
 | 11 | Repo limit enforcement | Product | — | **Resolved:** hard block (403) — Decision #18 ✓ |
-| 12 | ReportPortal instance URL | Testing | — | **Resolved:** `REPORTPORTAL_URL` as GHA **var** in `ci` environment — not hardcoded in workflows ✓ |
+| 12 | ReportPortal instance URL | Testing | — | **Resolved:** `REPORTPORTAL_URL` as GHA **secret** in `ci` environment (Phase sync) — workflows use `${{ secrets.REPORTPORTAL_URL }}` ✓ |
 
 ---
 

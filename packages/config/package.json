@@ -24,6 +24,14 @@
       "types": "./dist/sync-secrets-manifest.d.ts",
       "default": "./dist/sync-secrets-manifest.js"
     },
+    "./reportportal-ci": {
+      "types": "./dist/reportportal-ci.d.ts",
+      "default": "./dist/reportportal-ci.js"
+    },
+    "./vitest-reportportal": {
+      "types": "./dist/vitest-reportportal.d.ts",
+      "default": "./dist/vitest-reportportal.js"
+    },
     "./typescript": "./typescript/tsconfig.base.json",
     "./eslint": "./eslint/base.mjs"
   },
@@ -38,6 +46,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@reportportal/agent-js-vitest": "^5.2.2",
     "@types/node": "^22.13.4",
     "eslint": "catalog:",
     "globals": "^15.14.0",

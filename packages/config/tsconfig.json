@@ -10,6 +10,9 @@
     "edition.ts",
     "env.ts",
     "plan-limits.ts",
+    "reportportal-ci.ts",
+    "vitest-reportportal.ts",
+    "github-actions-secrets.ts",
     "strict-env-fields.ts",
     "sync-secrets-manifest.ts",
     "src"

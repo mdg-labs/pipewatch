@@ -15,9 +15,9 @@ jobs:
     runs-on: ubuntu-latest
     environment: ci
     env:
-      REPORTPORTAL_URL: ${{ vars.REPORTPORTAL_URL }}
+      REPORTPORTAL_URL: ${{ secrets.REPORTPORTAL_URL }}
       REPORTPORTAL_API_KEY: ${{ secrets.REPORTPORTAL_API_KEY }}
-      REPORTPORTAL_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
+      REPORTPORTAL_PROJECT: ${{ secrets.REPORTPORTAL_PROJECT }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -33,6 +33,18 @@ jobs:
       - name: Typecheck
         id: typecheck
         run: pnpm typecheck
+
+      - name: Check ReportPortal configuration
+        run: |
+          missing=()
+          [ -z "${REPORTPORTAL_URL:-}" ] && missing+=("REPORTPORTAL_URL")
+          [ -z "${REPORTPORTAL_PROJECT:-}" ] && missing+=("REPORTPORTAL_PROJECT")
+          [ -z "${REPORTPORTAL_API_KEY:-}" ] && missing+=("REPORTPORTAL_API_KEY")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::warning::ReportPortal disabled — unset: ${missing[*]} (set in GHA ci environment secrets)"
+          else
+            echo "ReportPortal configuration present"
+          fi
 
       - name: Start ReportPortal unit launch
         id: rp-unit-start
@@ -71,6 +83,10 @@ jobs:
       - name: Validate sync-secrets manifest
         if: always() && steps.typecheck.outcome == 'success'
         run: node --experimental-strip-types scripts/validate-sync-secrets-manifest.ts
+
+      - name: Validate workflow secrets policy
+        if: always() && steps.typecheck.outcome == 'success'
+        run: node --experimental-strip-types scripts/validate-workflow-secrets-policy.ts
 
       - name: Start ReportPortal integration launch
         if: always() && steps.typecheck.outcome == 'success'
@@ -128,8 +144,8 @@ jobs:
       contents: read
       pull-requests: write
     env:
-      REPORTPORTAL_SUMMARY_URL: ${{ vars.REPORTPORTAL_URL }}
-      REPORTPORTAL_SUMMARY_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
+      REPORTPORTAL_SUMMARY_URL: ${{ secrets.REPORTPORTAL_URL }}
+      REPORTPORTAL_SUMMARY_PROJECT: ${{ secrets.REPORTPORTAL_PROJECT }}
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4

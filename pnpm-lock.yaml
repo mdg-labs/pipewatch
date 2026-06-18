@@ -259,6 +259,9 @@ importers:
       '@eslint/js':
         specifier: ^9.17.0
         version: 9.39.4
+      '@reportportal/agent-js-vitest':
+        specifier: ^5.2.2
+        version: 5.2.3
       '@types/node':
         specifier: ^22.13.4
         version: 22.19.21
@@ -1599,6 +1602,10 @@ packages:
   '@reportportal/agent-js-playwright@5.4.1':
     resolution: {integrity: sha512-t4OWacvAr341lmGRR0fSV6S6kLQUIhC+oPFy8r1N0x1xMqtrwWP7lPU1W9rI0ekZAQ1cuRarhSwj4VyamHYSqQ==}
     engines: {node: '>=14.x'}
+
+  '@reportportal/agent-js-vitest@5.2.3':
+    resolution: {integrity: sha512-jZ6B7OcPXPgsl5cxhQTsRZ7Ecf5jgz2MHlEWqqYvxtklLyZmJxgNaX4LjFhEz228fe+/aXj0xIcTmddi+afJ+w==}
+    engines: {node: '>=16.x'}
 
   '@reportportal/client-javascript@5.5.11':
     resolution: {integrity: sha512-TaocKCN0hDjqLs9BZ5+irWy9dGwSbcfM+z40o55OS7zxH4Nyx5rnZ9Yto6JDpsqhrH6l5sBDk2KamAvg+r8nEg==}
@@ -4916,6 +4923,13 @@ snapshots:
     dependencies:
       '@reportportal/client-javascript': 5.5.11
       strip-ansi: 6.0.1
+    transitivePeerDependencies:
+      - debug
+      - supports-color
+
+  '@reportportal/agent-js-vitest@5.2.3':
+    dependencies:
+      '@reportportal/client-javascript': 5.5.11
     transitivePeerDependencies:
       - debug
       - supports-color

@@ -38,6 +38,20 @@ function trimEnv(value: string | undefined): string | undefined {
   return trimmed ? trimmed : undefined;
 }
 
+export function reportPortalMissingKeys(): string[] {
+  const missing: string[] = [];
+  if (!trimEnv(process.env.REPORTPORTAL_URL)) {
+    missing.push("REPORTPORTAL_URL");
+  }
+  if (!trimEnv(process.env.REPORTPORTAL_PROJECT)) {
+    missing.push("REPORTPORTAL_PROJECT");
+  }
+  if (!trimEnv(process.env.REPORTPORTAL_API_KEY)) {
+    missing.push("REPORTPORTAL_API_KEY");
+  }
+  return missing;
+}
+
 export function readReportPortalEnv(): ReportPortalEnv | null {
   const url = trimEnv(process.env.REPORTPORTAL_URL);
   const project = trimEnv(process.env.REPORTPORTAL_PROJECT);
