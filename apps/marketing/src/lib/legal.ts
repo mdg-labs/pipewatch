@@ -1,9 +1,8 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { compileMDX } from "next-mdx-remote/rsc";
 
 import { legalMdxComponents } from "@/components/legal/mdx-components";
+
+import { legalSources } from "./content-sources";
 
 export type LegalPageSlug = "privacy" | "terms";
 
@@ -17,8 +16,6 @@ export type LegalSection = {
   id: string;
   title: string;
 };
-
-const LEGAL_DIR = join(process.cwd(), "content/legal");
 
 const FRONTMATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
 
@@ -94,9 +91,13 @@ export function extractLegalSections(body: string): LegalSection[] {
 }
 
 function readLegalSource(slug: LegalPageSlug): { filename: string; raw: string } {
-  const filename = `${slug}.mdx`;
-  const raw = readFileSync(join(LEGAL_DIR, filename), "utf8");
-  return { filename, raw };
+  const sourcePath = `${slug}.mdx`;
+  const raw = legalSources[sourcePath];
+  if (!raw) {
+    throw new Error(`Legal page not found: ${slug}`);
+  }
+
+  return { filename: sourcePath, raw };
 }
 
 export function getLegalPageMeta(slug: LegalPageSlug): LegalPageFrontmatter {

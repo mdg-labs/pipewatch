@@ -5,6 +5,8 @@ import { DocsPage } from "@/components/docs";
 import { getDocPageMeta, isValidDocSlug } from "@/lib/docs/content";
 import { getAllDocSlugs, getDefaultDocSlug } from "@/lib/docs/nav-tree";
 
+export const dynamic = "force-static";
+
 type DocPageProps = {
   params: Promise<{ slug?: string[] }>;
 };

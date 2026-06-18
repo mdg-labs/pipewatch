@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { ChangelogPage } from "@/components/changelog";
 
+export const dynamic = "force-static";
+
 export const metadata: Metadata = {
   title: "Changelog",
   description:

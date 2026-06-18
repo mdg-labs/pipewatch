@@ -1,23 +1,32 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-
 import { compileMDX } from "next-mdx-remote/rsc";
 
 import { docsMdxComponents } from "@/components/docs/mdx-components";
 import { slugifyHeading } from "@/lib/legal";
 
-import { DOCS_CONTENT_DIR } from "./constants";
+import { docSources } from "../content-sources";
 import { getAllDocSlugs } from "./nav-tree";
 import type { DocsPageFrontmatter, DocsSection } from "./types";
 
-const CONTENT_ROOT = join(process.cwd(), DOCS_CONTENT_DIR);
-
 const FRONTMATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
 
+function docSlugFromSourcePath(sourcePath: string): string {
+  const slug = sourcePath.replace(/\.mdx$/, "");
+  if (slug.length === 0) {
+    throw new Error(`Unexpected docs path: ${sourcePath}`);
+  }
+  return slug;
+}
+
+const docSourceBySlug = new Map<string, string>(
+  Object.entries(docSources).map(([sourcePath, raw]) => [docSlugFromSourcePath(sourcePath), raw]),
+);
+
 function readDocSource(slug: string): { filename: string; raw: string } {
-  const filename = `${slug}.mdx`;
-  const raw = readFileSync(join(CONTENT_ROOT, filename), "utf8");
-  return { filename, raw };
+  const raw = docSourceBySlug.get(slug);
+  if (!raw) {
+    throw new Error(`Doc not found: ${slug}`);
+  }
+  return { filename: `${slug}.mdx`, raw };
 }
 
 export function isValidDocSlug(slug: string): boolean {

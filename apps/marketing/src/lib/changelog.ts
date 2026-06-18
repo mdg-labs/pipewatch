@@ -1,6 +1,3 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-
 export type ChangelogSection = {
   title: string;
   items: string[];
@@ -15,8 +12,7 @@ export type ChangelogEntry = {
   sections: ChangelogSection[];
 };
 
-const CHANGELOG_DIR = join(process.cwd(), "content/changelog");
-
+import { changelogSources } from "./content-sources";
 const FRONTMATTER_PATTERN = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
 
 function parseFrontmatterValue(raw: string): string {
@@ -113,13 +109,18 @@ function parseChangelogFile(filename: string, raw: string): ChangelogEntry {
   return entry;
 }
 
-export function getChangelogEntries(): ChangelogEntry[] {
-  const filenames = readdirSync(CHANGELOG_DIR)
-    .filter((name) => name.endsWith(".md"))
-    .sort();
+function filenameFromSourcePath(sourcePath: string): string {
+  const segments = sourcePath.split("/");
+  const filename = segments.at(-1);
+  if (!filename) {
+    throw new Error(`Unexpected changelog path: ${sourcePath}`);
+  }
+  return filename;
+}
 
-  const entries = filenames.map((filename) => {
-    const raw = readFileSync(join(CHANGELOG_DIR, filename), "utf8");
+export function getChangelogEntries(): ChangelogEntry[] {
+  const entries = Object.entries(changelogSources).map(([sourcePath, raw]) => {
+    const filename = filenameFromSourcePath(sourcePath);
     return parseChangelogFile(filename, raw);
   });
 
