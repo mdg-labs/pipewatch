@@ -1,0 +1,100 @@
+.pw-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.pw-pagination-summary {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  font-feature-settings: "tnum";
+  white-space: nowrap;
+}
+
+.pw-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+}
+
+.pw-pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+
+.pw-pagination-btn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.pw-pagination-btn:disabled {
+  color: var(--text-tertiary);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.pw-pagination-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--focus-ring);
+}
+
+.pw-pagination-pages {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.pw-pagination-page {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-feature-settings: "tnum";
+}
+
+.pw-pagination-page:hover {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+.pw-pagination-page-active {
+  background: oklch(70% 0.195 55 / 0.12);
+  border-color: oklch(70% 0.195 55 / 0.4);
+  color: var(--text-accent);
+  font-weight: var(--weight-medium);
+}
+
+.pw-pagination-page:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--focus-ring);
+}
+
+.pw-pagination-ellipsis {
+  min-width: 20px;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+}

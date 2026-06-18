@@ -1,0 +1,24 @@
+---
+title: Workspaces
+description: How PipeWatch scopes data, members, and settings using workspaces as the tenant boundary.
+---
+
+## What is a workspace
+
+A **workspace** is the top-level tenant in PipeWatch. All integrations, repositories, pipeline runs, and API keys belong to exactly one workspace.
+
+## Roles
+
+| Role | Capabilities |
+|---|---|
+| **owner** | Full access including billing (Cloud) and destructive settings |
+| **admin** | Manage integrations, repositories, members, and API keys |
+| **member** | Read-only access to dashboards and run history |
+
+## Cloud vs CE
+
+**PipeWatch Cloud** supports multiple workspaces per account with a workspace switcher. **PipeWatch CE** runs a single workspace per deployment — the switcher is hidden.
+
+## API scoping
+
+Every REST route is workspace-scoped under `/api/v1/workspaces/:workspaceId/...`. Access tokens embed the active workspace and role at issuance time.

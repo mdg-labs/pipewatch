@@ -1,0 +1,35 @@
+---
+title: Docker Compose config
+description: Overview of the PipeWatch CE Compose stack and how services connect.
+---
+
+## Services
+
+A typical CE deployment runs:
+
+- **api** — Hono API + webhook receiver (applies migrations on startup)
+- **worker** — BullMQ consumer for backfill and async jobs
+- **web** — Next.js dashboard
+- **postgres** — Embedded database
+- **redis** — Queue and cache
+
+## Volumes
+
+Persist Postgres data and Redis AOF/RDB files on named volumes so container recreation does not wipe state.
+
+## Networking
+
+Expose only the web and API ports required for your environment. Internal services communicate on the Compose network.
+
+## Example override
+
+Use a `docker-compose.override.yml` for local port mappings, resource limits, or attaching an external reverse proxy.
+
+```yaml
+services:
+  api:
+    ports:
+      - "8787:8787"
+```
+
+Refer to the repository Compose files for the current service names and health checks.

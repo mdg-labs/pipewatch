@@ -9,6 +9,7 @@
 # Dependencies & build
 node_modules/
 dist/
+*.tsbuildinfo
 .next/
 .turbo/
 .open-next/
@@ -24,3 +25,4 @@ coverage/
 
 # python
 __pycache__/
+

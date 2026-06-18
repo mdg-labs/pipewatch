@@ -1,0 +1,111 @@
+---
+title: CE quickstart
+description: Run PipeWatch Community Edition with Docker Compose and connect your GitHub App in under ten minutes.
+---
+
+PipeWatch CE ships as pre-built container images with embedded Postgres and Redis. You need **Docker Compose v2**, a [GitHub App](/docs/github-app-setup/creating-the-app), and (for webhook mode) a public HTTPS endpoint that reaches your API.
+
+## 1. Get the Compose files
+
+Clone the repository or copy `docker-compose.yml` and `.env.example` from a release tag:
+
+```bash
+git clone https://github.com/mdg-labs/pipewatch.git
+cd pipewatch
+cp .env.example .env
+```
+
+CE pulls images from GitHub Container Registry — you do not need to build the monorepo locally.
+
+## 2. Create a GitHub App
+
+Register a GitHub App before starting the stack. PipeWatch needs the App ID, private key, OAuth client credentials, webhook secret, and app slug in `.env`.
+
+Follow the [GitHub App setup guide](/docs/github-app-setup/creating-the-app) for callback URLs, [permissions and events](/docs/github-app-setup/permissions-and-events), and [webhook URL](/docs/github-app-setup/webhook-url) configuration.
+
+**Local development tip:** set `PIPEWATCH_MODE=polling` in `.env` if you cannot expose a public webhook URL yet. You can switch repositories to webhook mode after [setting up a tunnel](/docs/github-app-setup/cloudflare-tunnel).
+
+## 3. Configure environment
+
+Edit `.env` with your GitHub App credentials and signing secrets. Each of `JWT_SECRET`, `JWT_REFRESH_SECRET`, and `ENCRYPTION_KEY` must be at least 32 characters.
+
+Generate random values:
+
+```bash
+openssl rand -hex 32   # run three times for the secrets above
+```
+
+| Variable | Required | Notes |
+|---|---|---|
+| `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET` | Yes | From your GitHub App |
+| `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_APP_SLUG` | Yes | OAuth login and install URL |
+| `JWT_SECRET`, `JWT_REFRESH_SECRET`, `ENCRYPTION_KEY` | Yes | Random strings ≥ 32 chars |
+| `APP_URL`, `MARKETING_URL` | Local | Default `http://localhost:3001` in Compose |
+| `NEXT_PUBLIC_API_URL` | Local | Default `http://localhost:3000` in Compose |
+| `PIPEWATCH_MODE` | No | `webhook` (default) or `polling` |
+| `RETENTION_DAYS` | No | Default `30` |
+| `SMTP_*` | No | Email features degrade gracefully when unset |
+
+See the full [environment variables](/docs/ce-reference/environment-variables) reference.
+
+## 4. Start the stack
+
+```bash
+docker compose up -d
+```
+
+The API applies Drizzle migrations automatically on startup before serving traffic (no manual migration step).
+
+| Service | Port | Purpose |
+|---|---|---|
+| **web** (dashboard) | 3001 | Browser UI — open this URL |
+| **api** | 3000 | REST API + webhook receiver |
+| **worker** | — | Background jobs (internal) |
+| **postgres** | — | Embedded database (internal) |
+| **redis** | — | Queue and cache (internal) |
+
+Verify the API is healthy:
+
+```bash
+curl -s http://localhost:3000/health
+# {"status":"ok","edition":"ce"}
+```
+
+Or run the optional smoke test script from the repository root:
+
+```bash
+bash scripts/ce-smoke-test.sh
+```
+
+## 5. Bootstrap and connect GitHub
+
+Open **http://localhost:3001**. When no users exist, CE redirects to `/setup` for the first-owner bootstrap via GitHub OAuth.
+
+After sign-in, the onboarding wizard walks you through:
+
+1. **Create workspace** — name your CE workspace (single-workspace mode).
+2. **Install GitHub App** — install the app you created on your org or user account.
+3. **Select repositories** — choose repos to track; backfill jobs populate historical runs.
+
+New workflow runs appear on the dashboard within seconds when webhook mode is active.
+
+## 6. Expose webhooks (production)
+
+GitHub must reach your API at `{API_URL}/webhooks/github` over HTTPS. Choose one:
+
+- **Public server** — point DNS and TLS at port 3000 (or reverse-proxy to it).
+- **Cloudflare Tunnel** — see the [tunnel guide](/docs/github-app-setup/cloudflare-tunnel) for a quick one-command setup or a named tunnel.
+- **Polling mode** — set `PIPEWATCH_MODE=polling` when inbound webhooks are impossible; see [Webhook vs polling](/docs/concepts/webhook-vs-polling).
+
+Update `APP_URL`, `MARKETING_URL`, and `NEXT_PUBLIC_API_URL` to your public hostnames before going live.
+
+## Upgrades
+
+Pull the latest images and restart — migrations run when the API container starts:
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+See [Upgrading](/docs/ce-reference/upgrading) for backup and rollback notes.

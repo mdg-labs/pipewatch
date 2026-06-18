@@ -1,0 +1,34 @@
+---
+title: Environment variables
+description: Required and optional environment variables for PipeWatch CE and local development.
+---
+
+## Required secrets
+
+These must be set before the API starts in production:
+
+| Variable | Purpose |
+|---|---|
+| `JWT_SECRET` | HS256 access token signing |
+| `JWT_REFRESH_SECRET` | Refresh token signing |
+| `DATABASE_URL` | Postgres connection string |
+| `GITHUB_WEBHOOK_SECRET` | Webhook HMAC validation |
+| `PIPEWATCH_EDITION` | `ce` or `cloud` |
+
+## GitHub App
+
+| Variable | Purpose |
+|---|---|
+| `GITHUB_APP_ID` | GitHub App identifier |
+| `GITHUB_APP_PRIVATE_KEY` | PEM private key for installation tokens |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | OAuth login |
+
+## Infrastructure
+
+| Variable | Purpose |
+|---|---|
+| `REDIS_URL` | BullMQ queue and cache |
+| `APP_URL` | Dashboard base URL |
+| `API_URL` | Public API base URL for webhooks and links |
+
+See `.env.example` in the repository for the authoritative list and Phase-managed values for hosted environments.

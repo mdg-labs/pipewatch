@@ -1,0 +1,5652 @@
+{
+  "paths": {
+    "/api/v1/public/bootstrap-status": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "CE bootstrap status",
+        "description": "Public endpoint for the web app to detect whether CE first-run bootstrap is required. No authentication required.",
+        "responses": {
+          "200": {
+            "description": "Bootstrap status for the current edition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BootstrapStatusResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sse-token": {
+      "get": {
+        "tags": [
+          "SSE"
+        ],
+        "summary": "Issue one-time SSE token",
+        "description": "Returns a short-lived one-time token for SSE stream authentication via query parameter.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One-time SSE token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SseTokenResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SSE token service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/users/me": {
+      "delete": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Delete current user account",
+        "description": "Revokes all refresh tokens and deletes the user. Blocked with 409 when the user is the sole owner of a workspace that has other members.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Account deleted"
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Account delete blocked — sole owner of a shared workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get current user profile",
+        "description": "Returns the authenticated user's profile. Email, avatar, and GitHub login are read-only GitHub fields.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Users"
+        ],
+        "summary": "Update current user profile",
+        "description": "Updates the authenticated user's display name only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserProfileBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated user profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/waitlist": {
+      "post": {
+        "tags": [
+          "Waitlist"
+        ],
+        "summary": "Join the waitlist",
+        "description": "Public cloud-only endpoint. Creates a subscriber row and sends a double opt-in confirmation email via SMTP.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaitlistSubscribeBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Subscription accepted (new or existing email)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistSubscribeResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Waitlist not available on this edition",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/waitlist/confirm/{token}": {
+      "get": {
+        "tags": [
+          "Waitlist"
+        ],
+        "summary": "Confirm waitlist subscription",
+        "description": "Sets confirmed_at for the subscriber matching the token.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription confirmed or already confirmed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistActionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token not found or waitlist unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/waitlist/unsubscribe/{token}": {
+      "get": {
+        "tags": [
+          "Waitlist"
+        ],
+        "summary": "Unsubscribe from waitlist",
+        "description": "Sets unsubscribed_at for the subscriber matching the token.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unsubscribed or already unsubscribed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WaitlistActionResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Token not found or waitlist unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "List workspaces for the authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspaces the user belongs to",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkspaceListItem"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Create a workspace",
+        "description": "Creates a workspace, auto-generates a slug from the name when omitted, and assigns the creator as owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkspaceBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Workspace limit reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Slug collision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/check-slug": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Check workspace slug availability",
+        "description": "Public endpoint used during onboarding and workspace settings to verify slug uniqueness.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "example": "my-workspace"
+            },
+            "required": true,
+            "name": "slug",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Workspace ID to exclude when checking availability during edits",
+              "example": "00000000-0000-4000-8000-000000000001"
+            },
+            "required": false,
+            "description": "Workspace ID to exclude when checking availability during edits",
+            "name": "exclude",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Slug availability result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SlugAvailability"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid slug format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}": {
+      "delete": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Delete a workspace",
+        "description": "Deletes the workspace and cascades related data. Blocked on CE when it is the user's only workspace.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Workspace deleted"
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workspace not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Cannot delete only workspace on CE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Get workspace details",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workspace not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Update workspace settings",
+        "description": "Updates name, slug, and default retention (cloud paid plans: 30–365 days).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkspaceBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Workspace"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workspace not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Slug collision",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/api-keys": {
+      "get": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "List workspace API keys",
+        "description": "Returns API key metadata (prefix only). Requires admin or owner. Full keys are never returned.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace API keys",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeySummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Create a workspace API key",
+        "description": "Creates an API key and returns the full `pw_...` value once. Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateApiKeyBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedApiKey"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Workspace not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/api-keys/{keyId}": {
+      "delete": {
+        "tags": [
+          "API Keys"
+        ],
+        "summary": "Revoke a workspace API key",
+        "description": "Sets `revoked_at` on the key. Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "keyId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "API key revoked"
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "API key not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/billing": {
+      "get": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Get workspace billing summary",
+        "description": "Returns plan, usage, next billing date, and recent invoices. Cloud only; owner-only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Billing summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceBillingSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/billing/checkout": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Create Stripe Checkout session",
+        "description": "Starts a subscription checkout for Pro or Business. Cloud only; owner-only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingCheckoutBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkout session URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingSessionUrl"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/billing/portal": {
+      "post": {
+        "tags": [
+          "Billing"
+        ],
+        "summary": "Create Stripe Customer Portal session",
+        "description": "Opens the billing portal for payment method updates and subscription cancellation. Cloud only; owner-only.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer portal session URL",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingSessionUrl"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/dashboard": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Get workspace dashboard aggregates",
+        "description": "Returns global health counts and per-repo card data: last run, 7-day failure-rate sparkline, and running pulse flag.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace dashboard aggregates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceDashboard"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/insights": {
+      "get": {
+        "tags": [
+          "Insights"
+        ],
+        "summary": "Get workspace insights aggregates",
+        "description": "Returns summary cards, per-workflow time series, and slowest/most-failing workflow tables for the selected range.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d"
+              ],
+              "default": "7d",
+              "description": "Time window for aggregates",
+              "example": "7d"
+            },
+            "required": false,
+            "description": "Time window for aggregates",
+            "name": "range",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Optional repository filter"
+            },
+            "required": false,
+            "description": "Optional repository filter",
+            "name": "repoId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Optional pipeline/workflow name filter"
+            },
+            "required": false,
+            "description": "Optional pipeline/workflow name filter",
+            "name": "workflow",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace insights aggregates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceInsights"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/integrations": {
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "List workspace integrations",
+        "description": "Returns GitHub integrations with account metadata, connected repo count, and token health. Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace integrations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IntegrationSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Create a workspace integration",
+        "description": "Persists a GitHub App installation after callback processing (`provider=github`). Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateIntegrationBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created integration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Installation already connected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/integrations/{integrationId}": {
+      "delete": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Disconnect a workspace integration",
+        "description": "Disables all repositories for the integration and removes the integration row. Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "integrationId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Integration disconnected"
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Integration not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Integrations"
+        ],
+        "summary": "Get integration details",
+        "description": "Returns a single integration. Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "integrationId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Integration details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntegrationSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Integration not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/invites": {
+      "get": {
+        "tags": [
+          "Invites"
+        ],
+        "summary": "List pending workspace invites",
+        "description": "Returns pending invites for the workspace. Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending workspace invites",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkspaceInvite"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Invites"
+        ],
+        "summary": "Invite a workspace member",
+        "description": "Creates a 7-day invite and sends email via SMTP when configured. Returns invite_url when SMTP is unset.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWorkspaceInviteBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceInvite"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invite conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/invites/{inviteId}": {
+      "delete": {
+        "tags": [
+          "Invites"
+        ],
+        "summary": "Revoke a pending invite",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "inviteId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Invite revoked"
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invite not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/invites/{inviteId}/resend": {
+      "post": {
+        "tags": [
+          "Invites"
+        ],
+        "summary": "Resend a workspace invite",
+        "description": "Re-sends the invite email via SMTP when configured. Returns invite_url when SMTP is unset.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "inviteId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite resent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceInvite"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invite not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invite already accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invite expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/members": {
+      "get": {
+        "tags": [
+          "Members"
+        ],
+        "summary": "List workspace members",
+        "description": "Returns accepted members with role, avatar, email, and joined date. All members have read access.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace members",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/WorkspaceMember"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/members/{userId}": {
+      "delete": {
+        "tags": [
+          "Members"
+        ],
+        "summary": "Remove a workspace member",
+        "description": "Removes a member from the workspace. Requires admin or owner. Cannot remove the last owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Member removed"
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Cannot remove the last owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Members"
+        ],
+        "summary": "Change a member role",
+        "description": "Updates a member role. Requires admin or owner. Cannot demote the last owner or change your own role.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateWorkspaceMemberBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Member not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Cannot demote the last owner",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/repos/{repoId}/stream": {
+      "get": {
+        "tags": [
+          "SSE"
+        ],
+        "summary": "SSE stream for repository pipeline updates",
+        "description": "Server-sent events for run and job updates. Authenticated via one-time query token (PRD §19, page B22).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "repoId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "One-time SSE token from GET /api/v1/sse-token"
+            },
+            "required": true,
+            "description": "One-time SSE token from GET /api/v1/sse-token",
+            "name": "token",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE event stream",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "SSE data lines with JSON event payloads"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid or expired SSE token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "SSE stream unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/repositories": {
+      "get": {
+        "tags": [
+          "Repositories"
+        ],
+        "summary": "List workspace repositories",
+        "description": "Returns tracked repositories with visibility and sync settings. Optional filters: enabled, integration_id.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ],
+              "description": "Filter by enabled flag"
+            },
+            "required": false,
+            "description": "Filter by enabled flag",
+            "name": "enabled",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": false,
+            "name": "integration_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace repositories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RepositorySummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/repositories/{repoId}": {
+      "delete": {
+        "tags": [
+          "Repositories"
+        ],
+        "summary": "Delete repository data",
+        "description": "Removes the repository row and cascades pipeline runs. Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "repoId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Repository deleted"
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Repositories"
+        ],
+        "summary": "Get repository details",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "repoId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Repository details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepositorySummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Repositories"
+        ],
+        "summary": "Update repository settings",
+        "description": "Updates enabled flag, polling interval (min 30s), and retention override (plan-clamped on cloud). Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "repoId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRepositoryBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated repository",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepositorySummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions or repository limit reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/runs": {
+      "get": {
+        "tags": [
+          "Pipeline Runs"
+        ],
+        "summary": "List pipeline runs for a repository",
+        "description": "Returns paginated pipeline runs sorted by started_at desc. Filters: branch, workflow, status, trigger, date range.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "repoId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by branch name"
+            },
+            "required": false,
+            "description": "Filter by branch name",
+            "name": "branch",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by pipeline/workflow name"
+            },
+            "required": false,
+            "description": "Filter by pipeline/workflow name",
+            "name": "workflow",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "queued",
+                "in_progress",
+                "completed"
+              ],
+              "description": "Filter by run status"
+            },
+            "required": false,
+            "description": "Filter by run status",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Filter by trigger type"
+            },
+            "required": false,
+            "description": "Filter by trigger type",
+            "name": "trigger",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Inclusive lower bound on started_at (ISO 8601)"
+            },
+            "required": false,
+            "description": "Inclusive lower bound on started_at (ISO 8601)",
+            "name": "started_from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "description": "Inclusive upper bound on started_at (ISO 8601)"
+            },
+            "required": false,
+            "description": "Inclusive upper bound on started_at (ISO 8601)",
+            "name": "started_to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "example": 20,
+              "description": "Page size (default 20, max 100)"
+            },
+            "required": false,
+            "description": "Page size (default 20, max 100)",
+            "name": "page_size",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Opaque pagination cursor from prior page"
+            },
+            "required": false,
+            "description": "Opaque pagination cursor from prior page",
+            "name": "cursor",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated pipeline runs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedPipelineRuns"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/runs/{runId}": {
+      "delete": {
+        "tags": [
+          "Pipeline Runs"
+        ],
+        "summary": "Delete a pipeline run",
+        "description": "Manually purges a pipeline run and cascaded jobs/steps. Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "repoId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "runId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Pipeline run deleted"
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pipeline run not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Pipeline Runs"
+        ],
+        "summary": "Get pipeline run details",
+        "description": "Returns full B6 header fields for a single pipeline run.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "repoId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "runId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pipeline run details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineRun"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pipeline run not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/runs/{runId}/jobs": {
+      "get": {
+        "tags": [
+          "Pipeline Jobs"
+        ],
+        "summary": "List pipeline jobs for a run",
+        "description": "Returns jobs ordered for DAG display (started_at asc). Includes runner_name, status, and durations.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "repoId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "runId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pipeline jobs for the run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineJobsList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository, run, or jobs not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/runs/{runId}/jobs/{jobId}/steps": {
+      "get": {
+        "tags": [
+          "Pipeline Steps"
+        ],
+        "summary": "List steps for a pipeline job",
+        "description": "Returns steps ordered by step number within the job.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "repoId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "runId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "jobId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pipeline steps for the job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PipelineStepsList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository, run, job, or steps not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/sync": {
+      "post": {
+        "tags": [
+          "Repositories"
+        ],
+        "summary": "Trigger manual repository re-sync",
+        "description": "Enqueues a backfill-repo job to re-fetch run history from GitHub. Requires admin or owner.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "repoId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Re-sync enqueued"
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Repository not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Queue unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/workspaces/{workspaceId}/sync-status": {
+      "get": {
+        "tags": [
+          "Workspaces"
+        ],
+        "summary": "Get workspace sync and backfill status",
+        "description": "Returns per-integration and per-repo sync state for onboarding progress and manual re-sync feedback. Optional integrationId filter.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "workspaceId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "description": "Limit results to a single integration"
+            },
+            "required": false,
+            "description": "Limit results to a single integration",
+            "name": "integrationId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Workspace sync status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceSyncStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/github": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Initiate GitHub OAuth",
+        "description": "Redirects the browser to GitHub authorization. Optional `next` query param is preserved for post-auth redirect.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Relative or absolute post-auth redirect target",
+              "example": "/dashboard"
+            },
+            "required": false,
+            "description": "Relative or absolute post-auth redirect target",
+            "name": "next",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to GitHub OAuth authorization"
+          }
+        }
+      }
+    },
+    "/auth/github/callback": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "GitHub OAuth callback",
+        "description": "Exchanges the authorization code, upserts the user, issues JWT + refresh cookies, and redirects to the app.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "example": "gho_authorization_code"
+            },
+            "required": true,
+            "name": "code",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "example": "signed-oauth-state"
+            },
+            "required": true,
+            "name": "state",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to app after successful sign-in"
+          },
+          "400": {
+            "description": "Invalid or missing OAuth parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "OAuth state validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "GitHub token exchange failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Log out current session",
+        "description": "Revokes the refresh token from the httpOnly cookie and clears auth cookies. Requires a valid refresh cookie.",
+        "responses": {
+          "204": {
+            "description": "Session revoked"
+          },
+          "401": {
+            "description": "Missing or invalid refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/logout-all": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Log out all sessions",
+        "description": "Revokes all refresh tokens for the authenticated user and clears auth cookies.",
+        "responses": {
+          "204": {
+            "description": "All sessions revoked"
+          },
+          "401": {
+            "description": "Missing or invalid refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Rotate refresh token",
+        "description": "Rotates the httpOnly refresh cookie and issues a new access JWT cookie. Requires a valid refresh cookie.",
+        "responses": {
+          "204": {
+            "description": "Tokens rotated"
+          },
+          "401": {
+            "description": "Missing or invalid refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Auth service unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/switch-workspace": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Switch active workspace",
+        "description": "Issues a new access JWT scoped to the requested workspace. Requires a valid refresh cookie and workspace membership.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwitchWorkspaceBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Workspace switched; new access cookie issued"
+          },
+          "401": {
+            "description": "Missing or invalid refresh token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Not a member of the requested workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health check",
+        "description": "Public liveness probe — no authentication required.",
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invite/{token}": {
+      "get": {
+        "tags": [
+          "Invites"
+        ],
+        "summary": "Validate a workspace invite token",
+        "description": "Public endpoint to validate an invite before sign-in or acceptance (pages B18).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Valid invite",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitePreview"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invite not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invite already accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invite expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/invite/{token}/accept": {
+      "post": {
+        "tags": [
+          "Invites"
+        ],
+        "summary": "Accept a workspace invite",
+        "description": "Creates workspace membership for the authenticated user whose email matches the invite.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "required": true,
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Invite accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AcceptInviteResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Invite email mismatch",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invite not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Invite already accepted or user already a member",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Invite expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/onboarding/github-callback": {
+      "get": {
+        "tags": [
+          "Onboarding"
+        ],
+        "summary": "GitHub App install callback",
+        "description": "Accepts GitHub `installation_id` after App install (or CE manual entry), upserts the integration, enqueues backfill, and redirects to onboarding step 3 (PRD §12.1, pages B17).",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "example": "12345678",
+              "description": "GitHub App installation ID from the install redirect or CE manual entry"
+            },
+            "required": true,
+            "description": "GitHub App installation ID from the install redirect or CE manual entry",
+            "name": "installation_id",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirect to onboarding step 3"
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions or missing workspace context",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "GitHub installation not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Installation already connected to another workspace",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Request validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/github": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "GitHub App webhook receiver",
+        "description": "Validates `X-Hub-Signature-256`, enqueues `workflow_run` and `workflow_job` events to BullMQ, and returns 200 immediately (PRD §12.6, pages B19).",
+        "responses": {
+          "200": {
+            "description": "Webhook accepted"
+          },
+          "401": {
+            "description": "Invalid webhook signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/postmark": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Postmark bounce and unsubscribe webhook receiver",
+        "description": "Validates `X-Postmark-Signature` (HMAC-SHA256, base64), updates `subscribers` on bounce and unsubscribe events, and returns 200 immediately (pages B21, PRD §14).",
+        "responses": {
+          "200": {
+            "description": "Webhook accepted"
+          },
+          "401": {
+            "description": "Invalid webhook signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/webhooks/stripe": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Stripe billing webhook receiver",
+        "description": "Validates `Stripe-Signature`, syncs workspace plan and subscription fields for billing lifecycle events, and returns 200 immediately (PRD §24, pages B20). Cloud only.",
+        "responses": {
+          "200": {
+            "description": "Webhook accepted"
+          },
+          "400": {
+            "description": "Invalid webhook payload",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid webhook signature",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AcceptInviteResult": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspace_name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ]
+          }
+        },
+        "required": [
+          "workspace_id",
+          "workspace_name",
+          "role"
+        ]
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "example": "NOT_FOUND"
+              },
+              "message": {
+                "type": "string",
+                "example": "Resource not found"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "ApiKeySummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "key_prefix": {
+            "type": "string"
+          },
+          "expires_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "last_used_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "revoked_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "name",
+          "key_prefix",
+          "expires_at",
+          "last_used_at",
+          "revoked_at",
+          "created_at"
+        ]
+      },
+      "BillingCheckoutBody": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "pro",
+              "business"
+            ],
+            "example": "pro"
+          }
+        },
+        "required": [
+          "plan"
+        ]
+      },
+      "BillingInvoice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "amount_cents": {
+            "type": "integer"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hosted_invoice_url": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "status",
+          "amount_cents",
+          "currency",
+          "created_at",
+          "hosted_invoice_url"
+        ]
+      },
+      "BillingSessionUrl": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "BillingUsageMetric": {
+        "type": "object",
+        "properties": {
+          "used": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "nullable": true,
+            "minimum": 0,
+            "exclusiveMinimum": true
+          }
+        },
+        "required": [
+          "used",
+          "limit"
+        ]
+      },
+      "BootstrapStatusResponse": {
+        "type": "object",
+        "properties": {
+          "bootstrapRequired": {
+            "type": "boolean",
+            "example": true
+          },
+          "userCount": {
+            "type": "integer",
+            "minimum": 0,
+            "example": 0
+          }
+        },
+        "required": [
+          "bootstrapRequired",
+          "userCount"
+        ]
+      },
+      "CreateApiKeyBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "example": "CI pipeline"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2027-01-01T00:00:00.000Z"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreateIntegrationBody": {
+        "type": "object",
+        "properties": {
+          "external_installation_id": {
+            "type": "string",
+            "minLength": 1,
+            "example": "12345678"
+          },
+          "account_login": {
+            "type": "string",
+            "minLength": 1,
+            "example": "mdg-labs"
+          },
+          "account_type": {
+            "type": "string",
+            "enum": [
+              "Organization",
+              "User"
+            ]
+          },
+          "access_token": {
+            "type": "string",
+            "minLength": 1,
+            "example": "ghs_installation_token"
+          },
+          "token_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-06-17T12:00:00.000Z"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "github"
+            ],
+            "example": "github"
+          }
+        },
+        "required": [
+          "external_installation_id",
+          "account_login",
+          "account_type",
+          "access_token",
+          "token_expires_at"
+        ]
+      },
+      "CreateWorkspaceBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "example": "My Workspace"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "example": "my-workspace"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "CreateWorkspaceInviteBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "colleague@example.com"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "role"
+        ]
+      },
+      "CreatedApiKey": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ApiKeySummary"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "description": "Full API key — shown once at creation; store securely.",
+                "example": "pw_live_x9k2m4n8p3q7r1s6"
+              }
+            },
+            "required": [
+              "key"
+            ]
+          }
+        ]
+      },
+      "DashboardHealthSummary": {
+        "type": "object",
+        "properties": {
+          "healthy": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "running": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failing": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "healthy",
+          "running",
+          "failing",
+          "total"
+        ]
+      },
+      "DashboardLastRun": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "external_run_id": {
+            "type": "string"
+          },
+          "pipeline_name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "in_progress",
+              "completed"
+            ]
+          },
+          "conclusion": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "success",
+              "failure",
+              "cancelled",
+              "skipped",
+              null
+            ]
+          },
+          "branch": {
+            "type": "string"
+          },
+          "commit_sha": {
+            "type": "string"
+          },
+          "commit_message": {
+            "type": "string",
+            "nullable": true
+          },
+          "actor_login": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger_type": {
+            "type": "string"
+          },
+          "source_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "external_run_id",
+          "pipeline_name",
+          "status",
+          "conclusion",
+          "branch",
+          "commit_sha",
+          "commit_message",
+          "actor_login",
+          "trigger_type",
+          "source_url",
+          "started_at",
+          "completed_at",
+          "duration_ms"
+        ]
+      },
+      "DashboardRepoCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "integration_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "is_running": {
+            "type": "boolean"
+          },
+          "health": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "running",
+              "failing"
+            ]
+          },
+          "last_run": {
+            "$ref": "#/components/schemas/DashboardLastRun"
+          },
+          "sparkline": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "description": "Daily failure rate (0–100) for the last 7 UTC days, oldest first"
+          }
+        },
+        "required": [
+          "id",
+          "full_name",
+          "integration_id",
+          "is_running",
+          "health",
+          "last_run",
+          "sparkline"
+        ]
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ],
+            "example": "ok"
+          },
+          "edition": {
+            "type": "string",
+            "enum": [
+              "ce",
+              "cloud"
+            ],
+            "example": "ce"
+          }
+        },
+        "required": [
+          "status",
+          "edition"
+        ]
+      },
+      "InsightsMostActiveRepo": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "repo_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "run_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "repo_id",
+          "full_name",
+          "run_count"
+        ]
+      },
+      "InsightsMostFailingWorkflow": {
+        "type": "object",
+        "properties": {
+          "workflow": {
+            "type": "string"
+          },
+          "repo_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "repo_full_name": {
+            "type": "string"
+          },
+          "failure_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "failure_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "run_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "trend_percent": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "workflow",
+          "repo_id",
+          "repo_full_name",
+          "failure_rate",
+          "failure_count",
+          "run_count",
+          "trend_percent"
+        ]
+      },
+      "InsightsSlowestWorkflow": {
+        "type": "object",
+        "properties": {
+          "workflow": {
+            "type": "string"
+          },
+          "repo_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "repo_full_name": {
+            "type": "string"
+          },
+          "avg_duration_ms": {
+            "type": "integer",
+            "nullable": true
+          },
+          "p50_duration_ms": {
+            "type": "integer",
+            "nullable": true
+          },
+          "p95_duration_ms": {
+            "type": "integer",
+            "nullable": true
+          },
+          "run_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "trend_percent": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "workflow",
+          "repo_id",
+          "repo_full_name",
+          "avg_duration_ms",
+          "p50_duration_ms",
+          "p95_duration_ms",
+          "run_count",
+          "trend_percent"
+        ]
+      },
+      "InsightsSummary": {
+        "type": "object",
+        "properties": {
+          "total_runs": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "success_rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "avg_duration_ms": {
+            "type": "integer",
+            "nullable": true
+          },
+          "most_active_repo": {
+            "$ref": "#/components/schemas/InsightsMostActiveRepo"
+          },
+          "trends": {
+            "type": "object",
+            "properties": {
+              "total_runs_percent": {
+                "type": "number",
+                "nullable": true
+              },
+              "success_rate_points": {
+                "type": "number",
+                "nullable": true
+              },
+              "avg_duration_percent": {
+                "type": "number",
+                "nullable": true
+              }
+            },
+            "required": [
+              "total_runs_percent",
+              "success_rate_points",
+              "avg_duration_percent"
+            ]
+          }
+        },
+        "required": [
+          "total_runs",
+          "success_rate",
+          "avg_duration_ms",
+          "most_active_repo",
+          "trends"
+        ]
+      },
+      "InsightsTimeSeriesDay": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InsightsTimeSeriesPoint"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "points"
+        ]
+      },
+      "InsightsTimeSeriesPoint": {
+        "type": "object",
+        "properties": {
+          "workflow": {
+            "type": "string"
+          },
+          "repo_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "repo_full_name": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "workflow",
+          "repo_id",
+          "repo_full_name",
+          "value"
+        ]
+      },
+      "IntegrationSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "github"
+            ]
+          },
+          "external_installation_id": {
+            "type": "string"
+          },
+          "account_login": {
+            "type": "string"
+          },
+          "account_type": {
+            "type": "string",
+            "enum": [
+              "Organization",
+              "User"
+            ]
+          },
+          "connected_repo_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "token_health": {
+            "type": "string",
+            "enum": [
+              "healthy",
+              "expiring",
+              "expired"
+            ]
+          },
+          "token_expires_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "provider",
+          "external_installation_id",
+          "account_login",
+          "account_type",
+          "connected_repo_count",
+          "token_health",
+          "token_expires_at",
+          "created_at"
+        ]
+      },
+      "InvitePreview": {
+        "type": "object",
+        "properties": {
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspace_name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ]
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "workspace_name",
+          "email",
+          "role",
+          "expires_at"
+        ]
+      },
+      "PaginatedPipelineRuns": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PipelineRun"
+            }
+          },
+          "cursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "data",
+          "cursor",
+          "has_more"
+        ]
+      },
+      "PipelineJob": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "run_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "external_job_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "in_progress",
+              "completed"
+            ]
+          },
+          "conclusion": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "success",
+              "failure",
+              "cancelled",
+              "skipped",
+              null
+            ]
+          },
+          "runner_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "run_id",
+          "external_job_id",
+          "name",
+          "status",
+          "conclusion",
+          "runner_name",
+          "started_at",
+          "completed_at",
+          "duration_ms"
+        ]
+      },
+      "PipelineJobsList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PipelineJob"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "PipelineRun": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "repo_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "external_run_id": {
+            "type": "string"
+          },
+          "pipeline_name": {
+            "type": "string"
+          },
+          "pipeline_definition_ref": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "in_progress",
+              "completed"
+            ]
+          },
+          "conclusion": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "success",
+              "failure",
+              "cancelled",
+              "skipped",
+              null
+            ]
+          },
+          "branch": {
+            "type": "string"
+          },
+          "commit_sha": {
+            "type": "string"
+          },
+          "commit_message": {
+            "type": "string",
+            "nullable": true
+          },
+          "actor_login": {
+            "type": "string",
+            "nullable": true
+          },
+          "trigger_type": {
+            "type": "string"
+          },
+          "source_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "repo_id",
+          "external_run_id",
+          "pipeline_name",
+          "pipeline_definition_ref",
+          "status",
+          "conclusion",
+          "branch",
+          "commit_sha",
+          "commit_message",
+          "actor_login",
+          "trigger_type",
+          "source_url",
+          "started_at",
+          "completed_at",
+          "duration_ms",
+          "created_at"
+        ]
+      },
+      "PipelineStep": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "job_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "in_progress",
+              "completed"
+            ]
+          },
+          "conclusion": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "success",
+              "failure",
+              "cancelled",
+              "skipped",
+              null
+            ]
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "duration_ms": {
+            "type": "integer",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "job_id",
+          "number",
+          "name",
+          "status",
+          "conclusion",
+          "started_at",
+          "completed_at",
+          "duration_ms"
+        ]
+      },
+      "PipelineStepsList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PipelineStep"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "RepositorySummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "workspace_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "integration_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "external_repo_id": {
+            "type": "string"
+          },
+          "full_name": {
+            "type": "string"
+          },
+          "private": {
+            "type": "boolean"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "polling_interval_seconds": {
+            "type": "integer",
+            "nullable": true
+          },
+          "retention_days": {
+            "type": "integer",
+            "nullable": true
+          },
+          "last_synced_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "integration_id",
+          "external_repo_id",
+          "full_name",
+          "private",
+          "enabled",
+          "polling_interval_seconds",
+          "retention_days",
+          "last_synced_at"
+        ]
+      },
+      "SlugAvailability": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "example": true
+          },
+          "slug": {
+            "type": "string",
+            "example": "my-workspace"
+          }
+        },
+        "required": [
+          "available",
+          "slug"
+        ]
+      },
+      "SseTokenResponse": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "example": "dGhpcyBpcyBhIG9uZS10aW1lIHRva2Vu"
+          },
+          "expiresIn": {
+            "type": "integer",
+            "example": 60
+          }
+        },
+        "required": [
+          "token",
+          "expiresIn"
+        ]
+      },
+      "SwitchWorkspaceBody": {
+        "type": "object",
+        "properties": {
+          "workspaceId": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        },
+        "required": [
+          "workspaceId"
+        ]
+      },
+      "SyncStatusIntegration": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "last_synced_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "backfill_in_progress": {
+            "type": "boolean"
+          },
+          "repos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyncStatusRepo"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "enabled",
+          "last_synced_at",
+          "backfill_in_progress",
+          "repos"
+        ]
+      },
+      "SyncStatusRepo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "last_synced_at": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "backfill_in_progress": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "enabled",
+          "last_synced_at",
+          "backfill_in_progress"
+        ]
+      },
+      "UpdateRepositoryBody": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "example": true
+          },
+          "polling_interval_seconds": {
+            "type": "integer",
+            "nullable": true,
+            "example": 60,
+            "description": "null switches to webhook mode; minimum 30 when set"
+          },
+          "retention_days": {
+            "type": "integer",
+            "nullable": true,
+            "example": 90,
+            "description": "null uses workspace plan default"
+          }
+        }
+      },
+      "UpdateUserProfileBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 256,
+            "example": "Jane Doe"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateWorkspaceBody": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "example": "Renamed Workspace"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "example": "renamed-workspace"
+          },
+          "default_retention_days": {
+            "type": "integer",
+            "example": 90
+          }
+        }
+      },
+      "UpdateWorkspaceMemberBody": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "Jane Doe"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "format": "email",
+            "example": "jane@example.com"
+          },
+          "avatar_url": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "https://avatars.githubusercontent.com/u/1?v=4"
+          },
+          "github_login": {
+            "type": "string",
+            "example": "janedoe"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "avatar_url",
+          "github_login"
+        ]
+      },
+      "WaitlistActionResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "confirmed",
+              "already_confirmed",
+              "unsubscribed",
+              "already_unsubscribed"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "WaitlistSubscribeBody": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "example": "you@example.com"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "WaitlistSubscribeResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "subscribed",
+              "already_subscribed"
+            ]
+          },
+          "email_sent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "status",
+          "email_sent"
+        ]
+      },
+      "Workspace": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "pro",
+              "business"
+            ]
+          },
+          "default_retention_days": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "slug",
+          "plan",
+          "default_retention_days",
+          "created_at"
+        ]
+      },
+      "WorkspaceBillingSummary": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "free",
+              "pro",
+              "business"
+            ]
+          },
+          "usage": {
+            "type": "object",
+            "properties": {
+              "repositories": {
+                "$ref": "#/components/schemas/BillingUsageMetric"
+              },
+              "members": {
+                "$ref": "#/components/schemas/BillingUsageMetric"
+              },
+              "retention_days": {
+                "type": "integer",
+                "minimum": 0,
+                "exclusiveMinimum": true
+              }
+            },
+            "required": [
+              "repositories",
+              "members",
+              "retention_days"
+            ]
+          },
+          "subscription_status": {
+            "type": "string",
+            "nullable": true
+          },
+          "next_billing_date": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "invoices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillingInvoice"
+            }
+          }
+        },
+        "required": [
+          "plan",
+          "usage",
+          "subscription_status",
+          "next_billing_date",
+          "invoices"
+        ]
+      },
+      "WorkspaceDashboard": {
+        "type": "object",
+        "properties": {
+          "health": {
+            "$ref": "#/components/schemas/DashboardHealthSummary"
+          },
+          "repos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DashboardRepoCard"
+            }
+          }
+        },
+        "required": [
+          "health",
+          "repos"
+        ]
+      },
+      "WorkspaceInsights": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "type": "string",
+            "enum": [
+              "7d",
+              "30d"
+            ]
+          },
+          "summary": {
+            "$ref": "#/components/schemas/InsightsSummary"
+          },
+          "time_series": {
+            "type": "object",
+            "properties": {
+              "duration": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/InsightsTimeSeriesDay"
+                }
+              },
+              "failure_rate": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/InsightsTimeSeriesDay"
+                }
+              }
+            },
+            "required": [
+              "duration",
+              "failure_rate"
+            ]
+          },
+          "slowest_workflows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InsightsSlowestWorkflow"
+            }
+          },
+          "most_failing_workflows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InsightsMostFailingWorkflow"
+            }
+          }
+        },
+        "required": [
+          "range",
+          "summary",
+          "time_series",
+          "slowest_workflows",
+          "most_failing_workflows"
+        ]
+      },
+      "WorkspaceInvite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ]
+          },
+          "invited_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "email_sent": {
+            "type": "boolean"
+          },
+          "invite_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "role",
+          "invited_at",
+          "expires_at",
+          "email_sent"
+        ]
+      },
+      "WorkspaceListItem": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Workspace"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "role": {
+                "type": "string",
+                "enum": [
+                  "owner",
+                  "admin",
+                  "member"
+                ]
+              }
+            },
+            "required": [
+              "role"
+            ]
+          }
+        ]
+      },
+      "WorkspaceMember": {
+        "type": "object",
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "Jane Doe"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true,
+            "format": "email",
+            "example": "jane@example.com"
+          },
+          "avatar_url": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri",
+            "example": "https://avatars.githubusercontent.com/u/1?v=4"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "admin",
+              "member"
+            ]
+          },
+          "joined_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "user_id",
+          "name",
+          "email",
+          "avatar_url",
+          "role",
+          "joined_at"
+        ]
+      },
+      "WorkspaceSyncStatus": {
+        "type": "object",
+        "properties": {
+          "integrations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SyncStatusIntegration"
+            }
+          }
+        },
+        "required": [
+          "integrations"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Short-lived JWT from GitHub OAuth. Send as `Authorization: Bearer <token>`."
+      },
+      "apiKeyAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Workspace API key. Send as `Authorization: Bearer pw_<key>`."
+      }
+    }
+  },
+  "openapi": "3.0.0",
+  "info": {
+    "title": "PipeWatch API",
+    "version": "1.0.0",
+    "description": "PipeWatch REST API for workspace-scoped CI pipeline monitoring. Authenticate with a browser session JWT or a workspace API key (`pw_` prefix)."
+  },
+  "x-tagGroups": [
+    {
+      "name": "Core",
+      "tags": [
+        "System",
+        "Public",
+        "Users"
+      ]
+    },
+    {
+      "name": "Authentication",
+      "tags": [
+        "Auth",
+        "Onboarding",
+        "Invites"
+      ]
+    },
+    {
+      "name": "Workspace",
+      "tags": [
+        "Workspaces",
+        "Members",
+        "Invites",
+        "API Keys"
+      ]
+    },
+    {
+      "name": "Integrations & Repositories",
+      "tags": [
+        "Integrations",
+        "Repositories"
+      ]
+    },
+    {
+      "name": "Pipelines",
+      "tags": [
+        "Pipeline Runs",
+        "Pipeline Jobs",
+        "Pipeline Steps",
+        "Insights",
+        "SSE"
+      ]
+    },
+    {
+      "name": "Billing & Marketing",
+      "tags": [
+        "Billing",
+        "Waitlist"
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "tags": [
+        "Webhooks"
+      ]
+    }
+  ]
+}

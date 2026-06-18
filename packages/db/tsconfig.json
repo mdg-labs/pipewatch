@@ -1,0 +1,11 @@
+{
+  "extends": "@pipewatch/config/typescript",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "noEmit": false
+  },
+  "include": ["src"],
+  "exclude": ["**/*.test.ts", "vitest.config.ts"]
+}

@@ -1,0 +1,30 @@
+# Fly.io Redis workload — internal 6PN only (PRD §4.2).
+# App name is overridden at deploy time via flyctl --app (provision-redis.sh).
+# REDIS_URL is derived at sync-secrets time — do not duplicate here.
+#
+# IPv6 bind requirement: Fly .internal DNS uses the 6PN (IPv6) private network.
+# Redis must listen on :: — binding to 0.0.0.0 alone breaks .internal connectivity.
+# See: https://community.fly.io/t/redis-app-refuses-private-connections/1403
+
+# Overwritten at deploy time by provision-redis.sh (per-env app name).
+app = "pipewatch-staging-redis"
+primary_region = "fra"
+
+[build]
+  image = "redis:7-alpine"
+
+[mounts]
+  source = "redis_data"
+  destination = "/data"
+
+[processes]
+  app = "redis-server --bind :: --appendonly yes --dir /data --protected-mode no"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
+
+[scale]
+  min_machines = 1
+  max_machines = 1

@@ -272,7 +272,7 @@ For net-new non-roadmap work, fetch if unsure:
 gh api /repos/mdg-labs/pipewatch/milestones --jq '.[] | {number, title, state, due_on}'
 ```
 
-## Status sync — sub-agent duties
+## Status sync — sub-agent duties + orchestrator guarantee
 
 ### Execution — first action
 
@@ -284,14 +284,40 @@ Set Status → **In Progress** on every listed issue (leaf + parent epic).
 2. Status → **In Review** (leaf only)
 3. Single implementation commit
 
-### Verifier — after PASS
+### Verifier — after PASS (best effort)
 
 1. `add_issue_comment` (mandatory summary)
-2. Status → **Done** (leaf + parent if final child)
+2. Status → **Done** (leaf + parent if final child) via GraphQL
+
+**Important:** Verifiers must **not** be launched `readonly` — GraphQL Status mutations require shell write access. Even when verifiers succeed, the **orchestrator re-queries and fixes** board Status after every PASS (see below).
 
 ### Verifier — on FAIL
 
 Status → **Ready** + FAIL comment. Do NOT set Done.
+
+### Orchestrator — after every verifier PASS (mandatory)
+
+The orchestrator is the **source of truth** for board Status. Sub-agents often leave leaves stuck **In Review** (readonly verifiers, failed GraphQL, or PASS reported without confirming mutation).
+
+After each verifier PASS, the orchestrator **must**:
+
+1. Set **Done** (`98236657`) on the leaf via `updateProjectV2ItemFieldValue`.
+2. If `CLOSE_PARENTS` lists epic parent(s), set **Done** on each parent (final child only).
+3. **Re-query** Status for every issue touched; if not **Done**, retry mutation once.
+4. Post PASS comment via MCP if the verifier did not.
+
+**Audit at epic end:** Re-query all epic children; fix any still **In Review** or **In Progress** (except parent left In Progress mid-epic).
+
+```bash
+# Orchestrator board sync — set Done on issue N
+ITEM=$(gh api graphql -f 'query=query { repository(owner:"mdg-labs",name:"pipewatch") { issue(number:N) { projectItems(first:5) { nodes { id project { number } } } } } }' \
+  | jq -r '.data.repository.issue.projectItems.nodes[] | select(.project.number==5) | .id')
+gh api graphql -f "query=mutation { updateProjectV2ItemFieldValue(input: {
+  projectId: \"PVT_kwDODv-LLc4Ba3QP\" itemId: \"$ITEM\"
+  fieldId: \"PVTSSF_lADODv-LLc4Ba3QPzhVryEg\"
+  value: { singleSelectOptionId: \"98236657\" }
+}) { projectV2Item { fieldValueByName(name: \"Status\") { ... on ProjectV2ItemFieldSingleSelectValue { name } } } } }"
+```
 
 ## Verifier Done comment (mandatory on PASS)
 
@@ -345,14 +371,18 @@ GITHUB SYNC — VERIFIER:
 - project: 5
 - issues: [{ number: 12 }]
 - CLOSE_PARENTS: [#8] | none
-- AFTER PASS: comment → Status → Done
+- DISPATCH: readonly MUST be false (GraphQL Status mutations)
+- AFTER PASS: comment → Status → Done → re-query and report actual Status in output
 - AFTER FAIL: FAIL comment → Status → Ready
+- Orchestrator re-syncs Done after PASS regardless (see Status sync section)
 ```
 
 ## Epic pattern
 
 Feature parent → sub-issues (Tasks/Bugs). Implement **leaves** only.
 
+- **Orchestrator epic invocation** → present Lane S/P **batch plan**, then run **all** not-Done leaves (unless user said wait).
 - Parent **In Progress** when any child starts.
-- Parent **Done** when last in-scope child verifies PASS.
+- Parent **Done** when last in-scope child verifies PASS **and** orchestrator confirms board Status.
 - `fixes #<parent>` in commit body only on final child (orchestrator supplies `CLOSE_PARENTS`).
+- Default execution: **Lane S serial** unless orchestrator parallelism rules allow Lane P for a tier.

@@ -1,0 +1,138 @@
+.pw-integration-card {
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-surface);
+  overflow: hidden;
+}
+
+.pw-integration-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+}
+
+.pw-integration-card-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.pw-integration-card-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pw-integration-card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pw-integration-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.pw-integration-card-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.pw-integration-card-expand {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pw-integration-card-body {
+  border-top: 1px solid var(--border-default);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+.pw-integration-card-token {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.pw-integration-card-token-label {
+  color: var(--text-secondary);
+}
+
+.pw-integration-card-sync-progress {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.pw-integration-card-repos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pw-integration-card-repos-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.pw-integration-card-repo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.pw-integration-card-repo-row:last-child {
+  border-bottom: none;
+}
+
+.pw-integration-card-repo-name {
+  font-size: 14px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pw-integration-card-repo-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pw-integration-card-repo-sync {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pw-integration-card-empty-repos {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}

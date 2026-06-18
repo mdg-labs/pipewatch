@@ -1,0 +1,101 @@
+# PipeWatch CE — self-hosted stack (PRD §25)
+# Copy .env.example → .env, fill GitHub App + auth secrets, then: docker compose up -d
+
+services:
+  api:
+    image: ghcr.io/mdg-labs/pipewatch-api:latest
+    ports: ["3000:3000"]
+    environment:
+      NODE_ENV: production
+      PIPEWATCH_EDITION: ce
+      PORT: 3000
+      DATABASE_URL: postgres://pipewatch:pipewatch@postgres:5432/pipewatch
+      REDIS_URL: redis://redis:6379
+      PIPEWATCH_MODE: ${PIPEWATCH_MODE:-webhook}
+      RETENTION_DAYS: ${RETENTION_DAYS:-30}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      # GitHub App
+      GITHUB_APP_ID: ${GITHUB_APP_ID}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY}
+      GITHUB_WEBHOOK_SECRET: ${GITHUB_WEBHOOK_SECRET}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      GITHUB_APP_SLUG: ${GITHUB_APP_SLUG}
+      # Auth
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:3001}
+      MARKETING_URL: ${MARKETING_URL:-http://localhost:3001}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000}
+      # Email (optional — features degrade gracefully if SMTP_HOST is unset)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@example.com}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  worker:
+    image: ghcr.io/mdg-labs/pipewatch-worker:latest
+    environment:
+      NODE_ENV: production
+      PIPEWATCH_EDITION: ce
+      DATABASE_URL: postgres://pipewatch:pipewatch@postgres:5432/pipewatch
+      REDIS_URL: redis://redis:6379
+      PIPEWATCH_MODE: ${PIPEWATCH_MODE:-webhook}
+      RETENTION_DAYS: ${RETENTION_DAYS:-30}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      GITHUB_APP_ID: ${GITHUB_APP_ID}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/mdg-labs/pipewatch-web:latest
+    ports: ["3001:3001"]
+    environment:
+      NODE_ENV: production
+      PIPEWATCH_EDITION: ce
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      SENTRY_DSN: ${SENTRY_DSN:-}
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: pipewatch
+      POSTGRES_USER: pipewatch
+      POSTGRES_PASSWORD: pipewatch
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pipewatch"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

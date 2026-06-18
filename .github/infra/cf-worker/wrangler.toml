@@ -1,0 +1,17 @@
+# Cloudflare Workers (OpenNext) — PRD §4.2, §4.3.
+# Rendered at deploy time by deploy-cf-worker.sh (worker name, account, custom domain).
+
+name = "__WORKER_NAME__"
+account_id = "__ACCOUNT_ID__"
+main = ".open-next/worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = false
+
+routes = [
+  { pattern = "__CUSTOM_DOMAIN__", custom_domain = true }
+]
+
+[assets]
+directory = ".open-next/assets"
+binding = "ASSETS"

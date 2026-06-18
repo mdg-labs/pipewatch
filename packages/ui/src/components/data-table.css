@@ -1,0 +1,10 @@
+.pw-data-table {
+  width: 100%;
+}
+
+.pw-data-table-empty {
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+  padding: var(--space-8) var(--space-4) !important;
+}

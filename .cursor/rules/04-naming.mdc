@@ -35,7 +35,7 @@ alwaysApply: true
 - Column names: `snake_case` (`workspace_id`, `external_run_id`, `created_at`)
 - Provider IDs: `external_*` prefix (`external_installation_id`, `external_run_id`, `external_job_id`)
 - Enum values: lowercase or `SCREAMING_SNAKE_CASE` per column — match Drizzle schema
-- Migration names: Drizzle Kit generates timestamps — **never create migration directories by hand**
+- Migrations: Drizzle Kit only — see `15-db-migrations-schema.mdc` (never hand-write; never edit committed migrations)
 
 ## Product vocabulary
 

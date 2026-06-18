@@ -1,0 +1,101 @@
+---
+title: Privacy Policy
+description: How PipeWatch and MDG Labs collect, use, and protect your information across our marketing site, Cloud service, and self-hosted CE edition.
+lastUpdated: "2026-06-18"
+---
+
+## Introduction
+
+This Privacy Policy explains how **MDG Labs** ("we", "us", "our") handles personal information when you visit the PipeWatch marketing site (`pipewatch.app`), use **PipeWatch Cloud** (`cloud.pipewatch.app`), or run **PipeWatch CE** (self-hosted Community Edition).
+
+PipeWatch is a GitHub Actions dashboard. Depending on how you interact with us, we may process account data, integration metadata, billing details, and limited marketing analytics. We describe each category below, including third-party services we rely on.
+
+## Information we collect
+
+We collect information in these broad categories:
+
+- **Account and profile data** — name, email address, workspace membership, and authentication identifiers when you sign up or are invited to a workspace.
+- **GitHub integration data** — OAuth tokens, GitHub user ID, username, avatar URL, and repository/workflow metadata needed to display pipeline runs. We do not store raw workflow logs in PipeWatch MVP; log links point to GitHub.
+- **Usage and service data** — API requests, webhook delivery events, workspace settings, and operational logs required to run the service securely.
+- **Billing data (Cloud only)** — subscription status, plan tier, and payment-related identifiers processed by Stripe. We do not store full payment card numbers.
+- **Marketing and communications data** — email address and consent status when you join the waitlist or subscribe to updates.
+- **Anonymous analytics (marketing site only)** — aggregated, cookie-light page views via Umami as described below.
+
+## Umami analytics (marketing site)
+
+When enabled, we load **Umami**, a privacy-oriented analytics script on **marketing pages only** — never inside the PipeWatch application dashboard.
+
+Umami helps us understand which marketing pages and calls-to-action perform well. It is configured to collect **anonymous, aggregated usage data** such as page views, referrers, and coarse device/browser information. We do not use Umami to track individual users across the app, and we do not sell analytics data.
+
+You can limit analytics collection with browser privacy settings or extensions that block scripts. Because Umami is self-hosted by MDG Labs, event data stays under our operational control rather than being sent to large ad-tech platforms.
+
+## Postmark (waitlist and email)
+
+When you submit your email on the **waitlist** or confirm marketing communications, we use **Postmark** to send transactional messages such as double opt-in confirmations, launch announcements, and unsubscribe acknowledgements.
+
+Postmark processes:
+
+- Your **email address**
+- Message delivery metadata (send time, bounces, spam complaints)
+- Unsubscribe and confirmation tokens linked to your subscriber record
+
+We store waitlist and newsletter subscribers in our own database with consent timestamps. Postmark webhook events (for example bounces and unsubscribes) may update subscriber status so we stop sending to invalid or opted-out addresses.
+
+## Stripe (Cloud billing)
+
+**PipeWatch Cloud** subscriptions and invoicing are handled by **Stripe**. When you purchase a paid plan, Stripe collects payment method details and billing contact information directly. We receive limited billing metadata from Stripe — such as customer ID, subscription status, invoice references, and plan identifiers — to enforce entitlements and show billing history in the app.
+
+We do not store full card numbers on PipeWatch servers. Stripe's handling of payment data is governed by Stripe's privacy policy and PCI obligations. Self-hosted **PipeWatch CE** does not use Stripe.
+
+## GitHub OAuth and integration data
+
+PipeWatch connects to GitHub via **OAuth** and/or a GitHub App installation so we can read workflow run metadata on repositories you authorize.
+
+Depending on your setup, we may process:
+
+- GitHub user ID, username, display name, and avatar URL
+- OAuth access tokens and refresh-related credentials (stored securely; never logged)
+- GitHub App installation ID and repository selection
+- Workflow run, job, and step metadata (status, conclusions, timestamps, external IDs)
+- Webhook payloads signed by GitHub for real-time updates
+
+We request only the scopes needed to display pipeline activity in your workspace. You can revoke access from GitHub at any time; revoked access stops new data sync until you reconnect.
+
+## How we use information
+
+We use collected information to:
+
+- Provide, secure, and improve PipeWatch Cloud and CE
+- Authenticate users and enforce workspace roles
+- Display pipeline runs and related GitHub metadata
+- Process subscriptions and enforce Cloud plan limits
+- Send service, waitlist, and product update emails you have consented to receive
+- Measure anonymous marketing performance via Umami
+- Comply with legal obligations and respond to support requests
+
+We do not sell personal information.
+
+## Data retention
+
+We retain personal data for as long as your account or subscription is active and as needed to provide the service, resolve disputes, enforce agreements, and meet legal requirements. Pipeline run metadata retention follows your workspace plan and edition settings. Waitlist and marketing subscriber records are kept until you unsubscribe or request deletion, subject to proof-of-consent requirements.
+
+When you delete a workspace or request account deletion (where supported), we delete or anonymize associated personal data within a reasonable period, except where retention is required by law or legitimate security needs.
+
+## Your rights
+
+Depending on your location, you may have rights to access, correct, delete, restrict, or export personal data we hold about you, and to object to certain processing. You may also withdraw marketing consent at any time via unsubscribe links in Postmark-sent emails.
+
+To exercise these rights, contact us using the details below. We will respond within applicable legal timeframes.
+
+## International transfers
+
+MDG Labs operates primarily from the European Union. Some subprocessors — including Stripe and GitHub — may process data in the United States or other countries. Where required, we rely on appropriate safeguards such as Standard Contractual Clauses or equivalent mechanisms.
+
+## Contact
+
+Questions about this policy or our data practices:
+
+**MDG Labs**  
+Email: [privacy@mdg-labs.com](mailto:privacy@mdg-labs.com)
+
+We may update this Privacy Policy from time to time. The "Last updated" date at the top reflects the most recent revision.

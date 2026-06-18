@@ -1,0 +1,39 @@
+.pw-pulse-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.pw-pulse-dot {
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  background: var(--status-running);
+  animation: pw-pulse 1.5s ease-in-out infinite;
+}
+
+.pw-pulse-ring {
+  position: relative;
+}
+
+.pw-pulse-ring::before {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: var(--radius-full);
+  background: var(--status-running-subtle);
+  animation: pw-ring-expand 1.5s ease-out infinite;
+}
+
+.pw-pulse-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  color: var(--status-running);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pw-pulse-dot,
+  .pw-pulse-ring::before {
+    animation: none;
+  }
+}

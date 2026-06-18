@@ -1,0 +1,30 @@
+name: Setup workspace
+description: pnpm, Node.js, and frozen lockfile install (no runtime secret fetch)
+
+inputs:
+  skip-checkout:
+    description: Set to true when checkout already ran in the job
+    required: false
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout
+      if: inputs.skip-checkout != 'true'
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      with:
+        version: 9.15.4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+
+    - name: Install dependencies
+      shell: bash
+      run: pnpm install --frozen-lockfile

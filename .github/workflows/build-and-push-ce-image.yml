@@ -1,0 +1,76 @@
+name: Build and push CE images
+
+on:
+  workflow_call:
+    inputs:
+      tags:
+        description: Newline-separated tag suffixes applied to each CE image (e.g. latest, abc1234, 1.0.0)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build CE image (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: api
+            dockerfile: apps/api/Dockerfile
+            image: ghcr.io/mdg-labs/pipewatch-api
+          - service: worker
+            dockerfile: apps/worker/Dockerfile
+            image: ghcr.io/mdg-labs/pipewatch-worker
+          - service: web
+            dockerfile: apps/web/Dockerfile
+            image: ghcr.io/mdg-labs/pipewatch-web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare image tags
+        id: meta
+        env:
+          TAG_SUFFIXES: ${{ inputs.tags }}
+          IMAGE: ${{ matrix.image }}
+        run: |
+          set -euo pipefail
+          tags=""
+          while IFS= read -r suffix || [[ -n "$suffix" ]]; do
+            suffix="${suffix//$'\r'/}"
+            [[ -z "$suffix" ]] && continue
+            if [[ -n "$tags" ]]; then
+              tags="${tags}"$'\n'"${IMAGE}:${suffix}"
+            else
+              tags="${IMAGE}:${suffix}"
+            fi
+          done <<< "$TAG_SUFFIXES"
+          {
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          # No build-args or secrets — CE users provide env at runtime (PRD §22)

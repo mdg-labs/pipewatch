@@ -1,0 +1,57 @@
+{
+  "name": "@pipewatch/config",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./edition": {
+      "types": "./dist/edition.d.ts",
+      "default": "./dist/edition.js"
+    },
+    "./env": {
+      "types": "./dist/env.d.ts",
+      "default": "./dist/env.js"
+    },
+    "./plan-limits": {
+      "types": "./dist/plan-limits.d.ts",
+      "default": "./dist/plan-limits.js"
+    },
+    "./sync-secrets-manifest": {
+      "types": "./dist/sync-secrets-manifest.d.ts",
+      "default": "./dist/sync-secrets-manifest.js"
+    },
+    "./reportportal-ci": {
+      "types": "./dist/reportportal-ci.d.ts",
+      "default": "./dist/reportportal-ci.js"
+    },
+    "./vitest-reportportal": {
+      "types": "./dist/vitest-reportportal.d.ts",
+      "default": "./dist/vitest-reportportal.js"
+    },
+    "./typescript": "./typescript/tsconfig.base.json",
+    "./eslint": "./eslint/base.mjs"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint .",
+    "typecheck": "tsc --build",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@reportportal/agent-js-vitest": "^5.2.2",
+    "@types/node": "^22.13.4",
+    "eslint": "catalog:",
+    "globals": "^15.14.0",
+    "typescript": "catalog:",
+    "typescript-eslint": "^8.18.2",
+    "vitest": "^3.0.5"
+  }
+}

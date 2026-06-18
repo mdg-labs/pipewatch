@@ -1,0 +1,74 @@
+/* ============================================================
+   PipeWatch Semantic Tokens
+   Dark mode is the DEFAULT (developer tool — first-class dark).
+   Light mode via [data-theme="light"] on <html> or <body>.
+   ============================================================ */
+
+:root {
+  /* ── Backgrounds ──────────────────────────────────────────── */
+  --bg-base:      var(--pw-slate-950);   /* page background          */
+  --bg-surface:   var(--pw-slate-900);   /* cards, panels, sidebar   */
+  --bg-elevated:  var(--pw-slate-850);   /* hover bg, tooltips       */
+  --bg-overlay:   var(--pw-slate-800);   /* dropdowns, popovers      */
+  --bg-sunken:    var(--pw-slate-950);   /* inputs, recessed areas   */
+  --bg-code:      oklch(14% 0.012 252);  /* code blocks, terminals   */
+
+  /* ── Borders ──────────────────────────────────────────────── */
+  --border-subtle:  var(--pw-slate-850);
+  --border-default: var(--pw-slate-800);
+  --border-strong:  var(--pw-slate-700);
+  --border-accent:  oklch(70% 0.195 55 / 0.35);
+
+  /* ── Text ─────────────────────────────────────────────────── */
+  --text-primary:   var(--pw-slate-50);
+  --text-secondary: var(--pw-slate-400);
+  --text-tertiary:  var(--pw-slate-600);
+  --text-accent:    var(--pw-amber-500);
+  --text-inverse:   var(--pw-slate-950);
+
+  /* ── Interactive ──────────────────────────────────────────── */
+  --interactive-accent:  var(--pw-amber-500);
+  --interactive-hover:   var(--pw-amber-400);
+  --interactive-active:  var(--pw-amber-600);
+  --interactive-fg:      var(--pw-slate-950);  /* text ON accent bg  */
+  --focus-ring:          var(--pw-amber-500);
+
+  /* ── Status aliases ───────────────────────────────────────── */
+  --status-success:          var(--pw-success);
+  --status-success-subtle:   var(--pw-success-subtle);
+  --status-success-muted:    var(--pw-success-muted);
+  --status-failure:          var(--pw-failure);
+  --status-failure-subtle:   var(--pw-failure-subtle);
+  --status-failure-muted:    var(--pw-failure-muted);
+  --status-running:          var(--pw-running);
+  --status-running-subtle:   var(--pw-running-subtle);
+  --status-cancelled:        var(--pw-cancelled);
+  --status-cancelled-subtle: var(--pw-cancelled-subtle);
+  --status-skipped:          var(--pw-skipped);
+  --status-skipped-subtle:   var(--pw-skipped-subtle);
+  --status-queued:           var(--pw-queued);
+  --status-queued-subtle:    var(--pw-queued-subtle);
+}
+
+/* ============================================================
+   Light mode overrides
+   ============================================================ */
+[data-theme="light"] {
+  --bg-base:      var(--pw-slate-50);
+  --bg-surface:   #ffffff;
+  --bg-elevated:  var(--pw-slate-100);
+  --bg-overlay:   var(--pw-slate-200);
+  --bg-sunken:    var(--pw-slate-100);
+  --bg-code:      var(--pw-slate-100);
+
+  --border-subtle:  var(--pw-slate-200);
+  --border-default: var(--pw-slate-300);
+  --border-strong:  var(--pw-slate-400);
+
+  --text-primary:   var(--pw-slate-950);
+  --text-secondary: var(--pw-slate-600);
+  --text-tertiary:  var(--pw-slate-400);
+  --text-inverse:   var(--pw-slate-50);
+
+  --interactive-fg: #ffffff;
+}

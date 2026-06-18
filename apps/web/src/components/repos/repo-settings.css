@@ -1,0 +1,136 @@
+.pw-repo-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 24px);
+  max-width: 640px;
+}
+
+.pw-repo-settings-header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.pw-repo-settings-header p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.pw-repo-settings-repo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.pw-repo-settings-repo-name {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pw-repo-settings-github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.pw-repo-settings-github-link:hover {
+  color: var(--text-primary);
+}
+
+.pw-repo-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+  padding: 20px 24px;
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  background: var(--bg-surface, #fff);
+}
+
+.pw-repo-settings-section-title {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.06));
+}
+
+.pw-repo-settings-polling-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  background: var(--bg-elevated, rgba(0, 0, 0, 0.02));
+}
+
+.pw-repo-settings-polling-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pw-repo-settings-polling-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.pw-repo-settings-retention-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default, rgba(0, 0, 0, 0.08));
+  background: var(--bg-elevated, rgba(0, 0, 0, 0.02));
+}
+
+.pw-repo-settings-retention-hint {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.pw-repo-settings-effective {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.06));
+  background: var(--bg-elevated, rgba(0, 0, 0, 0.02));
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.pw-repo-settings-effective strong {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.pw-repo-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pw-repo-settings-disabled-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--surface-muted, rgba(0, 0, 0, 0.06));
+}

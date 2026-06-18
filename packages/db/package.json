@@ -1,0 +1,41 @@
+{
+  "name": "@pipewatch/db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    },
+    "./neon": {
+      "types": "./dist/neon.d.ts",
+      "default": "./dist/neon.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build && tsc -p tsconfig.schema.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --build",
+    "test:unit": "vitest run",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config drizzle.config.ts"
+  },
+  "devDependencies": {
+    "@pipewatch/config": "workspace:*",
+    "@types/node": "^22.13.4",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "^3.0.5"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9"
+  }
+}

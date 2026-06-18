@@ -1,0 +1,118 @@
+.pw-account-settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 24px);
+  max-width: 640px;
+}
+
+.pw-account-settings-header h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.pw-account-settings-header p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.pw-account-settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+}
+
+.pw-account-settings-section-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pw-account-profile-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.pw-account-profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4, 16px);
+  flex: 1;
+  min-width: 0;
+}
+
+.pw-account-settings-actions {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.pw-account-connected-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pw-account-connected-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pw-account-connected-provider {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pw-account-connected-login {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pw-account-workspace-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-subtle, rgba(0, 0, 0, 0.08));
+}
+
+.pw-account-workspace-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.pw-account-workspace-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pw-account-workspace-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.pw-account-workspace-slug {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.pw-account-workspace-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.pw-account-sessions-copy {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}

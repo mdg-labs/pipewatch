@@ -1,0 +1,192 @@
+name: E2E
+
+# Playwright E2E — reusable workflow (PRD §11, §22).
+# Cloud: staging URLs when E2E_APP_URL / E2E_API_URL are set.
+# CE: ephemeral local stack via pnpm test:e2e wrapper (test-with-deps).
+# Automated: staging → main PR only (after CI), required merge check on main.
+# Manual: workflow_dispatch on this file for on-demand runs.
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: "Deployment mode — cloud, ce, or empty for both"
+        required: false
+        type: string
+        default: ""
+      advisory:
+        description: "Continue on error (PR advisory checks)"
+        required: false
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Deployment mode — cloud, ce, or empty for both"
+        required: false
+        type: string
+        default: ""
+      advisory:
+        description: "Continue on error"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  e2e-cloud:
+    name: E2E · Cloud
+    if: >
+      !cancelled() && (
+        github.event_name == 'workflow_dispatch' && (inputs.mode == '' || inputs.mode == 'cloud')
+        || github.event_name == 'workflow_call' && (inputs.mode == '' || inputs.mode == 'cloud')
+      )
+    continue-on-error: ${{ inputs.advisory }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: staging
+    permissions:
+      contents: read
+    env:
+      REPORTPORTAL_URL: ${{ secrets.REPORTPORTAL_URL }}
+      REPORTPORTAL_API_KEY: ${{ secrets.REPORTPORTAL_API_KEY }}
+      REPORTPORTAL_PROJECT: ${{ secrets.REPORTPORTAL_PROJECT }}
+      E2E_APP_URL: ${{ secrets.APP_URL }}
+      E2E_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+      E2E_MARKETING_URL: ${{ secrets.MARKETING_URL }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      CI: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Run Playwright (cloud)
+        run: bash scripts/e2e-ci-playwright.sh cloud rp-e2e-cloud.log
+
+      - name: Extract ReportPortal launch UUID (cloud)
+        if: always()
+        run: bash scripts/reportportal-ci-summary.sh parse-uuids rp-e2e-cloud.log > rp-e2e-cloud.uuid || true
+
+      - name: Upload ReportPortal launch log (cloud)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: reportportal-e2e-cloud-log
+          path: |
+            rp-e2e-cloud.log
+            rp-e2e-cloud.uuid
+          if-no-files-found: ignore
+
+  e2e-ce:
+    name: E2E · CE
+    if: >
+      !cancelled() && (
+        github.event_name == 'workflow_dispatch' && (inputs.mode == '' || inputs.mode == 'ce')
+        || github.event_name == 'workflow_call' && (inputs.mode == '' || inputs.mode == 'ce')
+      )
+    continue-on-error: ${{ inputs.advisory }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: ci
+    permissions:
+      contents: read
+    env:
+      REPORTPORTAL_URL: ${{ secrets.REPORTPORTAL_URL }}
+      REPORTPORTAL_API_KEY: ${{ secrets.REPORTPORTAL_API_KEY }}
+      REPORTPORTAL_PROJECT: ${{ secrets.REPORTPORTAL_PROJECT }}
+      CI: "true"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Run Playwright (CE)
+        run: bash scripts/e2e-ci-playwright.sh ce rp-e2e-ce.log
+
+      - name: Extract ReportPortal launch UUID (CE)
+        if: always()
+        run: bash scripts/reportportal-ci-summary.sh parse-uuids rp-e2e-ce.log > rp-e2e-ce.uuid || true
+
+      - name: Upload ReportPortal launch log (CE)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: reportportal-e2e-ce-log
+          path: |
+            rp-e2e-ce.log
+            rp-e2e-ce.uuid
+          if-no-files-found: ignore
+
+  reportportal-summary:
+    name: E2E · ReportPortal summary
+    needs: [e2e-cloud, e2e-ce]
+    if: always()
+    runs-on: ubuntu-latest
+    environment: ci
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      REPORTPORTAL_SUMMARY_URL: ${{ secrets.REPORTPORTAL_URL }}
+      REPORTPORTAL_SUMMARY_PROJECT: ${{ secrets.REPORTPORTAL_PROJECT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Download cloud launch log
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        continue-on-error: true
+        with:
+          name: reportportal-e2e-cloud-log
+          path: rp-logs
+
+      - name: Download CE launch log
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        continue-on-error: true
+        with:
+          name: reportportal-e2e-ce-log
+          path: rp-logs
+
+      - name: Record ReportPortal e2e launches
+        if: always()
+        run: |
+          if [ -s rp-logs/rp-e2e-cloud.uuid ]; then
+            while IFS= read -r uuid; do
+              [ -n "$uuid" ] || continue
+              RP_LAUNCH_UUID="$uuid" bash scripts/reportportal-ci-summary.sh record-env "e2e · cloud"
+            done < rp-logs/rp-e2e-cloud.uuid
+          else
+            bash scripts/reportportal-ci-summary.sh record-log "e2e · cloud" rp-logs/rp-e2e-cloud.log
+          fi
+          if [ -s rp-logs/rp-e2e-ce.uuid ]; then
+            while IFS= read -r uuid; do
+              [ -n "$uuid" ] || continue
+              RP_LAUNCH_UUID="$uuid" bash scripts/reportportal-ci-summary.sh record-env "e2e · CE"
+            done < rp-logs/rp-e2e-ce.uuid
+          else
+            bash scripts/reportportal-ci-summary.sh record-log "e2e · CE" rp-logs/rp-e2e-ce.log
+          fi
+
+      - name: ReportPortal job summary
+        if: always()
+        run: bash scripts/reportportal-ci-summary.sh write-summary e2e
+
+      - name: ReportPortal PR comment
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash scripts/reportportal-ci-summary.sh update-pr-comment e2e

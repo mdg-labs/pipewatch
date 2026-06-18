@@ -1,0 +1,76 @@
+name: Prepare Release
+
+# Release preparation — called from orchestrator.yml after CI passes on main.
+# Creates a draft GitHub Release + git tag when version >= 1.0.0 and v{version} does not exist.
+# Secrets come from the GitHub Actions environment (Phase-synced) — no runtime Phase fetch.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    name: Release · Prepare draft
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Check version bump
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          MIN_VERSION="1.0.0"
+          if [ "$(printf '%s\n' "$VERSION" "$MIN_VERSION" | sort -V | tail -1)" = "$MIN_VERSION" ] && [ "$VERSION" != "$MIN_VERSION" ]; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "Version ${VERSION} is below minimum threshold ${MIN_VERSION} — skipping"
+            exit 0
+          fi
+
+          if git rev-parse "v${VERSION}" >/dev/null 2>&1; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "Tag v${VERSION} already exists — skipping"
+            exit 0
+          fi
+
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          echo "Will create v${VERSION}"
+
+      - name: Generate changelog
+        if: steps.version.outputs.should_release == 'true'
+        id: changelog
+        run: |
+          set -euo pipefail
+          LATEST_TAG=$(git tag -l 'v*' --sort=-v:refname | head -n1 || true)
+          if [ -n "$LATEST_TAG" ]; then
+            RANGE="${LATEST_TAG}..HEAD"
+          else
+            RANGE="HEAD"
+          fi
+          CHANGELOG=$(git log "$RANGE" --pretty=format:"- %s" --no-merges)
+          {
+            echo "body<<EOF"
+            echo "$CHANGELOG"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create tag and release
+        if: steps.version.outputs.should_release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          git tag -a "v${VERSION}" -m "Release v${VERSION}"
+          git push origin "v${VERSION}"
+          gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --draft \
+            --notes "${{ steps.changelog.outputs.body }}"

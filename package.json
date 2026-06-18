@@ -1,0 +1,39 @@
+{
+  "name": "pipewatch",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test:unit": "turbo test:unit",
+    "test:integration": "bash scripts/test-with-deps.sh node scripts/test-integration.mjs",
+    "test:e2e": "bash scripts/test-e2e.sh",
+    "ci:preflight": "bash scripts/ci-preflight.sh",
+    "ci:gate": "bash scripts/ci-gate.sh",
+    "ci:verify-scoped": "bash scripts/ci-verify-scoped.sh",
+    "db:generate": "turbo db:generate --filter=@pipewatch/db",
+    "db:migrate": "turbo db:migrate --filter=@pipewatch/db"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.10",
+      "uuid": ">=11.1.1",
+      "@opentelemetry/core": ">=2.8.0",
+      "esbuild": ">=0.28.1"
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.1",
+    "@reportportal/agent-js-playwright": "^5.1.11",
+    "@reportportal/client-javascript": "5.5.11",
+    "@pipewatch/db": "workspace:*",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
+  }
+}

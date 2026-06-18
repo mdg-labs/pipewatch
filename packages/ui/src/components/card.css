@@ -1,0 +1,68 @@
+.pw-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.pw-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: var(--space-3);
+}
+
+.pw-card-body {
+  padding: var(--space-5);
+}
+
+.pw-card-flush {
+  padding: 0;
+}
+
+.pw-card-footer {
+  padding: var(--space-3) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+}
+
+.pw-card-sm .pw-card-header {
+  padding: var(--space-3) var(--space-4);
+}
+
+.pw-card-sm .pw-card-body {
+  padding: var(--space-4);
+}
+
+.pw-card-sm .pw-card-footer {
+  padding: var(--space-2) var(--space-4);
+}
+
+.pw-card-title {
+  font-family: var(--font-sans);
+  font-size: var(--text-md);
+  font-weight: var(--weight-semibold);
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.pw-card-subtitle {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin: var(--space-0-5) 0 0;
+}
+
+.pw-card-interactive {
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.pw-card-interactive:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}

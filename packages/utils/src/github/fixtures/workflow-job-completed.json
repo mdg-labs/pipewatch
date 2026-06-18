@@ -1,0 +1,40 @@
+{
+  "action": "completed",
+  "workflow_job": {
+    "id": 2891501297,
+    "run_id": 2891501295,
+    "name": "build",
+    "status": "completed",
+    "conclusion": "success",
+    "started_at": "2022-10-11T14:22:35Z",
+    "completed_at": "2022-10-11T14:23:40Z",
+    "html_url": "https://github.com/octocat/Hello-World/actions/runs/2891501295/jobs/2891501297",
+    "runner_name": "GitHub Actions 2",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 1,
+        "started_at": "2022-10-11T14:22:35Z",
+        "completed_at": "2022-10-11T14:22:40Z"
+      },
+      {
+        "name": "Run tests",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 2,
+        "started_at": "2022-10-11T14:22:41Z",
+        "completed_at": "2022-10-11T14:23:30Z"
+      },
+      {
+        "name": "Post job cleanup",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 3,
+        "started_at": "2022-10-11T14:23:31Z",
+        "completed_at": "2022-10-11T14:23:40Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,321 @@
+.pw-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.pw-dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pw-dashboard-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pw-dashboard-health {
+  display: flex;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pw-dashboard-health-segment {
+  flex: 1;
+  padding: 16px 20px;
+  border-right: 1px solid var(--border-subtle);
+}
+
+.pw-dashboard-health-segment:last-child {
+  border-right: none;
+}
+
+.pw-dashboard-health-label {
+  margin-bottom: 5px;
+}
+
+.pw-dashboard-health-label-text {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.pw-dashboard-health-value {
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-feature-settings: "tnum";
+}
+
+.pw-dashboard-health-total .pw-dashboard-health-value {
+  color: var(--text-primary);
+}
+
+.pw-dashboard-health-running {
+  background: var(--status-running-subtle);
+}
+
+.pw-dashboard-health-running .pw-dashboard-health-label-text,
+.pw-dashboard-health-running .pw-dashboard-health-value {
+  color: var(--status-running);
+}
+
+.pw-dashboard-health-failing {
+  background: var(--status-failure-subtle);
+}
+
+.pw-dashboard-health-failing .pw-dashboard-health-label-text,
+.pw-dashboard-health-failing .pw-dashboard-health-value {
+  color: var(--status-failure);
+}
+
+.pw-dashboard-health-healthy .pw-dashboard-health-label-text,
+.pw-dashboard-health-healthy .pw-dashboard-health-value {
+  color: var(--status-success);
+}
+
+.pw-dashboard-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pw-dashboard-controls-row {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.pw-dashboard-sort,
+.pw-dashboard-integration-filter {
+  min-width: 140px;
+}
+
+.pw-dashboard-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.pw-dashboard-view-toggle {
+  margin-left: auto;
+  display: flex;
+  gap: 2px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.pw-dashboard-view-toggle-btn {
+  width: 28px;
+  height: 26px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+}
+
+.pw-dashboard-view-toggle-btn:hover {
+  color: var(--text-secondary);
+}
+
+.pw-dashboard-view-toggle-btn-active {
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+}
+
+.pw-dashboard-results-label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.pw-dashboard-repo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.pw-dashboard-repo-card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.pw-dashboard-repo-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  transition:
+    border-color 100ms var(--ease-out, ease-out),
+    box-shadow 100ms var(--ease-out, ease-out);
+}
+
+.pw-dashboard-repo-card-link:hover .pw-dashboard-repo-card,
+.pw-dashboard-repo-card-link:focus-visible .pw-dashboard-repo-card {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+}
+
+.pw-dashboard-repo-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pw-dashboard-repo-card-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pw-dashboard-repo-card-org {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  line-height: 1.3;
+}
+
+.pw-dashboard-repo-card-name {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-top: 1px;
+  line-height: 1.2;
+}
+
+.pw-dashboard-repo-github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  text-decoration: none;
+}
+
+.pw-dashboard-repo-github-link:hover {
+  color: var(--text-secondary);
+}
+
+.pw-dashboard-repo-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.pw-dashboard-repo-card-branch {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.pw-dashboard-repo-card-workflow {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.pw-dashboard-repo-card-timing {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.pw-dashboard-repo-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pw-dashboard-repo-card-failure-rate {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.pw-dashboard-repo-card-failure-rate-high {
+  color: var(--status-failure);
+  font-weight: 500;
+}
+
+.pw-dashboard-table-repo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pw-dashboard-table-org {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+}
+
+.pw-dashboard-table-name {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.pw-dashboard-table-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pw-dashboard-table-sparkline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pw-dashboard-table-empty {
+  margin: 0;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 768px) {
+  .pw-dashboard-health {
+    flex-direction: column;
+  }
+
+  .pw-dashboard-health-segment {
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .pw-dashboard-health-segment:last-child {
+    border-bottom: none;
+  }
+
+  .pw-dashboard-view-toggle {
+    margin-left: 0;
+  }
+}

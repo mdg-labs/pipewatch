@@ -1,0 +1,114 @@
+---
+title: Cloudflare Tunnel guide
+description: Expose a self-hosted PipeWatch CE API securely to GitHub webhooks using Cloudflare Tunnel.
+---
+
+## Why use a tunnel
+
+GitHub delivers webhooks over the public internet. CE deployments behind NAT, home networks, or private VPCs need a stable HTTPS endpoint. Cloudflare Tunnel provides one without opening inbound firewall ports.
+
+Route the tunnel to the **API service on port 3000** — GitHub posts to `/webhooks/github` on the API, not the dashboard (port 3001).
+
+## Quick tunnel (fastest for testing)
+
+For a temporary public URL during setup:
+
+```bash
+cloudflared tunnel --url http://localhost:3000
+```
+
+`cloudflared` prints a `*.trycloudflare.com` hostname. Set your GitHub App webhook URL to:
+
+```
+https://<random-subdomain>.trycloudflare.com/webhooks/github
+```
+
+Quick tunnels are ephemeral — use a named tunnel for production.
+
+## Named tunnel (production)
+
+### 1. Install and authenticate
+
+Install `cloudflared` on the host running PipeWatch (or a gateway on the same Docker network) and log in:
+
+```bash
+cloudflared tunnel login
+cloudflared tunnel create pipewatch-ce
+cloudflared tunnel route dns pipewatch-ce api.your-domain.example
+```
+
+### 2. Configure ingress
+
+Create `~/.cloudflared/config.yml` (or `/etc/cloudflared/config.yml`):
+
+```yaml
+tunnel: pipewatch-ce
+credentials-file: /path/to/<tunnel-id>.json
+
+ingress:
+  - hostname: api.your-domain.example
+    service: http://localhost:3000
+  - service: http_status:404
+```
+
+If PipeWatch runs in Docker and `cloudflared` runs on the host, `localhost:3000` reaches the published API port from `docker-compose.yml`.
+
+If `cloudflared` runs inside Compose, use the service name instead:
+
+```yaml
+  - hostname: api.your-domain.example
+    service: http://api:3000
+```
+
+### 3. Run the tunnel
+
+```bash
+cloudflared tunnel run pipewatch-ce
+```
+
+Or install as a system service (`cloudflared service install`) for persistence across reboots.
+
+### 4. Update GitHub App settings
+
+Set the GitHub App webhook URL to:
+
+```
+https://api.your-domain.example/webhooks/github
+```
+
+Trigger a test workflow and confirm deliveries return **200** in GitHub → App → **Advanced**.
+
+### 5. Update PipeWatch URLs
+
+Set public hostnames in `.env` and restart:
+
+```bash
+APP_URL=https://pipewatch.your-domain.example
+MARKETING_URL=https://pipewatch.your-domain.example
+NEXT_PUBLIC_API_URL=https://api.your-domain.example
+```
+
+Update the GitHub App **Callback URL** to match `{APP_URL}/api/v1/auth/github/callback`.
+
+## Optional — tunnel the dashboard
+
+GitHub only needs API access. If you also want the dashboard on a custom domain, add a second ingress rule or a separate tunnel hostname pointing to port **3001**:
+
+```yaml
+ingress:
+  - hostname: api.your-domain.example
+    service: http://localhost:3000
+  - hostname: pipewatch.your-domain.example
+    service: http://localhost:3001
+  - service: http_status:404
+```
+
+## Security
+
+- Terminate TLS at Cloudflare; restrict tunnel tokens to the host that needs them.
+- Rotate `GITHUB_WEBHOOK_SECRET` if a delivery endpoint was ever misconfigured or exposed.
+- Do not commit tunnel credential JSON files to git.
+
+## Alternative — polling mode
+
+If tunnel setup is blocked, set `PIPEWATCH_MODE=polling` in `.env` and enable polling per repository. See [Webhook vs polling mode](/docs/concepts/webhook-vs-polling).

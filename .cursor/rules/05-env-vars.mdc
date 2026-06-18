@@ -17,7 +17,9 @@ When introducing **any** new env var, complete all four steps below in the **sam
 
 **Development** — local only via Phase CLI (`phase run --env=Development -- <command>`). No GitHub Actions sync.
 
-**CI / Staging / Production** — sync to GitHub Actions environments (`ci`, `staging`, `production`) via Phase Console (operator-configured). Deploy workflows read from GHA environments — never from Phase at runtime.
+**CI / Staging / Production** — sync to GitHub Actions environments (`ci`, `staging`, `production`) via Phase Console (operator-configured). **Every Phase key lands as a GHA secret** — URLs, slugs, and tokens alike. Workflows reference `${{ secrets.KEY }}` only. Deploy workflows read from GHA environments — never from Phase at runtime.
+
+**Exception:** workflow-managed GHA **variables** (not from Phase), e.g. `DEPLOYED_VERSION` — use `${{ vars.DEPLOYED_VERSION }}`.
 
 **Never put true secrets in `NEXT_PUBLIC_*` keys** — those are inlined into client bundles.
 

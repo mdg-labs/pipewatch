@@ -1,0 +1,39 @@
+/* ============================================================
+   PipeWatch Spacing & Shape Tokens
+   4px base unit. Named by multiplier for easy mental mapping.
+   ============================================================ */
+
+:root {
+  /* ── Spacing scale ─────────────────────────────────────────── */
+  --space-0:    0;
+  --space-px:   1px;
+  --space-0-5:  2px;
+  --space-1:    4px;
+  --space-1-5:  6px;
+  --space-2:    8px;
+  --space-2-5:  10px;
+  --space-3:    12px;
+  --space-4:    16px;
+  --space-5:    20px;
+  --space-6:    24px;
+  --space-7:    28px;
+  --space-8:    32px;
+  --space-10:   40px;
+  --space-12:   48px;
+  --space-16:   64px;
+  --space-20:   80px;
+  --space-24:   96px;
+  --space-32:  128px;
+
+  /* ── Border radii (soft-but-not-pill) ─────────────────────── */
+  /* Pick one radius character and hold it everywhere:
+     4→6→8→12 feels technical-modern without rounding to pill. */
+  --radius-none: 0;
+  --radius-xs:   2px;   /* fine lines, hairline separators          */
+  --radius-sm:   4px;   /* chips, tags, small badges, code blocks   */
+  --radius-md:   6px;   /* buttons, inputs, tooltips                */
+  --radius-lg:   8px;   /* cards, panels — default surface radius   */
+  --radius-xl:   12px;  /* modals, dialogs, large panels            */
+  --radius-2xl:  16px;  /* large decorative containers              */
+  --radius-full: 9999px;/* pill shapes, avatars, status dots        */
+}
