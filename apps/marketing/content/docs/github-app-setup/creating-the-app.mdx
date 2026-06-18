@@ -3,25 +3,72 @@ title: Creating the GitHub App
 description: Register a GitHub App for PipeWatch with the correct metadata, callback URLs, and webhook endpoint.
 ---
 
+PipeWatch integrates via a **GitHub App** (not an OAuth App or personal access token). Each PipeWatch workspace connects to one or more GitHub App installations (orgs or user accounts).
+
 ## Register the app
 
-In GitHub → **Settings → Developer settings → GitHub Apps**, create a new app owned by your organization or user account.
+In GitHub → **Settings → Developer settings → GitHub Apps → New GitHub App**:
 
-Use a clear name such as **PipeWatch (Your Org)** and set the homepage URL to your PipeWatch instance or `https://pipewatch.app`.
+| Field | Value |
+|---|---|
+| **GitHub App name** | e.g. `PipeWatch (Your Org)` — must be unique on GitHub |
+| **Homepage URL** | Your PipeWatch URL or `https://pipewatch.app` |
+| **Callback URL** | `{APP_URL}/api/v1/auth/github/callback` |
+| **Setup URL** (optional) | `{APP_URL}/settings/integrations` |
+| **Webhook URL** | `{API_URL}/webhooks/github` — see [Webhook URL](/docs/github-app-setup/webhook-url) |
+| **Webhook secret** | Generate a strong random string; copy to `GITHUB_WEBHOOK_SECRET` |
+| **Expire user authorization tokens** | Enabled (recommended) |
 
-## OAuth and setup URLs
+Replace `{APP_URL}` with your dashboard base URL (CE: `http://localhost:3001` locally) and `{API_URL}` with your API base URL (CE: `http://localhost:3000` locally, or your public API hostname in production).
 
-Configure these URLs for your environment:
+## Where the app can be installed
 
-- **Callback URL:** `{APP_URL}/api/v1/auth/github/callback`
-- **Setup URL (optional):** `{APP_URL}/settings/integrations`
+Choose based on your audience:
 
-Replace `{APP_URL}` with your Cloud or CE base URL.
+- **Any account** — personal and org installs (typical for CE and single-tenant setups).
+- **Only on this account** — restrict to your org (typical for internal Cloud deployments).
 
 ## Generate credentials
 
-Download the **private key** (.pem) and note the **App ID**. Store the private key as `GITHUB_APP_PRIVATE_KEY` — never commit it to git.
+After creating the app:
+
+1. Note the **App ID** → `GITHUB_APP_ID`
+2. Generate and download a **private key** (.pem) → `GITHUB_APP_PRIVATE_KEY`
+3. Note the **Client ID** and generate a **Client secret** → `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET`
+4. Copy the app **slug** from the URL (`github.com/apps/{slug}`) → `GITHUB_APP_SLUG`
+
+Store the private key and secrets in `.env` (CE) or your secrets manager (Cloud). **Never commit credentials to git.**
+
+For CE, paste the PEM contents into `GITHUB_APP_PRIVATE_KEY` in `.env`. Multi-line PEM values work in Docker Compose when quoted.
+
+## Configure permissions and events
+
+Set repository permissions and webhook subscriptions before installing — see [Permissions & events](/docs/github-app-setup/permissions-and-events).
+
+Minimum for MVP:
+
+- **Actions:** Read
+- **Metadata:** Read
+- Events: `workflow_run`, `workflow_job`, `installation`, `installation_repositories`
 
 ## Install the app
 
-Install the app on target organizations, then enable repositories inside PipeWatch. See [Permissions & events](/docs/github-app-setup/permissions-and-events) for required scopes.
+Install the app on target organizations or your personal account:
+
+```
+https://github.com/apps/{GITHUB_APP_SLUG}/installations/new
+```
+
+During installation, choose **All repositories** or select specific repos. PipeWatch discovers repos from the installation and lets you enable tracking per repo in **Settings → Integrations**.
+
+For CE, complete bootstrap at `/setup` first, then follow the onboarding wizard to link the installation.
+
+## Cloud vs CE
+
+| Concern | PipeWatch Cloud | PipeWatch CE |
+|---|---|---|
+| GitHub App | Managed `pipewatch` app | You create and own the app |
+| Webhook URL | `https://api.pipewatch.app/webhooks/github` | Your public API URL |
+| OAuth callback | `https://cloud.pipewatch.app/...` | Your `APP_URL` |
+
+Cloud users install the official PipeWatch app — no manual app creation required. CE operators must create and configure their own app following this guide.

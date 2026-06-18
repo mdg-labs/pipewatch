@@ -3,6 +3,8 @@ title: Webhook URL
 description: Point your GitHub App webhook at PipeWatch and configure the shared secret used for HMAC verification.
 ---
 
+GitHub delivers signed webhook payloads to PipeWatch's API. The webhook URL always targets the **API service**, not the dashboard.
+
 ## Webhook endpoint
 
 Set the GitHub App **Webhook URL** to:
@@ -11,20 +13,56 @@ Set the GitHub App **Webhook URL** to:
 {API_URL}/webhooks/github
 ```
 
-For PipeWatch Cloud, use `https://api.pipewatch.app/webhooks/github`. For CE, use your public API base URL.
+| Edition | Example URL |
+|---|---|
+| PipeWatch Cloud | `https://api.pipewatch.app/webhooks/github` |
+| PipeWatch CE (local) | Not reachable by GitHub — use [polling](/docs/concepts/webhook-vs-polling) or a [tunnel](/docs/github-app-setup/cloudflare-tunnel) |
+| PipeWatch CE (production) | `https://api.your-domain.example/webhooks/github` |
+
+The API listens on port **3000** in the default Compose stack. Reverse proxies and tunnels must forward to that port.
 
 ## Webhook secret
 
-Generate a strong random secret in GitHub and set the same value as `GITHUB_WEBHOOK_SECRET` in PipeWatch. The API rejects unsigned or incorrectly signed payloads with **401** — there is no bypass flag.
+1. Generate a strong random secret in GitHub when creating or editing the app.
+2. Set the same value as `GITHUB_WEBHOOK_SECRET` in PipeWatch (`.env` for CE).
+3. Restart the API after changing the secret.
+
+The API rejects unsigned or incorrectly signed payloads with **401** — there is no bypass flag in any environment.
+
+## Content type
+
+GitHub sends `application/json` payloads. PipeWatch expects the default GitHub webhook format — no custom content type configuration is needed.
 
 ## Delivery troubleshooting
 
-In GitHub → App → **Advanced**, inspect recent deliveries. Common issues:
+In GitHub → your App → **Advanced → Recent deliveries**, inspect failed requests:
 
-- DNS or TLS misconfiguration on self-hosted endpoints
+| Symptom | Likely cause |
+|---|---|
+| Connection refused / timeout | API not reachable from the public internet |
+| 401 Unauthorized | `GITHUB_WEBHOOK_SECRET` mismatch |
+| 502 / 504 | Reverse proxy misconfigured or API container not healthy |
+| SSL errors | Invalid or expired TLS certificate |
+
+Confirm the API is healthy before debugging webhooks:
+
+```bash
+curl -s https://api.your-domain.example/health
+# {"status":"ok","edition":"ce"}
+```
+
+Common self-hosted issues:
+
+- DNS or TLS misconfiguration on the public endpoint
 - Reverse proxy stripping the `X-Hub-Signature-256` header
+- Tunnel routing to the wrong port (dashboard **3001** vs API **3000**)
 - Secret mismatch between GitHub and PipeWatch env
 
 ## Self-hosted reachability
 
-CE instances must be reachable from GitHub over HTTPS. If you cannot expose a public port, use a [Cloudflare Tunnel](/docs/github-app-setup/cloudflare-tunnel).
+CE instances must be reachable from GitHub over HTTPS on the API port. If you cannot expose a public port:
+
+- **Option A:** [Cloudflare Tunnel](/docs/github-app-setup/cloudflare-tunnel) — stable HTTPS without inbound firewall rules
+- **Option B:** `PIPEWATCH_MODE=polling` — no inbound webhook required; higher latency
+
+Configure webhooks when possible — polling is a fallback, not the primary ingestion path.
