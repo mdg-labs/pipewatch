@@ -37,7 +37,7 @@ if [[ ! -f "$FLY_CONFIG" ]]; then
   exit 1
 fi
 
-deploy_config="$(mktemp)"
+deploy_config="$(mktemp "${ROOT}/.fly-deploy.XXXXXX.toml")"
 # fly.toml app name must match --app or deploy APIs disagree (static file uses placeholder).
 sed "s/^app = .*/app = \"${FLY_APP}\"/" "$FLY_CONFIG" >"$deploy_config"
 trap 'rm -f "$deploy_config"' EXIT

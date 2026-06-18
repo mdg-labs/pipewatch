@@ -49,26 +49,37 @@ case "$APP" in
 esac
 
 CUSTOM_DOMAIN="$("$SCRIPT_DIR/cf-worker-domain.sh" "$DEPLOY_ENVIRONMENT" "$APP")"
+APP_DIR="${ROOT}/apps/${APP}"
 
 pnpm install --frozen-lockfile
 
-echo "deploy-cf-worker: building ${FILTER} (with workspace dependencies)"
+echo "deploy-cf-worker: building ${FILTER} workspace dependencies"
 NODE_ENV=production \
   SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN:-}" \
   SENTRY_ORG="${SENTRY_ORG:-}" \
   SENTRY_PROJECT="${SENTRY_PROJECT:-}" \
   SENTRY_RELEASE="${SENTRY_RELEASE:-}" \
   SENTRY_ENVIRONMENT="${SENTRY_ENVIRONMENT:-}" \
-  pnpm exec turbo run build --filter="${FILTER}..."
+  pnpm exec turbo run build --filter="${FILTER}^..."
 
-if pnpm --filter "$FILTER" exec sh -c 'command -v opennextjs-cloudflare >/dev/null 2>&1'; then
-  echo "deploy-cf-worker: OpenNext build"
-  pnpm --filter "$FILTER" exec opennextjs-cloudflare build
-else
-  echo "deploy-cf-worker: opennextjs-cloudflare not installed — using next build output"
+echo "deploy-cf-worker: OpenNext build for ${FILTER}"
+(
+  cd "$APP_DIR"
+  NODE_ENV=production \
+    SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN:-}" \
+    SENTRY_ORG="${SENTRY_ORG:-}" \
+    SENTRY_PROJECT="${SENTRY_PROJECT:-}" \
+    SENTRY_RELEASE="${SENTRY_RELEASE:-}" \
+    SENTRY_ENVIRONMENT="${SENTRY_ENVIRONMENT:-}" \
+    SKIP_WRANGLER_CONFIG_CHECK=yes \
+    pnpm exec opennextjs-cloudflare build
+)
+
+if [[ ! -f "${APP_DIR}/.open-next/worker.js" ]]; then
+  echo "deploy-cf-worker: missing ${APP_DIR}/.open-next/worker.js after OpenNext build" >&2
+  exit 1
 fi
 
-APP_DIR="${ROOT}/apps/${APP}"
 deploy_config="$(mktemp "${APP_DIR}/.wrangler-deploy.XXXXXX.toml")"
 trap 'rm -f "$deploy_config"' EXIT
 
@@ -79,7 +90,9 @@ sed \
   "$WRANGLER_TEMPLATE" >"$deploy_config"
 
 echo "deploy-cf-worker: deploying ${WORKER_NAME} at https://${CUSTOM_DOMAIN}"
-cd "$APP_DIR"
-pnpm exec wrangler deploy --config "$deploy_config"
+(
+  cd "$APP_DIR"
+  pnpm exec wrangler deploy --config "$deploy_config"
+)
 
 echo "deploy-cf-worker: ${WORKER_NAME} deployed"

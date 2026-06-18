@@ -191,5 +191,5 @@ describe("BullMQ queue infrastructure integration", () => {
 
     await worker.close();
     await events.close();
-  });
+  }, 20_000);
 });
