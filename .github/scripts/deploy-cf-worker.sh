@@ -3,14 +3,17 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "$ROOT"
 
 APP="${1:-}"
 WORKER_NAME="${CF_WORKER_NAME:-}"
+DEPLOY_ENVIRONMENT="${DEPLOY_ENVIRONMENT:-}"
+WRANGLER_TEMPLATE="${ROOT}/.github/infra/cf-worker/wrangler.toml"
 
-if [[ -z "$APP" || -z "$WORKER_NAME" ]]; then
-  echo "deploy-cf-worker: usage: CF_WORKER_NAME=<name> deploy-cf-worker.sh <web|marketing>" >&2
+if [[ -z "$APP" || -z "$WORKER_NAME" || -z "$DEPLOY_ENVIRONMENT" ]]; then
+  echo "deploy-cf-worker: usage: DEPLOY_ENVIRONMENT=<staging|production> CF_WORKER_NAME=<name> deploy-cf-worker.sh <web|marketing>" >&2
   exit 1
 fi
 
@@ -21,6 +24,11 @@ fi
 
 if [[ -z "${CF_ACCOUNT_ID:-}" ]]; then
   echo "deploy-cf-worker: CF_ACCOUNT_ID must be set" >&2
+  exit 1
+fi
+
+if [[ ! -f "$WRANGLER_TEMPLATE" ]]; then
+  echo "deploy-cf-worker: missing Wrangler template: ${WRANGLER_TEMPLATE}" >&2
   exit 1
 fi
 
@@ -40,6 +48,8 @@ case "$APP" in
     ;;
 esac
 
+CUSTOM_DOMAIN="$("$SCRIPT_DIR/cf-worker-domain.sh" "$DEPLOY_ENVIRONMENT" "$APP")"
+
 pnpm install --frozen-lockfile
 
 echo "deploy-cf-worker: building ${FILTER} (with workspace dependencies)"
@@ -58,22 +68,18 @@ else
   echo "deploy-cf-worker: opennextjs-cloudflare not installed — using next build output"
 fi
 
-WRANGLER_CONFIG="apps/${APP}/wrangler.toml"
-if [[ ! -f "$WRANGLER_CONFIG" ]]; then
-  cat >"$WRANGLER_CONFIG" <<EOF
-name = "${WORKER_NAME}"
-main = ".open-next/worker.js"
-account_id = "${CF_ACCOUNT_ID}"
-compatibility_date = "2024-09-23"
-compatibility_flags = ["nodejs_compat"]
+APP_DIR="${ROOT}/apps/${APP}"
+deploy_config="$(mktemp "${APP_DIR}/.wrangler-deploy.XXXXXX.toml")"
+trap 'rm -f "$deploy_config"' EXIT
 
-[assets]
-directory = ".open-next/assets"
-binding = "ASSETS"
-EOF
-fi
+sed \
+  -e "s/__WORKER_NAME__/${WORKER_NAME}/g" \
+  -e "s/__ACCOUNT_ID__/${CF_ACCOUNT_ID}/g" \
+  -e "s/__CUSTOM_DOMAIN__/${CUSTOM_DOMAIN}/g" \
+  "$WRANGLER_TEMPLATE" >"$deploy_config"
 
-echo "deploy-cf-worker: deploying ${WORKER_NAME}"
-pnpm exec wrangler deploy --config "$WRANGLER_CONFIG" --name "$WORKER_NAME"
+echo "deploy-cf-worker: deploying ${WORKER_NAME} at https://${CUSTOM_DOMAIN}"
+cd "$APP_DIR"
+pnpm exec wrangler deploy --config "$deploy_config"
 
 echo "deploy-cf-worker: ${WORKER_NAME} deployed"
