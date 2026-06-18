@@ -58,12 +58,25 @@ jobs:
       environment: staging
     secrets: inherit
 
+  provision-redis-staging:
+    name: Provision Fly Redis (staging)
+    if: >-
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/staging'
+    needs: [provision-fly-staging]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/provision-redis.yml
+    with:
+      environment: staging
+    secrets: inherit
+
   sync-secrets-staging:
     name: Sync secrets (staging)
     if: >-
       github.event_name == 'push' &&
       github.ref == 'refs/heads/staging'
-    needs: [provision-fly-staging]
+    needs: [provision-redis-staging]
     permissions:
       contents: read
     uses: ./.github/workflows/sync-secrets.yml
@@ -137,10 +150,21 @@ jobs:
       environment: production
     secrets: inherit
 
+  provision-redis-production:
+    name: Provision Fly Redis (production)
+    if: github.event_name == 'release'
+    needs: [provision-fly-production]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/provision-redis.yml
+    with:
+      environment: production
+    secrets: inherit
+
   sync-secrets-production:
     name: Sync secrets (production)
     if: github.event_name == 'release'
-    needs: [provision-fly-production]
+    needs: [provision-redis-production]
     permissions:
       contents: read
     uses: ./.github/workflows/sync-secrets.yml

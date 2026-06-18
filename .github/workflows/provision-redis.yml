@@ -1,0 +1,31 @@
+name: Provision Fly Redis
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: GitHub Actions environment (staging | production)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  provision:
+    name: Provision Fly Redis (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # master
+
+      - name: Provision Fly Redis app and workload
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_ORG: ${{ secrets.FLY_ORG }}
+          FLY_REGION: ${{ secrets.FLY_REGION }}
+        run: bash .github/scripts/provision-redis.sh "${{ inputs.environment }}"

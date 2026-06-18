@@ -1,33 +1,146 @@
 #!/usr/bin/env bash
-# Ensure the Fly.io Redis app exists for the target environment (PRD §4.2).
-# Idempotent — skips create when the app is already registered.
+# Ensure the Fly.io Redis app exists and has a running Machine (PRD §4.2).
+#
+# Idempotent:
+#   - Healthy running Machine → skip (never redeploy or destroy existing Redis)
+#   - Missing app → flyctl apps create only, then first-time deploy if no Machines
+#   - App with zero Machines → first-time deploy (volume-backed, bind ::, port 6379)
+#
+# IPv6 bind: Fly 6PN (.internal DNS) is IPv6-only. Redis must use --bind :: (or omit
+# bind entirely). Binding to 0.0.0.0 alone breaks pipewatch-{staging|prod}-redis.internal.
+#
+# REDIS_URL is derived in sync-secrets.sh from FLY_REDIS_APP — not set here.
 
 set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+REDIS_FLY_CONFIG="${ROOT}/.github/infra/redis/fly.toml"
+REDIS_VOLUME_NAME="redis_data"
+
+usage() {
+  cat <<'EOF'
+Usage: provision-redis.sh <staging|production>
+
+Ensures pipewatch-{staging|prod}-redis exists with at least one running Machine.
+Respects FLY_ORG and FLY_REGION (default: fra) when creating apps/volumes.
+EOF
+}
 
 if [[ -z "${FLY_API_TOKEN:-}" ]]; then
   echo "provision-redis: FLY_API_TOKEN must be set" >&2
   exit 1
 fi
 
-if [[ -z "${FLY_REDIS_APP:-}" ]]; then
-  echo "provision-redis: FLY_REDIS_APP must be set" >&2
+if [[ $# -lt 1 ]]; then
+  usage >&2
   exit 1
 fi
 
-if flyctl apps show "$FLY_REDIS_APP" >/dev/null 2>&1; then
-  echo "provision-redis: ${FLY_REDIS_APP} already exists"
+GHA_ENV="$1"
+INFRA_SLUG="$("$SCRIPT_DIR/infra-slug.sh" "$GHA_ENV")"
+FLY_REDIS_APP="pipewatch-${INFRA_SLUG}-redis"
+FLY_REGION="${FLY_REGION:-fra}"
+
+export FLY_REDIS_APP
+
+count_machines() {
+  local app="$1"
+  flyctl machines list --app "$app" --json 2>/dev/null \
+    | jq 'length' 2>/dev/null \
+    || echo 0
+}
+
+count_running_machines() {
+  local app="$1"
+  flyctl machines list --app "$app" --json 2>/dev/null \
+    | jq '[.[] | select(.state == "started" or .state == "running")] | length' 2>/dev/null \
+    || echo 0
+}
+
+ensure_fly_app() {
+  if flyctl apps show "$FLY_REDIS_APP" >/dev/null 2>&1; then
+    echo "provision-redis: ${FLY_REDIS_APP} already exists"
+    return 0
+  fi
+
+  echo "provision-redis: creating ${FLY_REDIS_APP}"
+  local -a create_args=("$FLY_REDIS_APP")
+  if [[ -n "${FLY_ORG:-}" ]]; then
+    create_args+=(--org "$FLY_ORG")
+  fi
+
+  if ! flyctl apps create "${create_args[@]}"; then
+    echo "provision-redis: failed to create ${FLY_REDIS_APP}" >&2
+    exit 1
+  fi
+
+  echo "provision-redis: ${FLY_REDIS_APP} registered"
+}
+
+ensure_redis_volume() {
+  local existing
+  existing="$(flyctl volumes list --app "$FLY_REDIS_APP" --json 2>/dev/null \
+    | jq '[.[] | select(.name == "'"${REDIS_VOLUME_NAME}"'")] | length' 2>/dev/null \
+    || echo 0)"
+
+  if [[ "$existing" -ge 1 ]]; then
+    echo "provision-redis: volume ${REDIS_VOLUME_NAME} already exists on ${FLY_REDIS_APP}"
+    return 0
+  fi
+
+  echo "provision-redis: creating volume ${REDIS_VOLUME_NAME} in ${FLY_REGION}"
+  if ! flyctl volumes create "$REDIS_VOLUME_NAME" \
+    --app "$FLY_REDIS_APP" \
+    --region "$FLY_REGION" \
+    --yes; then
+    echo "provision-redis: failed to create volume ${REDIS_VOLUME_NAME}" >&2
+    exit 1
+  fi
+}
+
+deploy_redis_workload() {
+  if [[ ! -f "$REDIS_FLY_CONFIG" ]]; then
+    echo "provision-redis: missing Fly config: ${REDIS_FLY_CONFIG}" >&2
+    exit 1
+  fi
+
+  ensure_redis_volume
+
+  echo "provision-redis: deploying first-time Redis workload to ${FLY_REDIS_APP}"
+  if ! flyctl deploy \
+    --app "$FLY_REDIS_APP" \
+    --config "$REDIS_FLY_CONFIG" \
+    --remote-only \
+    --ha=false \
+    --yes; then
+    echo "provision-redis: deploy failed for ${FLY_REDIS_APP}" >&2
+    exit 1
+  fi
+
+  echo "provision-redis: ${FLY_REDIS_APP} deployed"
+}
+
+ensure_fly_app
+
+running="$(count_running_machines "$FLY_REDIS_APP")"
+if [[ "$running" -ge 1 ]]; then
+  echo "provision-redis: ${FLY_REDIS_APP} healthy (${running} running Machine(s)) — skipping deploy"
   exit 0
 fi
 
-echo "provision-redis: creating ${FLY_REDIS_APP}"
-create_args=("$FLY_REDIS_APP")
-if [[ -n "${FLY_ORG:-}" ]]; then
-  create_args+=(--org "$FLY_ORG")
-fi
-
-if ! flyctl apps create "${create_args[@]}"; then
-  echo "provision-redis: failed to create ${FLY_REDIS_APP}" >&2
+total="$(count_machines "$FLY_REDIS_APP")"
+if [[ "$total" -ge 1 ]]; then
+  echo "provision-redis: ${FLY_REDIS_APP} has ${total} Machine(s) but none running — manual intervention required" >&2
   exit 1
 fi
 
-echo "provision-redis: ${FLY_REDIS_APP} registered (deploy Redis workload separately if needed)"
+deploy_redis_workload
+
+running="$(count_running_machines "$FLY_REDIS_APP")"
+if [[ "$running" -lt 1 ]]; then
+  echo "provision-redis: deploy finished but no running Machines on ${FLY_REDIS_APP}" >&2
+  exit 1
+fi
+
+echo "provision-redis: complete (${GHA_ENV} → ${INFRA_SLUG}, app=${FLY_REDIS_APP})"
