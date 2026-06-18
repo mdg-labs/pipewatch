@@ -1,5 +1,24 @@
 # PipeWatch workspace notes
 
+## 2026-06-18 — P21 epic #24 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `244ec68`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #115 P21-02 Vitest + ReportPortal wiring | Done | `ddc0acc` |
+| #24 epic parent | Done | closes via #115 `fixes #24` |
+
+**Notes:**
+- #114 closed by user before run (test-with-deps already landed)
+- Added root `vitest.config.ts` workspace projects + `apps/api/src/test/harness.ts` (Hono native, not Supertest)
+- Refactored `me.integration.test.ts` as harness proof
+- ReportPortal + CI `environment: ci` were already satisfied
+- `pnpm ci:gate` audit fails on pre-existing `nodemailer@9.0.0` high CVE (unrelated)
+- Commit not pushed (local only unless user pushes)
+
+**Next suggested:** push `staging`; triage nodemailer audit separately
+
 ## 2026-06-18 — P135 epic #135 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `94e6063`
