@@ -9,6 +9,7 @@ import {
   workspaceMembers,
   workspaces,
 } from "@pipewatch/db/schema";
+import type { WorkspaceRole } from "@pipewatch/types";
 import { eq } from "drizzle-orm";
 
 export type E2eSeedResult = {
@@ -161,7 +162,10 @@ async function seedRun(
 }
 
 /** Seed dashboard + run-detail fixtures for authenticated E2E flows. */
-export async function seedDashboardFixture(slug: string): Promise<E2eSeedResult> {
+export async function seedDashboardFixture(
+  slug: string,
+  role: WorkspaceRole = "owner",
+): Promise<E2eSeedResult> {
   const database = createDb(requireDatabaseUrl());
 
   try {
@@ -170,7 +174,7 @@ export async function seedDashboardFixture(slug: string): Promise<E2eSeedResult>
     await database.insert(workspaceMembers).values({
       workspaceId: workspace.id,
       userId: user.id,
-      role: "owner",
+      role,
       acceptedAt: new Date(),
     });
 
