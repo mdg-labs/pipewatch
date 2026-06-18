@@ -3,8 +3,6 @@ import { randomBytes } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { OpenAPIHono } from "@hono/zod-openapi";
-import { parseApiEnv } from "@pipewatch/config/env";
 import { closeDb, createDb, type Db } from "@pipewatch/db";
 import {
   refreshTokens,
@@ -15,83 +13,24 @@ import {
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { errorHandler } from "../../middleware/error-handler.js";
-import { uniqueGithubId } from "../../testing/unique-github-id.js";
-import { signAccessToken } from "../../services/auth/jwt.js";
+import {
+  createApiTestApp,
+  requestApi,
+  seedTestUser,
+  signTestAccessToken,
+} from "../../test/harness.js";
 import {
   generateRefreshTokenValue,
   storeRefreshToken,
 } from "../../services/auth/refresh-token.js";
 import { registerUserMeRoutes } from "./me.js";
-import type { ApiEnv } from "../../types.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
-const testSecret = "a".repeat(32);
-
-const baseEnv: Record<string, string> = {
-  NODE_ENV: "development",
-  PIPEWATCH_EDITION: "cloud",
-  JWT_SECRET: testSecret,
-  JWT_REFRESH_SECRET: "b".repeat(32),
-  DATABASE_URL: "",
-};
-
-type SeedUser = {
-  id: string;
-  githubLogin: string;
-  email: string;
-  name: string;
-};
-
-async function seedUser(
-  database: Db,
-  loginPrefix: string,
-): Promise<SeedUser> {
-  const suffix = randomBytes(4).toString("hex");
-
-  const [user] = await database
-    .insert(users)
-    .values({
-      githubId: uniqueGithubId(),
-      githubLogin: `${loginPrefix}-${suffix}`,
-      email: `${loginPrefix}-${suffix}@example.com`,
-      name: "Profile User",
-      avatarUrl: "https://avatars.githubusercontent.com/u/1?v=4",
-    })
-    .returning();
-
-  if (!user) {
-    throw new Error("Failed to seed user");
-  }
-
-  return {
-    id: user.id,
-    githubLogin: user.githubLogin,
-    email: user.email!,
-    name: user.name!,
-  };
-}
-
-async function bearerToken(userId: string): Promise<string> {
-  return signAccessToken({ userId }, testSecret);
-}
-
 function createTestApp(database: Db) {
-  const app = new OpenAPIHono<ApiEnv>();
-  app.onError(errorHandler);
-
-  const env = parseApiEnv(
-    {
-      ...baseEnv,
-      DATABASE_URL: process.env.DATABASE_URL,
-    },
-    "cloud",
-  );
-
-  registerUserMeRoutes(app, { env, db: database });
-
-  return app;
+  return createApiTestApp(database, (app, context) => {
+    registerUserMeRoutes(app, context);
+  });
 }
 
 let containerId = "";
@@ -142,7 +81,6 @@ beforeAll(async () => {
   containerId = run.stdout.trim();
   const databaseUrl = `postgresql://postgres:${password}@127.0.0.1:${String(port)}/postgres`;
   process.env.DATABASE_URL = databaseUrl;
-  baseEnv.DATABASE_URL = databaseUrl;
 
   await waitForPostgres(databaseUrl);
 
@@ -166,17 +104,17 @@ afterAll(async () => {
 describe("users me integration", () => {
   it("returns 401 when Authorization header is missing", async () => {
     const app = createTestApp(database);
-    const response = await app.request("http://localhost/api/v1/users/me");
+    const response = await requestApi(app, "/api/v1/users/me");
 
     expect(response.status).toBe(401);
   });
 
   it("returns the authenticated user profile", async () => {
     const app = createTestApp(database);
-    const user = await seedUser(database, "profile-get");
-    const token = await bearerToken(user.id);
+    const user = await seedTestUser(database, "profile-get");
+    const token = await signTestAccessToken({ userId: user.id });
 
-    const response = await app.request("http://localhost/api/v1/users/me", {
+    const response = await requestApi(app, "/api/v1/users/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -191,10 +129,10 @@ describe("users me integration", () => {
 
   it("updates the user display name", async () => {
     const app = createTestApp(database);
-    const user = await seedUser(database, "profile-patch");
-    const token = await bearerToken(user.id);
+    const user = await seedTestUser(database, "profile-patch");
+    const token = await signTestAccessToken({ userId: user.id });
 
-    const response = await app.request("http://localhost/api/v1/users/me", {
+    const response = await requestApi(app, "/api/v1/users/me", {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
@@ -215,12 +153,12 @@ describe("users me integration", () => {
 
   it("deletes the account when not blocked by sole-owner guard", async () => {
     const app = createTestApp(database);
-    const user = await seedUser(database, "profile-delete-ok");
-    const token = await bearerToken(user.id);
+    const user = await seedTestUser(database, "profile-delete-ok");
+    const token = await signTestAccessToken({ userId: user.id });
     const refreshToken = generateRefreshTokenValue();
     await storeRefreshToken(database, user.id, refreshToken);
 
-    const response = await app.request("http://localhost/api/v1/users/me", {
+    const response = await requestApi(app, "/api/v1/users/me", {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -243,8 +181,8 @@ describe("users me integration", () => {
 
   it("returns 409 when sole owner of a workspace with other members", async () => {
     const app = createTestApp(database);
-    const owner = await seedUser(database, "profile-delete-blocked");
-    const member = await seedUser(database, "profile-delete-member");
+    const owner = await seedTestUser(database, "profile-delete-blocked");
+    const member = await seedTestUser(database, "profile-delete-member");
     const suffix = randomBytes(4).toString("hex");
 
     const [workspace] = await database
@@ -275,8 +213,8 @@ describe("users me integration", () => {
       },
     ]);
 
-    const token = await bearerToken(owner.id);
-    const response = await app.request("http://localhost/api/v1/users/me", {
+    const token = await signTestAccessToken({ userId: owner.id });
+    const response = await requestApi(app, "/api/v1/users/me", {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -298,8 +236,8 @@ describe("users me integration", () => {
 
   it("allows delete when another owner exists in the shared workspace", async () => {
     const app = createTestApp(database);
-    const owner = await seedUser(database, "profile-delete-coowner");
-    const coOwner = await seedUser(database, "profile-delete-coowner-2");
+    const owner = await seedTestUser(database, "profile-delete-coowner");
+    const coOwner = await seedTestUser(database, "profile-delete-coowner-2");
     const suffix = randomBytes(4).toString("hex");
 
     const [workspace] = await database
@@ -330,8 +268,8 @@ describe("users me integration", () => {
       },
     ]);
 
-    const token = await bearerToken(owner.id);
-    const response = await app.request("http://localhost/api/v1/users/me", {
+    const token = await signTestAccessToken({ userId: owner.id });
+    const response = await requestApi(app, "/api/v1/users/me", {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
