@@ -28,14 +28,18 @@ export type PollRepoDeps = {
   fetchImpl?: typeof fetch;
 };
 
-function resolvePollCreatedSince(
+/** GitHub `created` filter — date-only at retention boundary, ISO datetime when incremental (audit §6). */
+export function resolvePollCreatedSince(
   lastSyncedAt: Date | null,
   retentionDays: number,
 ): string {
   const retentionCutoff = new Date(retentionCreatedSince(retentionDays) + "T00:00:00.000Z");
-  const since =
-    lastSyncedAt && lastSyncedAt > retentionCutoff ? lastSyncedAt : retentionCutoff;
-  return since.toISOString().slice(0, 10);
+
+  if (lastSyncedAt && lastSyncedAt > retentionCutoff) {
+    return lastSyncedAt.toISOString();
+  }
+
+  return retentionCreatedSince(retentionDays);
 }
 
 /** Incremental poll — fetch latest workflow runs since `last_synced_at` (PRD §18). */
@@ -76,15 +80,35 @@ export async function pollRepo(
     ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
   };
 
-  const response = await fetchWorkflowRunsPage(repository.fullName, 1, createdSince, fetchDeps);
-  const runsIngested = await ingestWorkflowRuns(deps.db, response.workflow_runs, {
-    workspaceId,
-    repoId,
-  });
+  let page = 1;
+  let runsIngested = 0;
 
-  if (runsIngested > 0) {
-    await markRepositorySynced(deps.db, repoId, new Date());
+  while (true) {
+    const response = await fetchWorkflowRunsPage(
+      repository.fullName,
+      page,
+      createdSince,
+      fetchDeps,
+    );
+    const batch = response.workflow_runs;
+
+    if (batch.length === 0) {
+      break;
+    }
+
+    runsIngested += await ingestWorkflowRuns(deps.db, batch, {
+      workspaceId,
+      repoId,
+    });
+
+    if (batch.length < 100) {
+      break;
+    }
+
+    page += 1;
   }
+
+  await markRepositorySynced(deps.db, repoId, new Date());
 
   return { runsIngested };
 }
