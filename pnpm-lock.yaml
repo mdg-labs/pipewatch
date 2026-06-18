@@ -38,6 +38,9 @@ importers:
       '@reportportal/agent-js-playwright':
         specifier: ^5.1.11
         version: 5.4.1
+      '@reportportal/client-javascript':
+        specifier: 5.5.11
+        version: 5.5.11
       turbo:
         specifier: ^2.3.3
         version: 2.9.18

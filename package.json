@@ -23,6 +23,7 @@
   "devDependencies": {
     "@playwright/test": "^1.51.1",
     "@reportportal/agent-js-playwright": "^5.1.11",
+    "@reportportal/client-javascript": "5.5.11",
     "@pipewatch/db": "workspace:*",
     "turbo": "^2.3.3",
     "typescript": "^5.7.3"

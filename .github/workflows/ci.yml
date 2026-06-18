@@ -1,58 +1,168 @@
 name: CI
 
+# Reusable CI gate — lint, typecheck, unit, build, integration, audit.
+# Called by orchestrator.yml on PR/push; never triggered directly (PRD §22).
+
 on:
-  push:
-  pull_request:
+  workflow_call:
 
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
-  lint:
-    uses: ./.github/workflows/lint.yml
-
-  unit:
-    uses: ./.github/workflows/test-unit.yml
-
-  integration:
-    needs: [lint, unit]
-    uses: ./.github/workflows/test-integration.yml
-    secrets: inherit
-
-  e2e:
-    name: E2E (advisory on PR)
-    needs: [integration]
-    if: always() && needs.integration.result == 'success'
+  ci:
+    name: CI · Checks
     runs-on: ubuntu-latest
     environment: ci
-    continue-on-error: ${{ github.event_name == 'pull_request' }}
+    env:
+      REPORTPORTAL_URL: ${{ vars.REPORTPORTAL_URL }}
+      REPORTPORTAL_API_KEY: ${{ secrets.REPORTPORTAL_API_KEY }}
+      REPORTPORTAL_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
+      DATABASE_URL: postgresql://pipewatch:pipewatch@postgres:5432/pipewatch
+      REDIS_URL: redis://redis:6379
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: pipewatch
+          POSTGRES_USER: pipewatch
+          POSTGRES_PASSWORD: pipewatch
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pipewatch -d pipewatch"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        id: typecheck
+        run: pnpm typecheck
+
+      - name: Start ReportPortal unit launch
+        id: rp-unit-start
+        run: |
+          uuid=$(node --experimental-strip-types scripts/reportportal-ci-launch.ts start unit || true)
+          echo "launch_id=${uuid}" >> "$GITHUB_OUTPUT"
+          if [ -n "$uuid" ]; then
+            echo "RP_LAUNCH_ID=${uuid}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Unit tests
+        id: unit-tests
+        run: pnpm test:unit
+
+      - name: Finish ReportPortal unit launch
+        if: always() && steps.rp-unit-start.outputs.launch_id != ''
+        env:
+          RP_LAUNCH_STATUS: ${{ steps.unit-tests.outcome == 'success' && 'PASSED' || 'FAILED' }}
+        run: |
+          node --experimental-strip-types scripts/reportportal-ci-launch.ts finish unit \
+            "${{ steps.rp-unit-start.outputs.launch_id }}" \
+            "$RP_LAUNCH_STATUS"
+
+      - name: Record ReportPortal unit launch
+        if: always() && steps.rp-unit-start.outputs.launch_id != ''
+        env:
+          RP_LAUNCH_UUID: ${{ steps.rp-unit-start.outputs.launch_id }}
+        run: bash scripts/reportportal-ci-summary.sh record-env unit
+
+      - name: Build
+        if: always() && steps.typecheck.outcome == 'success'
+        env:
+          NODE_ENV: production
+        run: pnpm build
+
+      - name: Start ReportPortal integration launch
+        if: always() && steps.typecheck.outcome == 'success'
+        id: rp-integration-start
+        run: |
+          uuid=$(node --experimental-strip-types scripts/reportportal-ci-launch.ts start integration || true)
+          echo "launch_id=${uuid}" >> "$GITHUB_OUTPUT"
+          if [ -n "$uuid" ]; then
+            echo "RP_LAUNCH_ID=${uuid}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Integration tests
+        if: always() && steps.typecheck.outcome == 'success'
+        id: integration-tests
+        run: bash .github/scripts/run-integration-ci.sh
+
+      - name: Finish ReportPortal integration launch
+        if: always() && steps.rp-integration-start.outputs.launch_id != ''
+        env:
+          RP_LAUNCH_STATUS: ${{ steps.integration-tests.outcome == 'success' && 'PASSED' || 'FAILED' }}
+        run: |
+          node --experimental-strip-types scripts/reportportal-ci-launch.ts finish integration \
+            "${{ steps.rp-integration-start.outputs.launch_id }}" \
+            "$RP_LAUNCH_STATUS"
+
+      - name: Record ReportPortal integration launch
+        if: always() && steps.rp-integration-start.outputs.launch_id != ''
+        env:
+          RP_LAUNCH_UUID: ${{ steps.rp-integration-start.outputs.launch_id }}
+        run: bash scripts/reportportal-ci-summary.sh record-env integration
+
+      - name: Dependency audit
+        if: always() && steps.typecheck.outcome == 'success'
+        run: pnpm audit --audit-level=high
+
+      - name: Upload ReportPortal launch state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reportportal-ci-launches
+          path: reportportal-launches.jsonl
+          if-no-files-found: ignore
+
+      - name: ReportPortal summary pointer
+        if: always()
+        run: echo 'ReportPortal launch links are in the **CI · ReportPortal summary** job below.' >> "$GITHUB_STEP_SUMMARY"
+
+  reportportal-summary:
+    name: CI · ReportPortal summary
+    needs: ci
+    if: always()
+    runs-on: ubuntu-latest
+    environment: ci
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      REPORTPORTAL_SUMMARY_URL: ${{ vars.REPORTPORTAL_URL }}
+      REPORTPORTAL_SUMMARY_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Download ReportPortal launch state
+        uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          version: 9.15.4
+          name: reportportal-ci-launches
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
+      - name: ReportPortal job summary
+        if: always()
+        run: bash scripts/reportportal-ci-summary.sh write-summary ci
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: E2E tests
+      - name: ReportPortal PR comment
+        if: always() && github.event_name == 'pull_request'
         env:
-          REPORTPORTAL_URL: ${{ vars.REPORTPORTAL_URL }}
-          REPORTPORTAL_API_KEY: ${{ secrets.REPORTPORTAL_API_KEY }}
-          REPORTPORTAL_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
-          E2E_APP_URL: ${{ (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main') && 'https://staging-cloud.pipewatch.app' || '' }}
-          E2E_API_URL: ${{ (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main') && 'https://staging-api.pipewatch.app' || '' }}
-        run: pnpm test:e2e
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash scripts/reportportal-ci-summary.sh update-pr-comment ci
