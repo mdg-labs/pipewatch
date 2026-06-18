@@ -1,5 +1,44 @@
 # PipeWatch workspace notes
 
+## 2026-06-18 — P135 epic #135 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `94e6063`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #136 sync-secrets manifest + validator | Done | `ec7f842` |
+| #140 CF_ACCOUNT_ID for Wrangler | Done | `5e9f935` |
+| #137 Fly api/worker app provision | Done | `412cefb` |
+| #138 Fly Redis preflight | Done | `6fb87e0` |
+| #135 epic parent | Done | closes via #138 `fixes #135` |
+
+**Notes:**
+- Orchestrator chain: `provision-fly` → `provision-redis` → `sync-secrets` → `deploy`
+- `sync-secrets-manifest.ts` + drift validator in CI
+- `REDIS_URL` derived; `GH_*` storage keys; `CF_ACCOUNT_ID` wired
+- Redis first-time deploy: `.github/infra/redis/fly.toml` with `--bind ::`
+- 4 commits ahead of run base on `staging` (not pushed)
+
+**Next suggested:** push `staging`; operator sync Phase Staging → GHA (GH_* keys, CF_ACCOUNT_ID); manual dispatch or push to exercise full deploy chain
+
+## 2026-06-18 — #139 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `b08e699`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #139 Rename GITHUB_* secrets for GHA compatibility | Done | `94e6063` |
+
+**Notes:**
+- GH_* storage keys in sync-secrets.yml; `github-secret-map.sh` maps to runtime GITHUB_* on Fly
+- PRD §23 + .env examples document storage vs runtime naming
+- `sync-secrets.test.sh` for mapping verification
+- Comment on #136 for manifest follow-up
+- No DB migrations
+- Uncommitted local changes may still exist from REDIS_URL derivation (pre-#139) — check `git status`
+
+**Next suggested:** operator rename Phase Staging `GITHUB_*` → `GH_*` and re-sync to GHA; or orchestrate #135 epic (#136–#138)
+
 ## 2026-06-18 — P22 epic #128 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `e008377`
