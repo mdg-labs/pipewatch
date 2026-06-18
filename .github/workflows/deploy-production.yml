@@ -1,0 +1,178 @@
+name: Deploy Production
+
+# Production deploy pipeline — runs on release published only (PRD §22).
+# Not called from orchestrator.yml; gated by DEPLOYED_VERSION vs release tag.
+# Job chain: check-not-deployed → sync-secrets → migrate → parallel deploys → smoke → CE images → record.
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  check-not-deployed:
+    name: Production · 0 · Check deploy needed
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      should_deploy: ${{ steps.compare.outputs.should_deploy }}
+      release_tag: ${{ steps.compare.outputs.release_tag }}
+    steps:
+      - name: Compare release tag to deployed version
+        id: compare
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          DEPLOYED="${{ vars.DEPLOYED_VERSION }}"
+          echo "release_tag=${TAG}" >> "$GITHUB_OUTPUT"
+          if [ -n "$DEPLOYED" ] && [ "$TAG" = "$DEPLOYED" ]; then
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${TAG} already deployed — skipping"
+          else
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Deploying release ${TAG}"
+          fi
+
+  sync-secrets:
+    name: Production · 1 · Sync secrets
+    needs: check-not-deployed
+    if: needs.check-not-deployed.outputs.should_deploy == 'true'
+    uses: ./.github/workflows/sync-secrets.yml
+    with:
+      environment: production
+      services: all
+    secrets: inherit
+
+  migrate-production:
+    name: Production · 2 · Run DB migrations
+    runs-on: ubuntu-latest
+    environment: production
+    needs: sync-secrets
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Run Drizzle migrations
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        run: bash .github/scripts/run-migrate.sh
+
+  deploy-api:
+    name: Production · 3 · Deploy API
+    needs: migrate-production
+    uses: ./.github/workflows/deploy-api.yml
+    with:
+      environment: production
+      app: pipewatch-prod-api
+    secrets: inherit
+
+  deploy-worker:
+    name: Production · 3 · Deploy worker
+    needs: migrate-production
+    uses: ./.github/workflows/deploy-worker.yml
+    with:
+      environment: production
+      app: pipewatch-prod-worker
+    secrets: inherit
+
+  deploy-web:
+    name: Production · 3 · Deploy web
+    needs: migrate-production
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      environment: production
+      worker: pipewatch-prod-web
+    secrets: inherit
+
+  deploy-marketing:
+    name: Production · 3 · Deploy marketing
+    needs: migrate-production
+    uses: ./.github/workflows/deploy-marketing.yml
+    with:
+      environment: production
+      worker: pipewatch-prod-marketing
+    secrets: inherit
+
+  smoke-production:
+    name: Production · 4 · Smoke
+    runs-on: ubuntu-latest
+    environment: production
+    needs:
+      [
+        check-not-deployed,
+        deploy-api,
+        deploy-worker,
+        deploy-web,
+        deploy-marketing,
+      ]
+    if: needs.check-not-deployed.outputs.should_deploy == 'true'
+    env:
+      NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+      APP_URL: ${{ secrets.APP_URL }}
+      MARKETING_URL: ${{ secrets.MARKETING_URL }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Smoke deploy surfaces
+        run: bash .github/scripts/smoke-staging-health.sh
+
+  build-ce-image:
+    name: Production · 5 · Build CE images
+    needs: [check-not-deployed, smoke-production]
+    if: needs.check-not-deployed.outputs.should_deploy == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-ce-image.yml
+    with:
+      tags: |
+        latest
+        ${{ github.event.release.tag_name }}
+    secrets: inherit
+
+  record-deployed-version:
+    name: Production · 6 · Record deployed version
+    runs-on: ubuntu-latest
+    environment: production
+    needs:
+      [
+        check-not-deployed,
+        deploy-api,
+        deploy-worker,
+        deploy-web,
+        deploy-marketing,
+        smoke-production,
+        build-ce-image,
+      ]
+    if: >-
+      needs.check-not-deployed.outputs.should_deploy == 'true'
+      && needs.deploy-api.result == 'success'
+      && needs.deploy-worker.result == 'success'
+      && needs.deploy-web.result == 'success'
+      && needs.deploy-marketing.result == 'success'
+      && needs.smoke-production.result == 'success'
+      && needs.build-ce-image.result == 'success'
+    permissions:
+      actions: write
+    steps:
+      - name: Update DEPLOYED_VERSION
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh variable set DEPLOYED_VERSION --body "${{ github.event.release.tag_name }}"
