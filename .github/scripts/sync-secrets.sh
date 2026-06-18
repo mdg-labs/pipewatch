@@ -9,6 +9,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=github-secret-map.sh
+source "${SCRIPT_DIR}/github-secret-map.sh"
 
 usage() {
   cat <<'EOF'
@@ -112,6 +114,8 @@ if [[ -z "${CF_API_TOKEN:-}" ]]; then
 fi
 
 export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
+
+map_github_storage_to_runtime
 
 API_APP="pipewatch-${INFRA_SLUG}-api"
 WORKER_APP="pipewatch-${INFRA_SLUG}-worker"

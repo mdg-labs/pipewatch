@@ -617,7 +617,7 @@ Three environments. Workflows declare `environment: <name>` to access that envir
 
 | Environment | Purpose | Typical contents |
 |---|---|---|
-| `staging` | Staging deploys (`staging` branch) | All runtime secrets for staging Fly/CF apps (`DATABASE_URL`, `JWT_*`, `GITHUB_*`, etc.) |
+| `staging` | Staging deploys (`staging` branch) | All runtime secrets for staging Fly/CF apps (`DATABASE_URL`, `JWT_*`, `GH_*` GitHub App keys, etc.) |
 | `production` | Production deploys (release published) | All runtime secrets for production Fly/CF apps |
 | `ci` | PR/branch CI — lint gates don't need it; jobs that need credentials do | ReportPortal (`REPORTPORTAL_*`), `SENTRY_AUTH_TOKEN` / org / project for source maps on CI builds. **No `DATABASE_URL`** — Postgres, Redis, and other dependencies are ephemeral GHA service containers. **Provisioned** — Phase **CI** ↔ GitHub Actions `ci` sync configured. |
 
@@ -1489,6 +1489,17 @@ Migrations run as a dedicated step in deploy workflows **before** any `flyctl de
 
 All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, **Production**, and **CI** to matching GitHub Actions environments. **Development** is Phase-only (local CLI). Workflows push `staging` / `production` secrets to Fly/CF via `sync-secrets.yml`. See Section 10.
 
+**GitHub App credential naming:** Phase and GitHub Actions store GitHub App values under **`GH_*`** keys (shorter storage prefix). Fly.io, Cloudflare Workers, CE Docker Compose, and application code use **`GITHUB_*`** runtime names. `sync-secrets.sh` maps `GH_*` → `GITHUB_*` before `flyctl secrets set`; CE and local dev set `GITHUB_*` directly in `.env`.
+
+| Phase / GHA storage | Fly / runtime |
+|---|---|
+| `GH_APP_ID` | `GITHUB_APP_ID` |
+| `GH_APP_PRIVATE_KEY` | `GITHUB_APP_PRIVATE_KEY` |
+| `GH_WEBHOOK_SECRET` | `GITHUB_WEBHOOK_SECRET` |
+| `GH_CLIENT_ID` | `GITHUB_CLIENT_ID` |
+| `GH_CLIENT_SECRET` | `GITHUB_CLIENT_SECRET` |
+| `GH_APP_SLUG` | `GITHUB_APP_SLUG` |
+
 **GitHub Actions environment column** — which environment holds each value after Phase sync:
 
 | Variable | GHA environment | Services | Notes |
@@ -1500,12 +1511,12 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `JWT_SECRET` | staging, production | api | HS256 signing secret for access tokens |
 | `JWT_REFRESH_SECRET` | staging, production | api | Separate secret for refresh tokens |
 | `ENCRYPTION_KEY` | staging, production | api, worker | AES-256-GCM key for encrypting sensitive values at rest (e.g. integration tokens); min 32 chars |
-| `GITHUB_APP_ID` | staging, production | api, worker | GitHub App numeric ID |
-| `GITHUB_APP_PRIVATE_KEY` | staging, production | api, worker | PEM key (base64 encoded in Phase) |
-| `GITHUB_WEBHOOK_SECRET` | staging, production | api | For HMAC-SHA256 signature validation |
-| `GITHUB_CLIENT_ID` | staging, production | api | For OAuth flow |
-| `GITHUB_CLIENT_SECRET` | staging, production | api | For OAuth flow |
-| `GITHUB_APP_SLUG` | staging, production | api | e.g. `pipewatch` — used to build install URL |
+| `GH_APP_ID` | staging, production | api, worker | GitHub App numeric ID — runtime: `GITHUB_APP_ID` |
+| `GH_APP_PRIVATE_KEY` | staging, production | api, worker | PEM key (base64 encoded in Phase) — runtime: `GITHUB_APP_PRIVATE_KEY` |
+| `GH_WEBHOOK_SECRET` | staging, production | api | For HMAC-SHA256 signature validation — runtime: `GITHUB_WEBHOOK_SECRET` |
+| `GH_CLIENT_ID` | staging, production | api | For OAuth flow — runtime: `GITHUB_CLIENT_ID` |
+| `GH_CLIENT_SECRET` | staging, production | api | For OAuth flow — runtime: `GITHUB_CLIENT_SECRET` |
+| `GH_APP_SLUG` | staging, production | api | e.g. `pipewatch` — install URL — runtime: `GITHUB_APP_SLUG` |
 | `SMTP_HOST` | staging, production | api | Postmark SMTP (cloud) or user-configured (self-hosted) |
 | `SMTP_PORT` | staging, production | api | 587 |
 | `SMTP_USER` | staging, production | api | Postmark SMTP token |
