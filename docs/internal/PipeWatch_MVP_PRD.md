@@ -746,7 +746,7 @@ Implemented as part of the Onboarding Wizard (see Section 13). Summary:
 - Reject invalid signatures with 401 — no processing, no payload logging
 - Enqueue valid events to BullMQ for async processing
 - Return 200 immediately after enqueue (GitHub expects fast ack)
-- Handle: `workflow_run` (created, in_progress, completed) and `workflow_job` (queued, in_progress, completed)
+- Handle: `workflow_run` (`requested`, `in_progress`, `completed`) and `workflow_job` (`queued`, `in_progress`, `waiting`, `completed`) — per [GitHub webhook docs](https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_run); `requested` is the run-queued signal (not `created`)
 
 ### 12.7 Auth
 
@@ -908,7 +908,10 @@ Goal: sub-10-minute setup for a technical user. Applies to PipeWatch CE only.
 
 **Step 1 — Create a GitHub App**
 
-- Set Webhook URL to your PipeWatch instance (`https://pipewatch.yourdomain.com/webhooks/github`)
+- Set **Webhook URL** to the **API host** (not the dashboard): `https://<api-host>/webhooks/github`
+  - CE (Docker Compose): API listens on port **3000** (`api` service); dashboard is port **3001** — reverse proxies and tunnels must forward to **3000**
+  - Example CE: `https://pipewatch.yourdomain.com/webhooks/github` when your domain terminates TLS on the API container
+  - PipeWatch Cloud: `https://api.pipewatch.app/webhooks/github` (staging: `https://staging-api.pipewatch.app/webhooks/github`) — see `docs/internal/GitHub_App_Setup_Runbook.md`
 - Set Webhook Secret — copy into PipeWatch config
 - Required permissions: Actions (read), Metadata (read)
 - Subscribe to events: `workflow_run`, `workflow_job`
@@ -917,7 +920,7 @@ Goal: sub-10-minute setup for a technical user. Applies to PipeWatch CE only.
 
 - `docker compose up -d` — ships with PostgreSQL and Redis included
 - Set env vars: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY`, `GITHUB_WEBHOOK_SECRET`
-- Visit `http://localhost:3000`, create workspace, install the GitHub App, done
+- Visit `http://localhost:3001` (dashboard), create workspace, install the GitHub App, done
 
 **Migrations (CE):** Run automatically at API startup via the entrypoint script before the server process starts. No manual intervention needed — including on upgrades. Uses the standard `DATABASE_URL` (pooled or direct, both work for Drizzle migrations in CE since there's no Neon pooler involved).
 

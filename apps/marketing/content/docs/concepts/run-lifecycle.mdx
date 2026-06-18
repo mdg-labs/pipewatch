@@ -15,6 +15,12 @@ While a run is active, `status` reflects execution state (`queued`, `in_progress
 
 Each run contains **pipeline jobs** (GitHub workflow jobs) and optional **pipeline steps** when step-level detail is available. The run detail view groups jobs for quick scanning.
 
+## GitHub webhook signals
+
+PipeWatch ingests GitHub `workflow_run` and `workflow_job` webhooks. GitHub publishes these `workflow_run` actions: `requested`, `in_progress`, `completed` (there is no `created` action). The `requested` action is the run-queued signal — PipeWatch maps it to a new pipeline run. On workflow re-runs, GitHub does not send `requested` again.
+
+For jobs, GitHub also sends a `waiting` action when a runner is not yet assigned; PipeWatch treats job `waiting` status like `queued`.
+
 ## Real-time updates
 
 The dashboard and run detail pages subscribe to server-sent events (SSE) for live updates when webhooks arrive. A connection indicator shows stream health.
