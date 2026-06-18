@@ -117,6 +117,82 @@ export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
 
 map_github_storage_to_runtime
 
+# Required GHA storage keys per service — must match packages/config/sync-secrets-manifest.ts
+# (validated by scripts/validate-sync-secrets-manifest.ts in CI).
+preflight_required_gha_keys() {
+  local service="$1"
+  local edition="${PIPEWATCH_EDITION:-cloud}"
+  local -a keys=()
+  local -a missing=()
+
+  case "$service" in
+    api)
+      keys=(
+        DATABASE_URL
+        ENCRYPTION_KEY
+        JWT_SECRET
+        JWT_REFRESH_SECRET
+        GH_APP_ID
+        GH_APP_PRIVATE_KEY
+        GH_WEBHOOK_SECRET
+        GH_CLIENT_ID
+        GH_CLIENT_SECRET
+        GH_APP_SLUG
+        APP_URL
+        MARKETING_URL
+      )
+      if [[ "$edition" == "cloud" ]]; then
+        keys+=(
+          POSTMARK_WEBHOOK_SECRET
+          STRIPE_SECRET_KEY
+          STRIPE_WEBHOOK_SECRET
+          STRIPE_PRICE_PRO
+          STRIPE_PRICE_BUSINESS
+        )
+      fi
+      ;;
+    worker)
+      keys=(
+        DATABASE_URL
+        ENCRYPTION_KEY
+        GH_APP_ID
+        GH_APP_PRIVATE_KEY
+      )
+      ;;
+    web)
+      keys=(NEXT_PUBLIC_API_URL)
+      ;;
+    marketing)
+      keys=()
+      if [[ "$edition" == "cloud" ]]; then
+        keys=(UMAMI_SCRIPT_URL UMAMI_WEBSITE_ID)
+      fi
+      ;;
+    *)
+      echo "sync-secrets: unknown service for preflight: ${service}" >&2
+      exit 1
+      ;;
+  esac
+
+  for key in "${keys[@]}"; do
+    if [[ -z "${!key-}" ]]; then
+      missing+=("$key")
+    fi
+  done
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo "sync-secrets: missing required GHA secrets for ${service}: ${missing[*]}" >&2
+    exit 1
+  fi
+}
+
+run_service_preflight() {
+  local service="$1"
+  if service_selected "$service"; then
+    preflight_required_gha_keys "$service"
+  fi
+}
+
 API_APP="pipewatch-${INFRA_SLUG}-api"
 WORKER_APP="pipewatch-${INFRA_SLUG}-worker"
 REDIS_APP="pipewatch-${INFRA_SLUG}-redis"
@@ -190,6 +266,11 @@ MARKETING_WRANGLER_KEYS=(
 )
 
 echo "sync-secrets: Fly mode ${FLY_SECRETS_MODE}"
+
+run_service_preflight api
+run_service_preflight worker
+run_service_preflight web
+run_service_preflight marketing
 
 if service_selected api; then
   sync_fly_secrets "$API_APP" "${API_FLY_KEYS[@]}"

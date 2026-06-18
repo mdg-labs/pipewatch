@@ -68,6 +68,10 @@ jobs:
           NODE_ENV: production
         run: pnpm build
 
+      - name: Validate sync-secrets manifest
+        if: always() && steps.typecheck.outcome == 'success'
+        run: node --experimental-strip-types scripts/validate-sync-secrets-manifest.ts
+
       - name: Start ReportPortal integration launch
         if: always() && steps.typecheck.outcome == 'success'
         id: rp-integration-start

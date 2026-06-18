@@ -1,6 +1,21 @@
 import { z, type ZodError, type ZodTypeAny } from "zod";
 
 import { parseEdition, type PipeWatchEdition } from "./edition.js";
+import {
+  API_CLOUD_STRICT_FIELDS,
+  API_STRICT_FIELDS,
+  MARKETING_CLOUD_STRICT_FIELDS,
+  WEB_STRICT_FIELDS,
+  WORKER_STRICT_FIELDS,
+} from "./strict-env-fields.js";
+
+export {
+  API_CLOUD_STRICT_FIELDS,
+  API_STRICT_FIELDS,
+  MARKETING_CLOUD_STRICT_FIELDS,
+  WEB_STRICT_FIELDS,
+  WORKER_STRICT_FIELDS,
+} from "./strict-env-fields.js";
 
 /** Marketing CTA behaviour — waitlist form vs live cloud signup. */
 export const launchModeSchema = z.enum(["waitlist", "live"]);
@@ -122,45 +137,6 @@ function validateRequiredFields(
     }
   }
 }
-
-const API_STRICT_FIELDS = [
-  "DATABASE_URL",
-  "REDIS_URL",
-  "ENCRYPTION_KEY",
-  "JWT_SECRET",
-  "JWT_REFRESH_SECRET",
-  "GITHUB_APP_ID",
-  "GITHUB_APP_PRIVATE_KEY",
-  "GITHUB_WEBHOOK_SECRET",
-  "GITHUB_CLIENT_ID",
-  "GITHUB_CLIENT_SECRET",
-  "GITHUB_APP_SLUG",
-  "APP_URL",
-  "MARKETING_URL",
-] as const;
-
-const API_CLOUD_STRICT_FIELDS = [
-  "POSTMARK_WEBHOOK_SECRET",
-  "STRIPE_SECRET_KEY",
-  "STRIPE_WEBHOOK_SECRET",
-  "STRIPE_PRICE_PRO",
-  "STRIPE_PRICE_BUSINESS",
-] as const;
-
-const WORKER_STRICT_FIELDS = [
-  "DATABASE_URL",
-  "REDIS_URL",
-  "ENCRYPTION_KEY",
-  "GITHUB_APP_ID",
-  "GITHUB_APP_PRIVATE_KEY",
-] as const;
-
-const WEB_STRICT_FIELDS = ["NEXT_PUBLIC_API_URL"] as const;
-
-const MARKETING_CLOUD_STRICT_FIELDS = [
-  "UMAMI_SCRIPT_URL",
-  "UMAMI_WEBSITE_ID",
-] as const;
 
 /** Format Zod validation failures into actionable startup errors. */
 export function formatEnvError(error: ZodError, app: string): string {

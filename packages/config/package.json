@@ -20,6 +20,10 @@
       "types": "./dist/plan-limits.d.ts",
       "default": "./dist/plan-limits.js"
     },
+    "./sync-secrets-manifest": {
+      "types": "./dist/sync-secrets-manifest.d.ts",
+      "default": "./dist/sync-secrets-manifest.js"
+    },
     "./typescript": "./typescript/tsconfig.base.json",
     "./eslint": "./eslint/base.mjs"
   },

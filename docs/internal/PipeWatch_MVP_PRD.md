@@ -1491,6 +1491,10 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 
 **GitHub App credential naming:** Phase and GitHub Actions store GitHub App values under **`GH_*`** keys (shorter storage prefix). Fly.io, Cloudflare Workers, CE Docker Compose, and application code use **`GITHUB_*`** runtime names. `sync-secrets.sh` maps `GH_*` → `GITHUB_*` before `flyctl secrets set`; CE and local dev set `GITHUB_*` directly in `.env`.
 
+**Sync-secrets manifest:** `packages/config/sync-secrets-manifest.ts` is the single source of truth for which secrets each hosted service receives, Phase/GHA storage key names (`GH_*` vs runtime `GITHUB_*`), and derived values. `scripts/validate-sync-secrets-manifest.ts` runs in CI to assert the manifest stays aligned with `env.ts` strict fields, `.github/workflows/sync-secrets.yml`, and `.github/scripts/sync-secrets.sh`. `sync-secrets.sh` fails preflight with named missing keys when a required GHA secret is empty — no silent skip.
+
+**Derived `REDIS_URL` (hosted cloud):** Not stored in Phase or GitHub Actions. `sync-secrets.sh` auto-derives `redis://pipewatch-{staging|prod}-redis.internal:6379` from the Fly Redis app name (internal 6PN DNS). The manifest marks `REDIS_URL` as `derived` for api/worker; remove `REDIS_URL` from Phase Staging/Production if still present.
+
 | Phase / GHA storage | Fly / runtime |
 |---|---|
 | `GH_APP_ID` | `GITHUB_APP_ID` |
@@ -1507,7 +1511,7 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `PIPEWATCH_EDITION` | staging, production | all | `ce` \| `cloud` — drives all feature flags (see Section 25) |
 | `DATABASE_URL` | staging, production | api, worker | Neon PostgreSQL pooled connection string (runtime) |
 | `DATABASE_URL_UNPOOLED` | staging, production | deploy migrations | Neon direct connection — required for Drizzle Kit DDL at deploy time; not used in CI |
-| `REDIS_URL` | staging, production | api, worker | Redis on Fly.io |
+| `REDIS_URL` | — (derived) | api, worker | **Derived at sync** — `redis://pipewatch-{staging\|prod}-redis.internal:6379`; not in Phase/GHA |
 | `JWT_SECRET` | staging, production | api | HS256 signing secret for access tokens |
 | `JWT_REFRESH_SECRET` | staging, production | api | Separate secret for refresh tokens |
 | `ENCRYPTION_KEY` | staging, production | api, worker | AES-256-GCM key for encrypting sensitive values at rest (e.g. integration tokens); min 32 chars |

@@ -21,6 +21,7 @@ run pnpm lint
 run pnpm typecheck
 run pnpm test:unit
 run pnpm build
+run node --experimental-strip-types scripts/validate-sync-secrets-manifest.ts
 run pnpm test:integration
 run pnpm audit --audit-level=high
 

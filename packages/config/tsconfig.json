@@ -6,6 +6,13 @@
     "outDir": "dist",
     "noEmit": false
   },
-  "include": ["edition.ts", "env.ts", "plan-limits.ts", "src"],
+  "include": [
+    "edition.ts",
+    "env.ts",
+    "plan-limits.ts",
+    "strict-env-fields.ts",
+    "sync-secrets-manifest.ts",
+    "src"
+  ],
   "exclude": ["**/*.test.ts", "vitest.config.ts"]
 }
