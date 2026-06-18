@@ -1,6 +1,7 @@
 export { decrypt, encrypt, sha256, timingSafeCompare } from "./crypto/index.js";
 export { formatDuration } from "./format-duration.js";
 export {
+  mapRestWorkflowJob,
   mapWorkflowJobPayload,
   type GitHubWorkflowJob,
   type GitHubWorkflowJobWebhookPayload,

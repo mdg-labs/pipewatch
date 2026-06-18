@@ -8,11 +8,13 @@ import { parseWorkerEnv } from "@pipewatch/config/env";
 import { closeDb, createDb, type Db } from "@pipewatch/db";
 import {
   integrations,
+  pipelineJobs,
   pipelineRuns,
+  pipelineSteps,
   repositories,
   workspaces,
 } from "@pipewatch/db/schema";
-import type { GitHubWorkflowRun } from "@pipewatch/utils";
+import type { GitHubWorkflowJobWebhookPayload, GitHubWorkflowRun } from "@pipewatch/utils";
 import { encrypt } from "@pipewatch/utils";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -137,6 +139,27 @@ async function seedRepository(database: Db, options: SeedOptions = {}): Promise<
   };
 }
 
+function loadFixtureJob(name: string) {
+  const raw = readFileSync(join(fixturesDir, name), "utf8");
+  return JSON.parse(raw) as GitHubWorkflowJobWebhookPayload;
+}
+
+function emptyJobsResponse(): Response {
+  return new Response(
+    JSON.stringify({ total_count: 0, jobs: [] }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+}
+
+function filterRunsListCalls(calls: string[]): string[] {
+  return calls.filter(
+    (url) => url.includes("/actions/runs") && !url.includes("/jobs"),
+  );
+}
+
 function createMockWorkflowRunsFetch(
   fullName: string,
   pages: GitHubWorkflowRun[][],
@@ -146,6 +169,10 @@ function createMockWorkflowRunsFetch(
   const fetchImpl = vi.fn(async (input: string | URL) => {
     const url = typeof input === "string" ? input : input.toString();
     calls.push(url);
+
+    if (url.includes(`/actions/runs/`) && url.includes("/jobs")) {
+      return emptyJobsResponse();
+    }
 
     const pageMatch = /[?&]page=(\d+)/.exec(url);
     const page = pageMatch ? Number(pageMatch[1]) : 1;
@@ -252,9 +279,10 @@ describe("poll-repo integration", () => {
     });
 
     expect(result.runsIngested).toBe(101);
-    expect(calls).toHaveLength(2);
-    expect(calls[0]).toContain("page=1");
-    expect(calls[1]).toContain("page=2");
+    const runCalls = filterRunsListCalls(calls);
+    expect(runCalls).toHaveLength(2);
+    expect(runCalls[0]).toContain("page=1");
+    expect(runCalls[1]).toContain("page=2");
 
     const runs = await database
       .select()
@@ -291,8 +319,9 @@ describe("poll-repo integration", () => {
       fetchImpl,
     });
 
-    expect(calls).toHaveLength(1);
-    expect(calls[0]).toContain(
+    const runCalls = filterRunsListCalls(calls);
+    expect(runCalls).toHaveLength(1);
+    expect(runCalls[0]).toContain(
       encodeURIComponent(`>=${lastSyncedAt.toISOString()}`),
     );
   });
@@ -364,5 +393,75 @@ describe("poll-repo integration", () => {
 
     expect(result.runsIngested).toBe(0);
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("ingests workflow jobs and steps during poll via REST", async () => {
+    const seed = await seedRepository(database);
+    const runOne = loadFixtureRun("workflow-run-completed.json");
+    const jobFixture = loadFixtureJob("workflow-job-completed.json");
+
+    const fetchImpl = vi.fn(async (input: string | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+
+      if (url.includes(`/repos/${seed.fullName}/actions/runs`) && !url.includes("/jobs")) {
+        return new Response(
+          JSON.stringify({ total_count: 1, workflow_runs: [runOne] }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (url.includes(`/actions/runs/${String(runOne.id)}/jobs`)) {
+        return new Response(
+          JSON.stringify({
+            total_count: 1,
+            jobs: [jobFixture.workflow_job],
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      return new Response("not found", { status: 404 });
+    }) as typeof fetch;
+
+    const job = createJob({
+      repoId: seed.repoId,
+      workspaceId: seed.workspaceId,
+      integrationId: seed.integrationId,
+    });
+
+    const result = await pollRepo(job, {
+      db: database,
+      env: workerEnv,
+      fetchImpl,
+    });
+
+    expect(result.runsIngested).toBe(1);
+
+    const [run] = await database
+      .select()
+      .from(pipelineRuns)
+      .where(eq(pipelineRuns.repoId, seed.repoId));
+
+    expect(run).toBeDefined();
+
+    const jobs = await database
+      .select()
+      .from(pipelineJobs)
+      .where(eq(pipelineJobs.runId, run!.id));
+
+    expect(jobs).toHaveLength(1);
+
+    const steps = await database
+      .select()
+      .from(pipelineSteps)
+      .where(eq(pipelineSteps.jobId, jobs[0]!.id));
+
+    expect(steps).toHaveLength(3);
   });
 });

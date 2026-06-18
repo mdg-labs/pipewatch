@@ -102,6 +102,18 @@ function mapWorkflowJobStep(
 }
 
 /**
+ * Map a GitHub REST workflow job object to canonical job + step upsert shapes.
+ * REST list-jobs responses use the same job object shape as webhook payloads.
+ * @see https://docs.github.com/en/rest/actions/workflow-jobs?apiVersion=2022-11-28#list-jobs-for-a-workflow-run
+ */
+export function mapRestWorkflowJob(
+  job: GitHubWorkflowJob,
+  context: MapWorkflowJobContext,
+): MapWorkflowJobResult {
+  return mapWorkflowJobPayload({ action: "completed", workflow_job: job }, context);
+}
+
+/**
  * Map a GitHub `workflow_job` webhook payload to canonical job + step upsert shapes.
  * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_job
  */

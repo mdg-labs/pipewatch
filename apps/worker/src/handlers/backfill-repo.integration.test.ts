@@ -8,11 +8,13 @@ import { parseWorkerEnv } from "@pipewatch/config/env";
 import { closeDb, createDb, type Db } from "@pipewatch/db";
 import {
   integrations,
+  pipelineJobs,
   pipelineRuns,
+  pipelineSteps,
   repositories,
   workspaces,
 } from "@pipewatch/db/schema";
-import type { GitHubWorkflowRun } from "@pipewatch/utils";
+import type { GitHubWorkflowJobWebhookPayload, GitHubWorkflowRun } from "@pipewatch/utils";
 import { encrypt } from "@pipewatch/utils";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
@@ -129,6 +131,27 @@ async function seedRepository(database: Db): Promise<SeedContext> {
   };
 }
 
+function loadFixtureJob(name: string) {
+  const raw = readFileSync(join(fixturesDir, name), "utf8");
+  return JSON.parse(raw) as GitHubWorkflowJobWebhookPayload;
+}
+
+function emptyJobsResponse(): Response {
+  return new Response(
+    JSON.stringify({ total_count: 0, jobs: [] }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
+}
+
+function filterRunsListCalls(calls: string[]): string[] {
+  return calls.filter(
+    (url) => url.includes("/actions/runs") && !url.includes("/jobs"),
+  );
+}
+
 function createMockWorkflowRunsFetch(
   fullName: string,
   pages: GitHubWorkflowRun[][],
@@ -138,6 +161,10 @@ function createMockWorkflowRunsFetch(
   const fetchImpl = vi.fn(async (input: string | URL) => {
     const url = typeof input === "string" ? input : input.toString();
     calls.push(url);
+
+    if (url.includes(`/actions/runs/`) && url.includes("/jobs")) {
+      return emptyJobsResponse();
+    }
 
     const pageMatch = /[?&]page=(\d+)/.exec(url);
     const page = pageMatch ? Number(pageMatch[1]) : 1;
@@ -257,10 +284,11 @@ describe("backfill-repo integration", () => {
 
     expect(result.runsIngested).toBe(101);
     expect(result.historyTruncated).toBe(false);
-    expect(calls).toHaveLength(2);
-    expect(calls[0]).toContain("page=1");
-    expect(calls[0]).toContain("created=");
-    expect(calls[1]).toContain("page=2");
+    const runCalls = filterRunsListCalls(calls);
+    expect(runCalls).toHaveLength(2);
+    expect(runCalls[0]).toContain("page=1");
+    expect(runCalls[0]).toContain("created=");
+    expect(runCalls[1]).toContain("page=2");
 
     const runs = await database
       .select()
@@ -304,8 +332,9 @@ describe("backfill-repo integration", () => {
 
     expect(result.runsIngested).toBe(1);
     expect(result.historyTruncated).toBe(false);
-    expect(calls).toHaveLength(1);
-    expect(calls[0]).toContain("page=2");
+    const runCalls = filterRunsListCalls(calls);
+    expect(runCalls).toHaveLength(1);
+    expect(runCalls[0]).toContain("page=2");
 
     const [run] = await database
       .select()
@@ -355,6 +384,10 @@ describe("backfill-repo integration", () => {
 
     const fetchImpl = vi.fn(async (input: string | URL) => {
       const url = typeof input === "string" ? input : input.toString();
+
+      if (url.includes(`/actions/runs/`) && url.includes("/jobs")) {
+        return emptyJobsResponse();
+      }
 
       if (!url.includes(`/repos/${seed.fullName}/actions/runs`)) {
         return new Response("not found", { status: 404 });
@@ -437,7 +470,11 @@ describe("backfill-repo integration", () => {
 
     expect(result.runsIngested).toBe(1002);
     expect(result.historyTruncated).toBe(false);
-    expect(fetchImpl).toHaveBeenCalledTimes(12);
+    expect(
+      filterRunsListCalls(fetchImpl.mock.calls.map(([request]) =>
+        typeof request === "string" ? request : request.toString(),
+      )),
+    ).toHaveLength(12);
 
     const runs = await database
       .select()
@@ -445,7 +482,7 @@ describe("backfill-repo integration", () => {
       .where(eq(pipelineRuns.repoId, seed.repoId));
 
     expect(runs).toHaveLength(1002);
-  });
+  }, 30_000);
 
   it("subdivides a window when GitHub total_count reaches the search cap", async () => {
     const seed = await seedRepository(database);
@@ -453,6 +490,10 @@ describe("backfill-repo integration", () => {
 
     const fetchImpl = vi.fn(async (input: string | URL) => {
       const url = typeof input === "string" ? input : input.toString();
+
+      if (url.includes(`/actions/runs/`) && url.includes("/jobs")) {
+        return emptyJobsResponse();
+      }
 
       if (!url.includes(`/repos/${seed.fullName}/actions/runs`)) {
         return new Response("not found", { status: 404 });
@@ -533,6 +574,10 @@ describe("backfill-repo integration", () => {
     const fetchImpl = vi.fn(async (input: string | URL) => {
       const url = typeof input === "string" ? input : input.toString();
 
+      if (url.includes(`/actions/runs/`) && url.includes("/jobs")) {
+        return emptyJobsResponse();
+      }
+
       if (!url.includes(`/repos/${seed.fullName}/actions/runs`)) {
         return new Response("not found", { status: 404 });
       }
@@ -577,5 +622,93 @@ describe("backfill-repo integration", () => {
     expect(result.runsIngested).toBe(1000);
     expect(result.historyTruncated).toBe(true);
     expect(job.log).toHaveBeenCalled();
+  }, 30_000);
+
+  it("ingests workflow jobs and steps for each run via REST", async () => {
+    const seed = await seedRepository(database);
+    const runOne = loadFixtureRun("workflow-run-completed.json");
+    const jobFixture = loadFixtureJob("workflow-job-completed.json");
+    const jobCalls: string[] = [];
+
+    const fetchImpl = vi.fn(async (input: string | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+
+      if (url.includes(`/repos/${seed.fullName}/actions/runs`) && !url.includes("/jobs")) {
+        return new Response(
+          JSON.stringify({ total_count: 1, workflow_runs: [runOne] }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      if (url.includes(`/actions/runs/${String(runOne.id)}/jobs`)) {
+        jobCalls.push(url);
+        expect(url).toContain("filter=latest");
+        expect(url).toContain("per_page=100");
+
+        return new Response(
+          JSON.stringify({
+            total_count: 1,
+            jobs: [jobFixture.workflow_job],
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
+      }
+
+      return new Response("not found", { status: 404 });
+    }) as typeof fetch;
+
+    const job = createJob({
+      repoId: seed.repoId,
+      workspaceId: seed.workspaceId,
+      integrationId: seed.integrationId,
+    });
+
+    const result = await backfillRepo(job, {
+      db: database,
+      env: workerEnv,
+      fetchImpl,
+    });
+
+    expect(result.runsIngested).toBe(1);
+    expect(jobCalls).toHaveLength(1);
+
+    const [run] = await database
+      .select()
+      .from(pipelineRuns)
+      .where(
+        and(
+          eq(pipelineRuns.repoId, seed.repoId),
+          eq(pipelineRuns.externalRunId, String(runOne.id)),
+        ),
+      );
+
+    expect(run).toBeDefined();
+
+    const jobs = await database
+      .select()
+      .from(pipelineJobs)
+      .where(eq(pipelineJobs.runId, run!.id));
+
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]?.externalJobId).toBe(String(jobFixture.workflow_job.id));
+    expect(jobs[0]?.name).toBe("build");
+
+    const steps = await database
+      .select()
+      .from(pipelineSteps)
+      .where(eq(pipelineSteps.jobId, jobs[0]!.id));
+
+    expect(steps).toHaveLength(3);
+    expect(steps.map((step) => step.name)).toEqual([
+      "Set up job",
+      "Run tests",
+      "Post job cleanup",
+    ]);
   });
 });

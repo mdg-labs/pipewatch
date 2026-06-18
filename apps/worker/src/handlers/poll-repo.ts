@@ -100,7 +100,8 @@ export async function pollRepo(
     runsIngested += await ingestWorkflowRuns(deps.db, batch, {
       workspaceId,
       repoId,
-    });
+      fullName: repository.fullName,
+    }, fetchDeps);
 
     if (batch.length < 100) {
       break;

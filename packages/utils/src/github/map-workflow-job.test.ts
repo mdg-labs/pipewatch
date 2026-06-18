@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import type { GitHubWorkflowJobWebhookPayload } from "./map-workflow-job.js";
-import { mapWorkflowJobPayload } from "./map-workflow-job.js";
+import { mapRestWorkflowJob, mapWorkflowJobPayload } from "./map-workflow-job.js";
 
 const fixturesDir = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -70,5 +70,17 @@ describe("mapWorkflowJobPayload", () => {
     expect(result.job.durationMs).toBeNull();
     expect(result.job.runnerName).toBeNull();
     expect(result.steps).toEqual([]);
+  });
+
+  it("maps a REST workflow job object via mapRestWorkflowJob", () => {
+    const payload = loadFixture<GitHubWorkflowJobWebhookPayload>(
+      "workflow-job-completed.json",
+    );
+
+    const result = mapRestWorkflowJob(payload.workflow_job, context);
+
+    expect(result.job.externalJobId).toBe("2891501297");
+    expect(result.job.name).toBe("build");
+    expect(result.steps).toHaveLength(3);
   });
 });

@@ -10,12 +10,17 @@ import type { WorkspacePlan } from "@pipewatch/types";
 import {
   decrypt,
   encrypt,
+  mapRestWorkflowJob,
   mapWorkflowRunPayload,
+  type GitHubWorkflowJob,
   type GitHubWorkflowRun,
   type PipelineRunUpsert,
 } from "@pipewatch/utils";
 
-import { upsertPipelineRun } from "../pipeline-upsert.js";
+import {
+  upsertPipelineJobAndSteps,
+  upsertPipelineRun,
+} from "../pipeline-upsert.js";
 
 const GITHUB_API_BASE = "https://api.github.com";
 const APP_JWT_TTL_SECONDS = 9 * 60;
@@ -24,6 +29,7 @@ const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_BACKOFF_MS = 1_000;
 const REPOS_PER_PAGE = 100;
 const RUNS_PER_PAGE = 100;
+const JOBS_PER_PAGE = 100;
 
 /** GitHub caps filtered list-runs searches at 1,000 results (REST docs). */
 export const GITHUB_RUNS_SEARCH_CAP = 1000;
@@ -85,6 +91,17 @@ type GitHubInstallationRepositoriesResponse = {
 type GitHubWorkflowRunsResponse = {
   total_count: number;
   workflow_runs: GitHubWorkflowRun[];
+};
+
+type GitHubWorkflowJobsResponse = {
+  total_count: number;
+  jobs: GitHubWorkflowJob[];
+};
+
+export type IngestWorkflowRunsContext = {
+  workspaceId: string;
+  repoId: string;
+  fullName: string;
 };
 
 export type GitHubFetchDeps = {
@@ -592,6 +609,25 @@ export async function fetchWorkflowRunsPage(
   );
 }
 
+/** Paginated jobs for one workflow run — `filter=latest` returns only the latest execution (REST default). */
+export async function fetchWorkflowJobsPage(
+  fullName: string,
+  externalRunId: string,
+  page: number,
+  deps: GitHubFetchDeps,
+): Promise<GitHubWorkflowJobsResponse> {
+  const encodedRepo = encodeURIComponent(fullName).replace(/%2F/g, "/");
+  const url =
+    `${GITHUB_API_BASE}/repos/${encodedRepo}/actions/runs/${externalRunId}/jobs` +
+    `?filter=latest&per_page=${String(JOBS_PER_PAGE)}&page=${String(page)}`;
+
+  const response = await githubFetch(url, { method: "GET" }, deps);
+  return parseJsonResponse<GitHubWorkflowJobsResponse>(
+    response,
+    "GITHUB_JOBS_FETCH_FAILED",
+  );
+}
+
 export function mapRestWorkflowRun(
   run: GitHubWorkflowRun,
   context: { workspaceId: string; repoId: string },
@@ -602,16 +638,60 @@ export function mapRestWorkflowRun(
   );
 }
 
+export async function ingestWorkflowJobsForRun(
+  database: Db,
+  fullName: string,
+  externalRunId: string,
+  runId: string,
+  workspaceId: string,
+  fetchDeps: GitHubFetchDeps,
+): Promise<number> {
+  let page = 1;
+  let jobsIngested = 0;
+
+  while (true) {
+    const response = await fetchWorkflowJobsPage(
+      fullName,
+      externalRunId,
+      page,
+      fetchDeps,
+    );
+
+    for (const job of response.jobs) {
+      const mapped = mapRestWorkflowJob(job, { workspaceId, runId });
+      await upsertPipelineJobAndSteps(database, mapped.job, mapped.steps);
+      jobsIngested += 1;
+    }
+
+    if (response.jobs.length < JOBS_PER_PAGE) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return jobsIngested;
+}
+
 export async function ingestWorkflowRuns(
   database: Db,
   runs: GitHubWorkflowRun[],
-  context: { workspaceId: string; repoId: string },
+  context: IngestWorkflowRunsContext,
+  fetchDeps: GitHubFetchDeps,
 ): Promise<number> {
   let ingested = 0;
 
   for (const run of runs) {
     const mapped = mapRestWorkflowRun(run, context);
-    await upsertPipelineRun(database, mapped);
+    const upsertedRun = await upsertPipelineRun(database, mapped);
+    await ingestWorkflowJobsForRun(
+      database,
+      context.fullName,
+      String(run.id),
+      upsertedRun.id,
+      context.workspaceId,
+      fetchDeps,
+    );
     ingested += 1;
   }
 
