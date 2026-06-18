@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  unit:
+    uses: ./.github/workflows/test-unit.yml
+
+  integration:
+    needs: [lint, unit]
+    uses: ./.github/workflows/test-integration.yml
+    secrets: inherit
+
+  e2e:
+    name: E2E (advisory on PR)
+    needs: [integration]
+    if: always() && needs.integration.result == 'success'
+    runs-on: ubuntu-latest
+    environment: ci
+    continue-on-error: ${{ github.event_name == 'pull_request' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: E2E tests
+        env:
+          REPORTPORTAL_URL: ${{ vars.REPORTPORTAL_URL }}
+          REPORTPORTAL_API_KEY: ${{ secrets.REPORTPORTAL_API_KEY }}
+          REPORTPORTAL_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
+        run: pnpm test:e2e
