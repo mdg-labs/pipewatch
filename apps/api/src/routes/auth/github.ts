@@ -31,6 +31,7 @@ import {
   verifyOAuthState,
   type GitHubOAuthClient,
 } from "../../services/auth/oauth.js";
+import { resolveOAuthClient } from "../../testing/e2e-mock.js";
 import { sendEmail } from "../../services/email/send-email.js";
 import { renderWelcomeEmail } from "../../services/email/templates/welcome.js";
 import type { ApiEnv } from "../../types.js";
@@ -88,12 +89,14 @@ export function registerGitHubAuthRoutes(
     return {
       env,
       db: resolveDatabase(deps),
-      oauthClient:
+      oauthClient: resolveOAuthClient(
+        env,
         deps?.oauthClient ??
-        createGitHubOAuthClient({
-          clientId: env.GITHUB_CLIENT_ID ?? "",
-          clientSecret: env.GITHUB_CLIENT_SECRET ?? "",
-        }),
+          createGitHubOAuthClient({
+            clientId: env.GITHUB_CLIENT_ID ?? "",
+            clientSecret: env.GITHUB_CLIENT_SECRET ?? "",
+          }),
+      ),
     };
   };
 

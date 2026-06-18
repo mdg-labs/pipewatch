@@ -4,7 +4,7 @@ export type RunDetailPageProps = {
   params: Promise<{ slug: string; repoId: string; runId: string }>;
 };
 
-/** Workflow run detail — job DAG, steps, live SSE (page B6). */
+/** Workflow run drill-down (pages B6). */
 export default async function RunDetailPage({ params }: RunDetailPageProps) {
   const { slug, repoId, runId } = await params;
 

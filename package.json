@@ -13,7 +13,7 @@
     "typecheck": "turbo typecheck",
     "test:unit": "turbo test:unit",
     "test:integration": "bash scripts/test-with-deps.sh node scripts/test-integration.mjs",
-    "test:e2e": "node scripts/test-e2e.mjs",
+    "test:e2e": "bash scripts/test-e2e.sh",
     "ci:preflight": "bash scripts/ci-preflight.sh",
     "ci:gate": "bash scripts/ci-gate.sh",
     "ci:verify-scoped": "bash scripts/ci-verify-scoped.sh",
@@ -21,6 +21,9 @@
     "db:migrate": "turbo db:migrate --filter=@pipewatch/db"
   },
   "devDependencies": {
+    "@playwright/test": "^1.51.1",
+    "@reportportal/agent-js-playwright": "^5.1.11",
+    "@pipewatch/db": "workspace:*",
     "turbo": "^2.3.3",
     "typescript": "^5.7.3"
   }

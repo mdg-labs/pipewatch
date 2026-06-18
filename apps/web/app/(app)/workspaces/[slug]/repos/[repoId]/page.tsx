@@ -1,21 +1,12 @@
-import { Suspense } from "react";
+import { RepoDetailPageClient } from "@/components/repos/RepoDetailPageClient";
 
-import {
-  RepoDetailPageClient,
-  RepoDetailPageFallback,
-} from "@/components/repos/RepoDetailPageClient";
-
-export type RepositoryDetailPageProps = {
+export type RepoDetailPageProps = {
   params: Promise<{ slug: string; repoId: string }>;
 };
 
-/** Repository detail / run list (pages B4). */
-export default async function RepositoryDetailPage({ params }: RepositoryDetailPageProps) {
+/** Repository run list and workflow tabs (pages B4). */
+export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
   const { slug, repoId } = await params;
 
-  return (
-    <Suspense fallback={<RepoDetailPageFallback />}>
-      <RepoDetailPageClient workspaceSlug={slug} repoId={repoId} />
-    </Suspense>
-  );
+  return <RepoDetailPageClient workspaceSlug={slug} repoId={repoId} />;
 }

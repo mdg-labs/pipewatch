@@ -21,6 +21,7 @@ import {
   type EnqueueBackfillIntegration,
   type InstallCallbackDeps,
 } from "../../services/integrations/install-callback.js";
+import { createE2eGitHubFetch, isE2eMockEnabled } from "../../testing/e2e-mock.js";
 import { IntegrationError } from "../../services/integrations/integration.service.js";
 import type { ApiEnv } from "../../types.js";
 import { ACCESS_COOKIE_NAME, requireJwtSecret } from "../auth/shared.js";
@@ -151,12 +152,24 @@ export function registerGitHubInstallCallbackRoute(
   app: OpenAPIHono<ApiEnv>,
   deps?: Partial<GitHubInstallCallbackDependencies>,
 ): void {
-  const resolveDeps = (): GitHubInstallCallbackDependencies => ({
-    env: deps?.env ?? parseApiEnv(),
-    db: resolveDatabase(deps),
-    ...(deps?.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
-    ...(deps?.enqueueBackfill ? { enqueueBackfill: deps.enqueueBackfill } : {}),
-  });
+  const resolveDeps = (): GitHubInstallCallbackDependencies => {
+    const env = deps?.env ?? parseApiEnv();
+
+    return {
+      env,
+      db: resolveDatabase(deps),
+      ...(deps?.fetchImpl
+        ? { fetchImpl: deps.fetchImpl }
+        : isE2eMockEnabled(env)
+          ? { fetchImpl: createE2eGitHubFetch() }
+          : {}),
+      ...(deps?.enqueueBackfill
+        ? { enqueueBackfill: deps.enqueueBackfill }
+        : isE2eMockEnabled(env)
+          ? { enqueueBackfill: async () => undefined }
+          : {}),
+    };
+  };
 
   app.openapi(githubCallbackRoute, async (c) => {
     const resolved = resolveDeps();
