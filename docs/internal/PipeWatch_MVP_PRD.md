@@ -650,7 +650,7 @@ jobs:
   lint:         turbo lint                    # no environment needed
   unit:         turbo test:unit               # no environment needed
   integration:  environment: ci → turbo test:integration  (ephemeral Postgres + Redis containers)
-  e2e:          environment: ci → playwright test       (PR advisory; required on staging/main)
+  e2e:          environment: ci → playwright test       (staging→main PR after CI; manual dispatch)
 ```
 
 All test jobs that report to ReportPortal read `REPORTPORTAL_URL`, `REPORTPORTAL_API_KEY`, and `REPORTPORTAL_PROJECT` from the `ci` environment — not hardcoded in workflow YAML.
@@ -688,7 +688,7 @@ A failed or aborted test run must never leave Postgres/Redis containers running 
 
 Hosted **staging** and **production** remain on separate Neon projects (Decision #17). Integration tests never touch them.
 
-PR status checks gate on lint + unit + integration; E2E is advisory on PRs, required on `main`.
+PR status checks gate on lint + unit + integration (CI, required on PRs). E2E runs on staging→main PRs after CI succeeds (required merge check on `main`). Manual E2E via `e2e.yml` workflow_dispatch.
 
 ---
 
@@ -1160,13 +1160,16 @@ All orchestrator calling jobs grant minimum required `permissions` (typically `c
 orchestrator.yml — sole automated entry (on: push, pull_request, release published)
 
 Pull request (any branch)
-  ci → version-check → e2e (advisory)
+  ci → version-check
+
+Pull request (staging → main)
+  ci → e2e (required, after CI)
 
 Push to staging
-  ci → sync-secrets (staging, stage-only) → deploy-staging → build-and-push-ce-image → e2e (required)
+  ci → sync-secrets (staging, stage-only) → deploy-staging → build-and-push-ce-image
 
 Push to main
-  ci → prepare-release → build-and-push-ce-image → e2e (required)
+  ci → prepare-release → build-and-push-ce-image
 
 Release published
   sync-secrets (production, stage-only) → deploy-production → build-and-push-ce-image (if deployed)
@@ -1176,7 +1179,7 @@ Manual dispatch
   e2e.yml           — on-demand E2E
 ```
 
-PR gates: lint + typecheck + unit + build + integration + audit must pass. E2E is advisory on PRs (`continue-on-error`), required on `staging`/`main` branch pushes.
+PR gates: lint + typecheck + unit + build + integration + audit must pass (CI, required on PRs). E2E is required on staging→main PRs after CI succeeds (merge check on `main`). Manual E2E via `e2e.yml` workflow_dispatch.
 
 ---
 
@@ -1206,21 +1209,21 @@ jobs:
     uses: ./.github/workflows/version-check.yml
 
   sync-secrets-staging:
-    if: push to staging && needs.ci.result == 'success'
+    if: push to staging
     needs: [ci]
     uses: ./.github/workflows/sync-secrets.yml
     with:
       environment: staging    # FLY_SECRETS_MODE: stage-only
 
   deploy-staging:
-    if: push to staging && ci + sync-secrets-staging succeeded
-    needs: [ci, sync-secrets-staging]
+    if: push to staging
+    needs: [sync-secrets-staging]
     uses: ./.github/workflows/deploy-staging.yml
     secrets: inherit
 
   build-ce-staging:
-    if: push to staging && deploy-staging succeeded
-    needs: [ci, deploy-staging, meta]
+    if: push to staging
+    needs: [deploy-staging, meta]
     permissions:
       packages: write
     uses: ./.github/workflows/build-and-push-ce-image.yml
@@ -1231,7 +1234,7 @@ jobs:
         ${{ needs.meta.outputs.short_sha }}
 
   prepare-release:
-    if: push to main && needs.ci.result == 'success'
+    if: push to main
     needs: [ci]
     permissions:
       contents: write
@@ -1239,7 +1242,7 @@ jobs:
     secrets: inherit
 
   build-ce-main:
-    if: push to main && CI passed
+    if: push to main
     needs: [ci, meta]
     permissions:
       packages: write
@@ -1257,7 +1260,7 @@ jobs:
       environment: production   # FLY_SECRETS_MODE: stage-only
 
   deploy-production:
-    if: release && sync-secrets-production succeeded
+    if: release
     needs: [sync-secrets-production]
     permissions:
       actions: write
@@ -1267,7 +1270,7 @@ jobs:
     secrets: inherit
 
   build-ce-release:
-    if: release && deploy-production succeeded && deployed == 'true'
+    if: release && deploy-production.outputs.deployed == 'true'
     needs: [deploy-production]
     permissions:
       packages: write
@@ -1278,13 +1281,13 @@ jobs:
         ${{ github.event.release.tag_name }}
 
   e2e:
-    if: ci passed && (PR || main || (staging && deploy-staging succeeded))
-    needs: [ci, deploy-staging]
+    if: ci passed && PR base main && PR head staging
+    needs: [ci]
     permissions:
       pull-requests: write
     uses: ./.github/workflows/e2e.yml
     with:
-      advisory: ${{ github.event_name == 'pull_request' }}
+      advisory: false
     secrets: inherit
 ```
 
@@ -1474,9 +1477,10 @@ Migrations run as a dedicated step in deploy workflows **before** any `flyctl de
 
 | Trigger | CI | Secrets Sync | Deploy | CE Image Tags (per service) | E2E |
 |---|---|---|---|---|---|
-| Pull request (any branch) | ✓ | — | — | — | advisory |
-| Push to `staging` | ✓ | ✓ (staging, stage-only) | staging all services | `dev`, `nightly`, `{short_sha}` | required |
-| Push to `main` | ✓ + draft release if version ≥ 1.0.0 | — | — | `latest`, `{short_sha}`, `main` | required |
+| Pull request (any branch) | ✓ | — | — | — | — |
+| Pull request (staging → main) | ✓ | — | — | — | required (after CI) |
+| Push to `staging` | ✓ | ✓ (staging, stage-only) | staging all services | `dev`, `nightly`, `{short_sha}` | — |
+| Push to `main` | ✓ + draft release if version ≥ 1.0.0 | — | — | `latest`, `{short_sha}`, `main` | — |
 | Release published | — | ✓ (production, stage-only) | production all services (if not already deployed) | `latest`, `{release_tag}` (if deployed) | — |
 | Manual `sync-secrets` dispatch | — | ✓ (chosen env, stage-and-deploy) | none | — | — |
 | Manual `e2e` dispatch | — | — | none | — | on-demand |

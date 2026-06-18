@@ -3,7 +3,8 @@ name: E2E
 # Playwright E2E — reusable workflow (PRD §11, §22).
 # Cloud: staging URLs when E2E_APP_URL / E2E_API_URL are set.
 # CE: ephemeral local stack via pnpm test:e2e wrapper (test-with-deps).
-# Advisory on PRs (continue-on-error); required on staging/main branch pushes.
+# Automated: staging → main PR only (after CI), required merge check on main.
+# Manual: workflow_dispatch on this file for on-demand runs.
 
 on:
   workflow_call:

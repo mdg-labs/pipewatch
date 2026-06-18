@@ -48,8 +48,6 @@ jobs:
   sync-secrets-staging:
     name: Sync secrets (staging)
     if: >-
-      always() &&
-      needs.ci.result == 'success' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/staging'
     needs: [ci]
@@ -63,12 +61,9 @@ jobs:
   deploy-staging:
     name: Deploy staging
     if: >-
-      always() &&
-      needs.ci.result == 'success' &&
-      needs.sync-secrets-staging.result == 'success' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/staging'
-    needs: [ci, sync-secrets-staging]
+    needs: [sync-secrets-staging]
     permissions:
       contents: read
     uses: ./.github/workflows/deploy-staging.yml
@@ -77,12 +72,9 @@ jobs:
   build-ce-staging:
     name: Build CE images (staging)
     if: >-
-      always() &&
-      needs.ci.result == 'success' &&
-      needs.deploy-staging.result == 'success' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/staging'
-    needs: [ci, deploy-staging, meta]
+    needs: [deploy-staging, meta]
     permissions:
       contents: read
       packages: write
@@ -97,8 +89,6 @@ jobs:
   prepare-release:
     name: Prepare release
     if: >-
-      always() &&
-      needs.ci.result == 'success' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
     needs: [ci]
@@ -110,8 +100,6 @@ jobs:
   build-ce-main:
     name: Build CE images (main)
     if: >-
-      always() &&
-      needs.ci.result == 'success' &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main'
     needs: [ci, meta]
@@ -138,10 +126,7 @@ jobs:
 
   deploy-production:
     name: Deploy production
-    if: >-
-      always() &&
-      needs.sync-secrets-production.result == 'success' &&
-      github.event_name == 'release'
+    if: github.event_name == 'release'
     needs: [sync-secrets-production]
     permissions:
       contents: read
@@ -154,8 +139,6 @@ jobs:
   build-ce-release:
     name: Build CE images (release)
     if: >-
-      always() &&
-      needs.deploy-production.result == 'success' &&
       needs.deploy-production.outputs.deployed == 'true' &&
       github.event_name == 'release'
     needs: [deploy-production]
@@ -172,18 +155,14 @@ jobs:
   e2e:
     name: E2E
     if: >-
-      always() &&
-      needs.ci.result == 'success' &&
-      (
-        github.event_name == 'pull_request' ||
-        github.ref == 'refs/heads/main' ||
-        (github.ref == 'refs/heads/staging' && needs.deploy-staging.result == 'success')
-      )
-    needs: [ci, deploy-staging]
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'staging'
+    needs: [ci]
     permissions:
       contents: read
       pull-requests: write
     uses: ./.github/workflows/e2e.yml
     with:
-      advisory: ${{ github.event_name == 'pull_request' }}
+      advisory: false
     secrets: inherit

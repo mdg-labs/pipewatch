@@ -265,21 +265,9 @@ jobs:
     name: Production · 5 · Record deployed version
     runs-on: ubuntu-latest
     environment: production
-    needs:
-      [
-        check-not-deployed,
-        deploy-api,
-        deploy-worker,
-        deploy-web,
-        deploy-marketing,
-        smoke-production,
-      ]
+    needs: [check-not-deployed, smoke-production]
     if: >-
       needs.check-not-deployed.outputs.should_deploy == 'true'
-      && needs.deploy-api.result == 'success'
-      && needs.deploy-worker.result == 'success'
-      && needs.deploy-web.result == 'success'
-      && needs.deploy-marketing.result == 'success'
       && needs.smoke-production.result == 'success'
     permissions:
       actions: write
