@@ -1,0 +1,237 @@
+name: Deploy
+
+on:
+  push:
+    branches: [staging, main]
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [staging, production]
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  resolve:
+    name: Resolve deploy target
+    runs-on: ubuntu-latest
+    outputs:
+      gha_environment: ${{ steps.target.outputs.gha_environment }}
+      infra_slug: ${{ steps.target.outputs.infra_slug }}
+      should_deploy: ${{ steps.target.outputs.should_deploy }}
+      api_app: ${{ steps.target.outputs.api_app }}
+      worker_app: ${{ steps.target.outputs.worker_app }}
+      web_worker: ${{ steps.target.outputs.web_worker }}
+      marketing_worker: ${{ steps.target.outputs.marketing_worker }}
+      redis_app: ${{ steps.target.outputs.redis_app }}
+      ce_tags: ${{ steps.target.outputs.ce_tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine target environment
+        id: target
+        run: |
+          set -euo pipefail
+
+          should_deploy=false
+          gha_environment=""
+          ce_tags=""
+
+          case "${{ github.event_name }}" in
+            push)
+              if [[ "${{ github.ref }}" == "refs/heads/staging" ]]; then
+                gha_environment="staging"
+                should_deploy=true
+                ce_tags=$'ghcr.io/mdg-labs/pipewatch:dev\nghcr.io/mdg-labs/pipewatch:nightly'
+              elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+                gha_environment="staging"
+                should_deploy=false
+                ce_tags="ghcr.io/mdg-labs/pipewatch:main"
+              fi
+              ;;
+            release)
+              gha_environment="production"
+              should_deploy=true
+              version="$(node -p "require('./package.json').version")"
+              ce_tags=$"ghcr.io/mdg-labs/pipewatch:${version}"$'\n'"ghcr.io/mdg-labs/pipewatch:latest"
+              ;;
+            workflow_dispatch)
+              gha_environment="${{ inputs.environment }}"
+              should_deploy=true
+              if [[ "${{ inputs.environment }}" == "staging" ]]; then
+                ce_tags=$'ghcr.io/mdg-labs/pipewatch:dev\nghcr.io/mdg-labs/pipewatch:nightly'
+              else
+                version="$(node -p "require('./package.json').version")"
+                ce_tags=$"ghcr.io/mdg-labs/pipewatch:${version}"$'\n'"ghcr.io/mdg-labs/pipewatch:latest"
+              fi
+              ;;
+          esac
+
+          if [[ -z "$gha_environment" ]]; then
+            echo "No deploy target for this event" >&2
+            exit 1
+          fi
+
+          infra_slug="$(bash .github/scripts/infra-slug.sh "$gha_environment")"
+
+          {
+            echo "gha_environment=${gha_environment}"
+            echo "infra_slug=${infra_slug}"
+            echo "should_deploy=${should_deploy}"
+            echo "api_app=pipewatch-${infra_slug}-api"
+            echo "worker_app=pipewatch-${infra_slug}-worker"
+            echo "web_worker=pipewatch-${infra_slug}-web"
+            echo "marketing_worker=pipewatch-${infra_slug}-marketing"
+            echo "redis_app=pipewatch-${infra_slug}-redis"
+            echo "ce_tags<<EOF"
+            echo "$ce_tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  get-version:
+    name: Read release version
+    if: github.event_name == 'release'
+    needs: resolve
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: get
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+  provision-redis:
+    name: Provision Redis (Fly.io)
+    if: needs.resolve.outputs.should_deploy == 'true'
+    needs: resolve
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.gha_environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Ensure Redis Fly app exists
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_REDIS_APP: ${{ needs.resolve.outputs.redis_app }}
+          FLY_ORG: ${{ vars.FLY_ORG }}
+        run: bash .github/scripts/provision-redis.sh
+
+  sync-secrets:
+    if: needs.resolve.outputs.should_deploy == 'true'
+    needs: [resolve, provision-redis]
+    uses: ./.github/workflows/sync-secrets.yml
+    with:
+      environment: ${{ needs.resolve.outputs.gha_environment }}
+      services: all
+    secrets: inherit
+
+  migrate:
+    name: Run database migrations
+    if: needs.resolve.outputs.should_deploy == 'true'
+    needs: [resolve, sync-secrets]
+    runs-on: ubuntu-latest
+    environment: ${{ needs.resolve.outputs.gha_environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Migrate (unpooled DATABASE_URL)
+        env:
+          DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
+        run: bash .github/scripts/run-migrate.sh
+
+  deploy-api:
+    if: needs.resolve.outputs.should_deploy == 'true'
+    needs: [resolve, migrate]
+    uses: ./.github/workflows/deploy-api.yml
+    with:
+      environment: ${{ needs.resolve.outputs.gha_environment }}
+      app: ${{ needs.resolve.outputs.api_app }}
+    secrets: inherit
+
+  deploy-worker:
+    if: needs.resolve.outputs.should_deploy == 'true'
+    needs: [resolve, migrate]
+    uses: ./.github/workflows/deploy-worker.yml
+    with:
+      environment: ${{ needs.resolve.outputs.gha_environment }}
+      app: ${{ needs.resolve.outputs.worker_app }}
+    secrets: inherit
+
+  deploy-web:
+    if: needs.resolve.outputs.should_deploy == 'true'
+    needs: [resolve, migrate]
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      environment: ${{ needs.resolve.outputs.gha_environment }}
+      worker: ${{ needs.resolve.outputs.web_worker }}
+    secrets: inherit
+
+  deploy-marketing:
+    if: needs.resolve.outputs.should_deploy == 'true'
+    needs: [resolve, migrate]
+    uses: ./.github/workflows/deploy-marketing.yml
+    with:
+      environment: ${{ needs.resolve.outputs.gha_environment }}
+      worker: ${{ needs.resolve.outputs.marketing_worker }}
+    secrets: inherit
+
+  build-ce-image:
+    name: Build CE image (stub)
+    needs: [resolve, get-version, deploy-api, deploy-worker]
+    if: >-
+      always() &&
+      needs.resolve.result == 'success' &&
+      needs.resolve.outputs.ce_tags != '' &&
+      (
+        needs.resolve.outputs.should_deploy != 'true' ||
+        (needs.deploy-api.result == 'success' && needs.deploy-worker.result == 'success')
+      ) &&
+      (
+        github.event_name != 'release' ||
+        needs.get-version.result == 'success'
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push CE API image
+        env:
+          CE_TAGS: ${{ needs.resolve.outputs.ce_tags }}
+        run: |
+          set -euo pipefail
+          mapfile -t tags <<< "$CE_TAGS"
+          bash .github/scripts/build-ce-image-stub.sh "${tags[@]}"
