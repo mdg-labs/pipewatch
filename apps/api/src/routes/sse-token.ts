@@ -9,6 +9,7 @@ import { parseApiEnv } from "@pipewatch/config/env";
 
 import { parseBearerToken, resolveJwtAuthIdentity } from "../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../middleware/error-handler.js";
+import { OpenApiTags } from "../openapi-tags.js";
 import { createSseToken } from "../services/sse-token.js";
 import type { ApiEnv } from "../types.js";
 import { requireJwtSecret } from "./auth/shared.js";
@@ -23,7 +24,7 @@ const SseTokenResponseSchema = z
 const getSseTokenRoute = createRoute({
   method: "get",
   path: "/api/v1/sse-token",
-  tags: ["SSE"],
+  tags: [OpenApiTags.SSE],
   summary: "Issue one-time SSE token",
   description:
     "Returns a short-lived one-time token for SSE stream authentication via query parameter.",

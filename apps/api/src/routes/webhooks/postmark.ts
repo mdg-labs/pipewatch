@@ -8,6 +8,7 @@ import { eq } from "drizzle-orm";
 
 import { verifyPostmarkWebhookSignature } from "../../lib/postmark-webhook-signature.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import type { ApiEnv } from "../../types.js";
 
 const SUPPORTED_RECORD_TYPES = new Set(["Bounce", "SubscriptionChange"]);
@@ -22,7 +23,7 @@ type PostmarkWebhookEnvelope = {
 const postmarkWebhookRoute = createRoute({
   method: "post",
   path: "/webhooks/postmark",
-  tags: ["Webhooks"],
+  tags: [OpenApiTags.WEBHOOKS],
   summary: "Postmark bounce and unsubscribe webhook receiver",
   description:
     "Validates `X-Postmark-Signature` (HMAC-SHA256, base64), updates `subscribers` on bounce and unsubscribe events, and returns 200 immediately (pages B21, PRD §14).",

@@ -5,6 +5,7 @@ import type { Db } from "@pipewatch/db";
 
 import { getWorkspaceContext } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import { getWorkspaceDashboard } from "../../services/dashboard-aggregates.js";
 import type { ApiEnv } from "../../types.js";
 
@@ -64,7 +65,7 @@ const WorkspaceDashboardSchema = z
 const dashboardRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/dashboard",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.WORKSPACES],
   summary: "Get workspace dashboard aggregates",
   description:
     "Returns global health counts and per-repo card data: last run, 7-day failure-rate sparkline, and running pulse flag.",

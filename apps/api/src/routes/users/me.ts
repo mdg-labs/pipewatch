@@ -9,6 +9,7 @@ import { getDb, type Db } from "@pipewatch/db";
 
 import { resolveAuthIdentity } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   ProfileError,
   deleteUserAccount,
@@ -43,7 +44,7 @@ const UpdateUserProfileBodySchema = z
 const getMeRoute = createRoute({
   method: "get",
   path: "/api/v1/users/me",
-  tags: ["Users"],
+  tags: [OpenApiTags.USERS],
   summary: "Get current user profile",
   description:
     "Returns the authenticated user's profile. Email, avatar, and GitHub login are read-only GitHub fields.",
@@ -79,7 +80,7 @@ const getMeRoute = createRoute({
 const patchMeRoute = createRoute({
   method: "patch",
   path: "/api/v1/users/me",
-  tags: ["Users"],
+  tags: [OpenApiTags.USERS],
   summary: "Update current user profile",
   description: "Updates the authenticated user's display name only.",
   security: [{ bearerAuth: [] }],
@@ -132,7 +133,7 @@ const patchMeRoute = createRoute({
 const deleteMeRoute = createRoute({
   method: "delete",
   path: "/api/v1/users/me",
-  tags: ["Users"],
+  tags: [OpenApiTags.USERS],
   summary: "Delete current user account",
   description:
     "Revokes all refresh tokens and deletes the user. Blocked with 409 when the user is the sole owner of a workspace that has other members.",

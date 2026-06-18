@@ -81,6 +81,19 @@ export type {
 } from "./workspace-member.js";
 
 export type {
+  CreateWorkspaceInviteInput,
+  WorkspaceInvite,
+} from "./workspace-invite.js";
+
+export type {
+  BillingCheckoutInput,
+  BillingInvoice,
+  BillingSessionUrl,
+  BillingUsageMetric,
+  WorkspaceBillingSummary,
+} from "./billing.js";
+
+export type {
   SseDataEvent,
   SseEvent,
   SseEventType,

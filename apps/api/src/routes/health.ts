@@ -3,6 +3,7 @@ import { flags } from "@pipewatch/config/edition";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 
 import { ApiErrorEnvelopeSchema } from "../middleware/error-handler.js";
+import { OpenApiTags } from "../openapi-tags.js";
 import type { ApiEnv } from "../types.js";
 
 const HealthResponseSchema = z
@@ -15,7 +16,7 @@ const HealthResponseSchema = z
 const healthRoute = createRoute({
   method: "get",
   path: "/health",
-  tags: ["System"],
+  tags: [OpenApiTags.SYSTEM],
   summary: "Health check",
   description: "Public liveness probe — no authentication required.",
   responses: {

@@ -7,6 +7,7 @@ import type { Db } from "@pipewatch/db";
 
 import { getWorkspaceContext, roleMeetsMinimum } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   BillingError,
   createCheckoutSession,
@@ -72,7 +73,7 @@ const workspaceParams = z.object({
 const getBillingRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/billing",
-  tags: ["Billing"],
+  tags: [OpenApiTags.BILLING],
   summary: "Get workspace billing summary",
   description:
     "Returns plan, usage, next billing date, and recent invoices. Cloud only; owner-only.",
@@ -119,7 +120,7 @@ const getBillingRoute = createRoute({
 const checkoutRoute = createRoute({
   method: "post",
   path: "/api/v1/workspaces/{workspaceId}/billing/checkout",
-  tags: ["Billing"],
+  tags: [OpenApiTags.BILLING],
   summary: "Create Stripe Checkout session",
   description:
     "Starts a subscription checkout for Pro or Business. Cloud only; owner-only.",
@@ -182,7 +183,7 @@ const checkoutRoute = createRoute({
 const portalRoute = createRoute({
   method: "post",
   path: "/api/v1/workspaces/{workspaceId}/billing/portal",
-  tags: ["Billing"],
+  tags: [OpenApiTags.BILLING],
   summary: "Create Stripe Customer Portal session",
   description:
     "Opens the billing portal for payment method updates and subscription cancellation. Cloud only; owner-only.",

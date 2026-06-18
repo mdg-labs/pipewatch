@@ -5,6 +5,7 @@ import type { Db } from "@pipewatch/db";
 
 import { getWorkspaceContext } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import { getWorkspaceInsights } from "../../services/insights-aggregates.js";
 import type { ApiEnv } from "../../types.js";
 
@@ -105,7 +106,7 @@ const insightsQuerySchema = z.object({
 const insightsRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/insights",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.INSIGHTS],
   summary: "Get workspace insights aggregates",
   description:
     "Returns summary cards, per-workflow time series, and slowest/most-failing workflow tables for the selected range.",

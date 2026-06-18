@@ -1,7 +1,7 @@
 import { getCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
+import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
-import { z } from "@hono/zod-openapi";
 
 import type { ApiEnv as ParsedApiEnv } from "@pipewatch/config/env";
 import { parseApiEnv } from "@pipewatch/config/env";
@@ -10,6 +10,8 @@ import { workspaceMembers } from "@pipewatch/db/schema";
 import type { WorkspaceRole } from "@pipewatch/types";
 import { and, eq, isNotNull } from "drizzle-orm";
 
+import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   AuthError,
   REFRESH_COOKIE_NAME,
@@ -24,8 +26,60 @@ import {
   setAccessTokenCookie,
 } from "./shared.js";
 
-const SwitchWorkspaceBodySchema = z.object({
-  workspaceId: z.string().uuid(),
+const SwitchWorkspaceBodySchema = z
+  .object({
+    workspaceId: z.string().uuid().openapi({
+      example: "550e8400-e29b-41d4-a716-446655440000",
+    }),
+  })
+  .openapi("SwitchWorkspaceBody");
+
+const switchWorkspaceRoute = createRoute({
+  method: "post",
+  path: "/auth/switch-workspace",
+  tags: [OpenApiTags.AUTH],
+  summary: "Switch active workspace",
+  description:
+    "Issues a new access JWT scoped to the requested workspace. Requires a valid refresh cookie and workspace membership.",
+  request: {
+    body: {
+      required: true,
+      content: {
+        "application/json": {
+          schema: SwitchWorkspaceBodySchema,
+        },
+      },
+    },
+  },
+  responses: {
+    204: {
+      description: "Workspace switched; new access cookie issued",
+    },
+    401: {
+      description: "Missing or invalid refresh token",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    403: {
+      description: "Not a member of the requested workspace",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    422: {
+      description: "Request validation failed",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+  },
 });
 
 export type SwitchWorkspaceAuthDependencies = {
@@ -64,7 +118,7 @@ export function registerSwitchWorkspaceRoute(
     db: resolveDatabase(deps),
   });
 
-  app.post("/auth/switch-workspace", async (c) => {
+  app.openapi(switchWorkspaceRoute, async (c) => {
     const { env, db } = resolveDeps();
     const secure = resolveSecureCookies(env);
 
@@ -72,11 +126,7 @@ export function registerSwitchWorkspaceRoute(
       const jwtSecret = requireJwtSecret(env);
       const refreshCookie = getCookie(c, REFRESH_COOKIE_NAME);
       const tokenRow = await requireActiveRefreshToken(db, refreshCookie);
-
-      const body = SwitchWorkspaceBodySchema.safeParse(await c.req.json());
-      if (!body.success) {
-        throw new HTTPException(422, { message: "Request validation failed" });
-      }
+      const body = c.req.valid("json");
 
       const [membership] = await db
         .select({ role: workspaceMembers.role })
@@ -84,7 +134,7 @@ export function registerSwitchWorkspaceRoute(
         .where(
           and(
             eq(workspaceMembers.userId, tokenRow.userId),
-            eq(workspaceMembers.workspaceId, body.data.workspaceId),
+            eq(workspaceMembers.workspaceId, body.workspaceId),
             isNotNull(workspaceMembers.acceptedAt),
           ),
         )
@@ -100,7 +150,7 @@ export function registerSwitchWorkspaceRoute(
         tokenRow.userId,
         jwtSecret,
         getCookie(c, ACCESS_COOKIE_NAME),
-        { workspaceId: body.data.workspaceId, role },
+        { workspaceId: body.workspaceId, role },
       );
 
       setAccessTokenCookie(c, accessToken, secure);

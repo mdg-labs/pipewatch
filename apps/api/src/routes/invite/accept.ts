@@ -9,6 +9,7 @@ import { getDb, type Db } from "@pipewatch/db";
 
 import { resolveAuthIdentity } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   acceptWorkspaceInvite,
   getInvitePreview,
@@ -40,7 +41,7 @@ const AcceptInviteResultSchema = z
 const getInviteRoute = createRoute({
   method: "get",
   path: "/invite/{token}",
-  tags: ["Invites"],
+  tags: [OpenApiTags.INVITES],
   summary: "Validate a workspace invite token",
   description: "Public endpoint to validate an invite before sign-in or acceptance (pages B18).",
   request: {
@@ -87,7 +88,7 @@ const getInviteRoute = createRoute({
 const acceptInviteRoute = createRoute({
   method: "post",
   path: "/invite/{token}/accept",
-  tags: ["Invites"],
+  tags: [OpenApiTags.INVITES],
   summary: "Accept a workspace invite",
   description:
     "Creates workspace membership for the authenticated user whose email matches the invite.",

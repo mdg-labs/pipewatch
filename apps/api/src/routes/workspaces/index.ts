@@ -13,6 +13,7 @@ import {
   roleMeetsMinimum,
 } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import { workspaceScope } from "../../middleware/workspace-scope.js";
 import {
   createWorkspaceSafe,
@@ -84,7 +85,7 @@ const UpdateWorkspaceBodySchema = z
 const listWorkspacesRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.WORKSPACES],
   summary: "List workspaces for the authenticated user",
   security: [{ bearerAuth: [] }],
   responses: {
@@ -110,7 +111,7 @@ const listWorkspacesRoute = createRoute({
 const createWorkspaceRoute = createRoute({
   method: "post",
   path: "/api/v1/workspaces",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.WORKSPACES],
   summary: "Create a workspace",
   description:
     "Creates a workspace, auto-generates a slug from the name when omitted, and assigns the creator as owner.",
@@ -172,7 +173,7 @@ const createWorkspaceRoute = createRoute({
 const getWorkspaceRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.WORKSPACES],
   summary: "Get workspace details",
   security: [{ bearerAuth: [] }],
   request: {
@@ -219,7 +220,7 @@ const getWorkspaceRoute = createRoute({
 const patchWorkspaceRoute = createRoute({
   method: "patch",
   path: "/api/v1/workspaces/{workspaceId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.WORKSPACES],
   summary: "Update workspace settings",
   description: "Updates name, slug, and default retention (cloud paid plans: 30–365 days).",
   security: [{ bearerAuth: [] }],
@@ -291,7 +292,7 @@ const patchWorkspaceRoute = createRoute({
 const deleteWorkspaceRoute = createRoute({
   method: "delete",
   path: "/api/v1/workspaces/{workspaceId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.WORKSPACES],
   summary: "Delete a workspace",
   description:
     "Deletes the workspace and cascades related data. Blocked on CE when it is the user's only workspace.",

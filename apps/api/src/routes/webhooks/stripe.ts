@@ -6,6 +6,7 @@ import { getDb, type Db } from "@pipewatch/db";
 import Stripe from "stripe";
 
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   handleStripeWebhookEvent,
   SUPPORTED_STRIPE_EVENTS,
@@ -15,7 +16,7 @@ import type { ApiEnv } from "../../types.js";
 const stripeWebhookRoute = createRoute({
   method: "post",
   path: "/webhooks/stripe",
-  tags: ["Webhooks"],
+  tags: [OpenApiTags.WEBHOOKS],
   summary: "Stripe billing webhook receiver",
   description:
     "Validates `Stripe-Signature`, syncs workspace plan and subscription fields for billing lifecycle events, and returns 200 immediately (PRD §24, pages B20). Cloud only.",

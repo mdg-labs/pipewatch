@@ -10,6 +10,7 @@ import { getDb } from "@pipewatch/db";
 
 import { loadWorkspaceMembership } from "../../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../../middleware/error-handler.js";
+import { OpenApiTags } from "../../../openapi-tags.js";
 import { getWorkspaceRepository } from "../../../services/repositories/repository.service.js";
 import {
   createHeartbeatEvent,
@@ -31,7 +32,7 @@ const streamQuery = z.object({
 const streamRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/repos/{repoId}/stream",
-  tags: ["SSE"],
+  tags: [OpenApiTags.SSE],
   summary: "SSE stream for repository pipeline updates",
   description:
     "Server-sent events for run and job updates. Authenticated via one-time query token (PRD §19, page B22).",

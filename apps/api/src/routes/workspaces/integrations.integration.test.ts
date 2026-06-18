@@ -13,6 +13,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { errorHandler } from "../../middleware/error-handler.js";
+import { uniqueGithubId } from "../../testing/unique-github-id.js";
 import { signAccessToken } from "../../services/auth/jwt.js";
 import { TOKEN_REFRESH_BUFFER_MS } from "../../services/github/app-auth.js";
 import { computeTokenHealth } from "../../services/integrations/integration.service.js";
@@ -70,7 +71,7 @@ async function seedUser(database: Db, loginPrefix: string): Promise<SeedUser> {
   const [user] = await database
     .insert(users)
     .values({
-      githubId: BigInt(Date.now()) + BigInt(Math.floor(Math.random() * 1000)),
+      githubId: uniqueGithubId(),
       githubLogin: `${loginPrefix}-${suffix}`,
       email: `${loginPrefix}-${suffix}@example.com`,
       name: "Workspace User",

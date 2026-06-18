@@ -6,6 +6,7 @@ import type { Db } from "@pipewatch/db";
 
 import { getWorkspaceContext, roleMeetsMinimum } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   listWorkspaceMembers,
   MemberError,
@@ -43,7 +44,7 @@ const workspaceMemberParams = z.object({
 const listMembersRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/members",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.MEMBERS],
   summary: "List workspace members",
   description:
     "Returns accepted members with role, avatar, email, and joined date. All members have read access.",
@@ -84,7 +85,7 @@ const listMembersRoute = createRoute({
 const patchMemberRoute = createRoute({
   method: "patch",
   path: "/api/v1/workspaces/{workspaceId}/members/{userId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.MEMBERS],
   summary: "Change a member role",
   description:
     "Updates a member role. Requires admin or owner. Cannot demote the last owner or change your own role.",
@@ -155,7 +156,7 @@ const patchMemberRoute = createRoute({
 const deleteMemberRoute = createRoute({
   method: "delete",
   path: "/api/v1/workspaces/{workspaceId}/members/{userId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.MEMBERS],
   summary: "Remove a workspace member",
   description:
     "Removes a member from the workspace. Requires admin or owner. Cannot remove the last owner.",

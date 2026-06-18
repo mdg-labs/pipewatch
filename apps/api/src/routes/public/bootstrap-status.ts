@@ -4,6 +4,7 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import { getDb, type Db } from "@pipewatch/db";
 
 import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import { countUsers } from "../../services/auth/oauth.js";
 import type { ApiEnv } from "../../types.js";
 
@@ -17,7 +18,7 @@ const BootstrapStatusResponseSchema = z
 const bootstrapStatusRoute = createRoute({
   method: "get",
   path: "/api/v1/public/bootstrap-status",
-  tags: ["Public"],
+  tags: [OpenApiTags.PUBLIC],
   summary: "CE bootstrap status",
   description:
     "Public endpoint for the web app to detect whether CE first-run bootstrap is required. " +

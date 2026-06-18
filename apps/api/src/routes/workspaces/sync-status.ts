@@ -6,6 +6,7 @@ import type { Db } from "@pipewatch/db";
 
 import { getWorkspaceContext } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   getWorkspaceSyncStatus,
   type ListBackfillJobs,
@@ -40,7 +41,7 @@ const WorkspaceSyncStatusSchema = z
 const syncStatusRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/sync-status",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.WORKSPACES],
   summary: "Get workspace sync and backfill status",
   description:
     "Returns per-integration and per-repo sync state for onboarding progress and manual re-sync feedback. Optional integrationId filter.",

@@ -13,6 +13,7 @@ import { and, eq } from "drizzle-orm";
 
 import { verifyGitHubWebhookSignature } from "../../lib/github-webhook-signature.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import type { ApiEnv } from "../../types.js";
 
 const PROCESS_PIPELINE_RUN_JOB_NAME = "process-pipeline-run";
@@ -23,7 +24,7 @@ const SUPPORTED_GITHUB_EVENTS = new Set(["workflow_run", "workflow_job"]);
 const githubWebhookRoute = createRoute({
   method: "post",
   path: "/webhooks/github",
-  tags: ["Webhooks"],
+  tags: [OpenApiTags.WEBHOOKS],
   summary: "GitHub App webhook receiver",
   description:
     "Validates `X-Hub-Signature-256`, enqueues `workflow_run` and `workflow_job` events to BullMQ, and returns 200 immediately (PRD §12.6, pages B19).",

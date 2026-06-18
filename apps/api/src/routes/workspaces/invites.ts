@@ -7,6 +7,7 @@ import type { Db } from "@pipewatch/db";
 
 import { getWorkspaceContext, roleMeetsMinimum } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   createWorkspaceInvite,
   InviteError,
@@ -45,7 +46,7 @@ const inviteParams = z.object({
 const listInvitesRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/invites",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.INVITES],
   summary: "List pending workspace invites",
   description: "Returns pending invites for the workspace. Requires admin or owner.",
   security: [{ bearerAuth: [] }],
@@ -85,7 +86,7 @@ const listInvitesRoute = createRoute({
 const createInviteRoute = createRoute({
   method: "post",
   path: "/api/v1/workspaces/{workspaceId}/invites",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.INVITES],
   summary: "Invite a workspace member",
   description:
     "Creates a 7-day invite and sends email via SMTP when configured. Returns invite_url when SMTP is unset.",
@@ -150,7 +151,7 @@ const createInviteRoute = createRoute({
 const deleteInviteRoute = createRoute({
   method: "delete",
   path: "/api/v1/workspaces/{workspaceId}/invites/{inviteId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.INVITES],
   summary: "Revoke a pending invite",
   security: [{ bearerAuth: [] }],
   request: {
@@ -190,7 +191,7 @@ const deleteInviteRoute = createRoute({
 const resendInviteRoute = createRoute({
   method: "post",
   path: "/api/v1/workspaces/{workspaceId}/invites/{inviteId}/resend",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.INVITES],
   summary: "Resend a workspace invite",
   description:
     "Re-sends the invite email via SMTP when configured. Returns invite_url when SMTP is unset.",

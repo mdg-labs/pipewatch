@@ -6,6 +6,7 @@ import type { Db } from "@pipewatch/db";
 
 import { getWorkspaceContext } from "../../../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../../../middleware/error-handler.js";
+import { OpenApiTags } from "../../../../openapi-tags.js";
 import {
   listWorkspacePipelineJobSteps,
   listWorkspacePipelineJobs,
@@ -73,7 +74,7 @@ const jobStepsParams = runParams.extend({
 const listJobsRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/runs/{runId}/jobs",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.PIPELINE_JOBS],
   summary: "List pipeline jobs for a run",
   description:
     "Returns jobs ordered for DAG display (started_at asc). Includes runner_name, status, and durations.",
@@ -120,7 +121,7 @@ const listJobsRoute = createRoute({
 const listJobStepsRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/runs/{runId}/jobs/{jobId}/steps",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.PIPELINE_STEPS],
   summary: "List steps for a pipeline job",
   description: "Returns steps ordered by step number within the job.",
   security: [{ bearerAuth: [] }],

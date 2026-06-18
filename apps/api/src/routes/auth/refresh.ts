@@ -1,11 +1,14 @@
 import { getCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
+import { createRoute } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 
 import type { ApiEnv as ParsedApiEnv } from "@pipewatch/config/env";
 import { parseApiEnv } from "@pipewatch/config/env";
 import { getDb, type Db } from "@pipewatch/db";
 
+import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   AuthError,
   REFRESH_COOKIE_NAME,
@@ -27,6 +30,36 @@ export type RefreshAuthDependencies = {
   env: ParsedApiEnv;
   db: Db;
 };
+
+const refreshRoute = createRoute({
+  method: "post",
+  path: "/auth/refresh",
+  tags: [OpenApiTags.AUTH],
+  summary: "Rotate refresh token",
+  description:
+    "Rotates the httpOnly refresh cookie and issues a new access JWT cookie. Requires a valid refresh cookie.",
+  responses: {
+    204: {
+      description: "Tokens rotated",
+    },
+    401: {
+      description: "Missing or invalid refresh token",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    503: {
+      description: "Auth service unavailable",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+  },
+});
 
 function resolveDatabase(deps?: Partial<RefreshAuthDependencies>): Db {
   if (deps?.db) {
@@ -51,7 +84,7 @@ export function registerRefreshRoute(
     db: resolveDatabase(deps),
   });
 
-  app.post("/auth/refresh", async (c) => {
+  app.openapi(refreshRoute, async (c) => {
     const { env, db } = resolveDeps();
     const secure = resolveSecureCookies(env);
 

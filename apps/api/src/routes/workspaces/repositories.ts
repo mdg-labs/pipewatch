@@ -12,6 +12,7 @@ import { syncPollingLifecycle } from "@pipewatch/worker/services/polling/lifecyc
 
 import { getWorkspaceContext, roleMeetsMinimum } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   deleteWorkspaceRepository,
   getWorkspaceRepository,
@@ -62,7 +63,7 @@ const repositoryParams = z.object({
 const listRepositoriesRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/repositories",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.REPOSITORIES],
   summary: "List workspace repositories",
   description:
     "Returns tracked repositories with visibility and sync settings. Optional filters: enabled, integration_id.",
@@ -110,7 +111,7 @@ const listRepositoriesRoute = createRoute({
 const getRepositoryRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/repositories/{repoId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.REPOSITORIES],
   summary: "Get repository details",
   security: [{ bearerAuth: [] }],
   request: {
@@ -155,7 +156,7 @@ const getRepositoryRoute = createRoute({
 const patchRepositoryRoute = createRoute({
   method: "patch",
   path: "/api/v1/workspaces/{workspaceId}/repositories/{repoId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.REPOSITORIES],
   summary: "Update repository settings",
   description:
     "Updates enabled flag, polling interval (min 30s), and retention override (plan-clamped on cloud). Requires admin or owner.",
@@ -218,7 +219,7 @@ const patchRepositoryRoute = createRoute({
 const deleteRepositoryRoute = createRoute({
   method: "delete",
   path: "/api/v1/workspaces/{workspaceId}/repositories/{repoId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.REPOSITORIES],
   summary: "Delete repository data",
   description:
     "Removes the repository row and cascades pipeline runs. Requires admin or owner.",
@@ -260,7 +261,7 @@ const deleteRepositoryRoute = createRoute({
 const syncRepositoryRoute = createRoute({
   method: "post",
   path: "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/sync",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.REPOSITORIES],
   summary: "Trigger manual repository re-sync",
   description:
     "Enqueues a backfill-repo job to re-fetch run history from GitHub. Requires admin or owner.",

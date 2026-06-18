@@ -4,6 +4,7 @@ import type { OpenAPIHono } from "@hono/zod-openapi";
 import { getDb, type Db } from "@pipewatch/db";
 
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   checkSlugAvailability,
   WorkspaceError,
@@ -36,7 +37,7 @@ const SlugAvailabilitySchema = z
 const checkSlugRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/check-slug",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.WORKSPACES],
   summary: "Check workspace slug availability",
   description:
     "Public endpoint used during onboarding and workspace settings to verify slug uniqueness.",

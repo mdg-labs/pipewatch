@@ -5,6 +5,7 @@ import { getDb, type Db } from "@pipewatch/db";
 
 import { requireCloud } from "../middleware/edition-guards.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../middleware/error-handler.js";
+import { OpenApiTags } from "../openapi-tags.js";
 import type { EmailTransport } from "../services/email/send-email.js";
 import {
   confirmWaitlistSubscription,
@@ -45,7 +46,7 @@ const tokenParams = z.object({
 const subscribeRoute = createRoute({
   method: "post",
   path: "/api/v1/waitlist",
-  tags: ["Waitlist"],
+  tags: [OpenApiTags.WAITLIST],
   summary: "Join the waitlist",
   description:
     "Public cloud-only endpoint. Creates a subscriber row and sends a double opt-in confirmation email via SMTP.",
@@ -90,7 +91,7 @@ const subscribeRoute = createRoute({
 const confirmRoute = createRoute({
   method: "get",
   path: "/api/v1/waitlist/confirm/{token}",
-  tags: ["Waitlist"],
+  tags: [OpenApiTags.WAITLIST],
   summary: "Confirm waitlist subscription",
   description: "Sets confirmed_at for the subscriber matching the token.",
   request: {
@@ -119,7 +120,7 @@ const confirmRoute = createRoute({
 const unsubscribeRoute = createRoute({
   method: "get",
   path: "/api/v1/waitlist/unsubscribe/{token}",
-  tags: ["Waitlist"],
+  tags: [OpenApiTags.WAITLIST],
   summary: "Unsubscribe from waitlist",
   description: "Sets unsubscribed_at for the subscriber matching the token.",
   request: {

@@ -1,12 +1,15 @@
 import type { Context } from "hono";
 import { getCookie, setCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
+import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 
 import type { ApiEnv as ParsedApiEnv } from "@pipewatch/config/env";
 import { parseApiEnv } from "@pipewatch/config/env";
 import { getDb, type Db } from "@pipewatch/db";
 
+import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import { ACCESS_TOKEN_TTL_SECONDS, signAccessToken } from "../../services/auth/jwt.js";
 import {
   ACCESS_COOKIE_NAME,
@@ -42,6 +45,72 @@ export type GitHubAuthDependencies = {
   oauthClient: GitHubOAuthClient;
   sendEmailFn?: typeof sendEmail;
 };
+
+const githubInitRoute = createRoute({
+  method: "get",
+  path: "/auth/github",
+  tags: [OpenApiTags.AUTH],
+  summary: "Initiate GitHub OAuth",
+  description:
+    "Redirects the browser to GitHub authorization. Optional `next` query param is preserved for post-auth redirect.",
+  request: {
+    query: z.object({
+      next: z.string().optional().openapi({
+        description: "Relative or absolute post-auth redirect target",
+        example: "/dashboard",
+      }),
+    }),
+  },
+  responses: {
+    302: {
+      description: "Redirect to GitHub OAuth authorization",
+    },
+  },
+});
+
+const githubCallbackRoute = createRoute({
+  method: "get",
+  path: "/auth/github/callback",
+  tags: [OpenApiTags.AUTH],
+  summary: "GitHub OAuth callback",
+  description:
+    "Exchanges the authorization code, upserts the user, issues JWT + refresh cookies, and redirects to the app.",
+  request: {
+    query: z.object({
+      code: z.string().openapi({ example: "gho_authorization_code" }),
+      state: z.string().openapi({ example: "signed-oauth-state" }),
+    }),
+  },
+  responses: {
+    302: {
+      description: "Redirect to app after successful sign-in",
+    },
+    400: {
+      description: "Invalid or missing OAuth parameters",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    401: {
+      description: "OAuth state validation failed",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    502: {
+      description: "GitHub token exchange failed",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+  },
+});
 
 function resolveSecureCookies(env: ParsedApiEnv): boolean {
   return env.NODE_ENV !== "development";
@@ -100,10 +169,10 @@ export function registerGitHubAuthRoutes(
     };
   };
 
-  app.get("/auth/github", (c) => {
+  app.openapi(githubInitRoute, (c) => {
     const { env } = resolveDeps();
     const config = requireOAuthConfig(env);
-    const next = c.req.query("next");
+    const { next } = c.req.valid("query");
     const { state, cookieValue } = createOAuthState(config.refreshSecret, next);
     const redirectUri = callbackUrl(c.req.url);
     const authorizeUrl = buildGitHubAuthorizeUrl(config.clientId, redirectUri, state);
@@ -120,14 +189,13 @@ export function registerGitHubAuthRoutes(
     return c.redirect(authorizeUrl, 302);
   });
 
-  app.get("/auth/github/callback", async (c) => {
+  app.openapi(githubCallbackRoute, async (c) => {
     const { env, db, oauthClient } = resolveDeps();
     const secure = resolveSecureCookies(env);
 
     try {
       const config = requireOAuthConfig(env);
-      const code = c.req.query("code");
-      const state = c.req.query("state");
+      const { code, state } = c.req.valid("query");
       const stateCookie = getCookie(c, OAUTH_STATE_COOKIE_NAME);
 
       if (!code || !state) {

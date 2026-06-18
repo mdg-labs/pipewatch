@@ -1,11 +1,14 @@
 import { getCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
+import { createRoute } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 
 import type { ApiEnv as ParsedApiEnv } from "@pipewatch/config/env";
 import { parseApiEnv } from "@pipewatch/config/env";
 import { getDb, type Db } from "@pipewatch/db";
 
+import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   AuthError,
   REFRESH_COOKIE_NAME,
@@ -20,6 +23,50 @@ export type LogoutAuthDependencies = {
   env: ParsedApiEnv;
   db: Db;
 };
+
+const logoutRoute = createRoute({
+  method: "post",
+  path: "/auth/logout",
+  tags: [OpenApiTags.AUTH],
+  summary: "Log out current session",
+  description:
+    "Revokes the refresh token from the httpOnly cookie and clears auth cookies. Requires a valid refresh cookie.",
+  responses: {
+    204: {
+      description: "Session revoked",
+    },
+    401: {
+      description: "Missing or invalid refresh token",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+  },
+});
+
+const logoutAllRoute = createRoute({
+  method: "post",
+  path: "/auth/logout-all",
+  tags: [OpenApiTags.AUTH],
+  summary: "Log out all sessions",
+  description:
+    "Revokes all refresh tokens for the authenticated user and clears auth cookies.",
+  responses: {
+    204: {
+      description: "All sessions revoked",
+    },
+    401: {
+      description: "Missing or invalid refresh token",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+  },
+});
 
 function resolveDatabase(deps?: Partial<LogoutAuthDependencies>): Db {
   if (deps?.db) {
@@ -44,7 +91,7 @@ export function registerLogoutRoutes(
     db: resolveDatabase(deps),
   });
 
-  app.post("/auth/logout", async (c) => {
+  app.openapi(logoutRoute, async (c) => {
     const { env, db } = resolveDeps();
     const secure = resolveSecureCookies(env);
 
@@ -66,7 +113,7 @@ export function registerLogoutRoutes(
     }
   });
 
-  app.post("/auth/logout-all", async (c) => {
+  app.openapi(logoutAllRoute, async (c) => {
     const { env, db } = resolveDeps();
     const secure = resolveSecureCookies(env);
 

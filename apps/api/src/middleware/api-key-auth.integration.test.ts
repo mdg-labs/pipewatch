@@ -14,6 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { workspaceScope } from "./workspace-scope.js";
 import { apiKeyAuth } from "./api-key-auth.js";
+import { uniqueGithubId } from "../testing/unique-github-id.js";
 import { errorHandler } from "./error-handler.js";
 import { requireRole } from "./require-role.js";
 import type { ApiEnv } from "../types.js";
@@ -42,7 +43,7 @@ async function seedUsersWithWorkspaces(database: Db): Promise<SeedResult> {
   const [owner] = await database
     .insert(users)
     .values({
-      githubId: BigInt(Date.now()) + BigInt(Math.floor(Math.random() * 1000)),
+      githubId: uniqueGithubId(),
       githubLogin: `apikey-owner-${suffix}`,
       email: `apikey-owner-${suffix}@example.com`,
       name: "API Key Owner",

@@ -11,6 +11,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { signAccessToken } from "../services/auth/jwt.js";
+import { uniqueGithubId } from "../testing/unique-github-id.js";
 import { errorHandler } from "./error-handler.js";
 import { requireRole } from "./require-role.js";
 import { workspaceScope } from "./workspace-scope.js";
@@ -41,7 +42,7 @@ async function seedUsersWithWorkspaces(database: Db): Promise<SeedResult> {
   const [owner] = await database
     .insert(users)
     .values({
-      githubId: BigInt(Date.now()) + BigInt(Math.floor(Math.random() * 1000)),
+      githubId: uniqueGithubId(),
       githubLogin: `scope-owner-${suffix}`,
       email: `scope-owner-${suffix}@example.com`,
       name: "Scope Owner",
@@ -51,7 +52,7 @@ async function seedUsersWithWorkspaces(database: Db): Promise<SeedResult> {
   const [member] = await database
     .insert(users)
     .values({
-      githubId: BigInt(Date.now()) + BigInt(Math.floor(Math.random() * 1000) + 1000),
+      githubId: uniqueGithubId(),
       githubLogin: `scope-member-${suffix}`,
       email: `scope-member-${suffix}@example.com`,
       name: "Scope Member",

@@ -7,6 +7,7 @@ import type { Db } from "@pipewatch/db";
 
 import { getWorkspaceContext, roleMeetsMinimum } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   IntegrationError,
   createWorkspaceIntegration,
@@ -54,7 +55,7 @@ const integrationParams = z.object({
 const listIntegrationsRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/integrations",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.INTEGRATIONS],
   summary: "List workspace integrations",
   description:
     "Returns GitHub integrations with account metadata, connected repo count, and token health. Requires admin or owner.",
@@ -95,7 +96,7 @@ const listIntegrationsRoute = createRoute({
 const getIntegrationRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/integrations/{integrationId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.INTEGRATIONS],
   summary: "Get integration details",
   description: "Returns a single integration. Requires admin or owner.",
   security: [{ bearerAuth: [] }],
@@ -141,7 +142,7 @@ const getIntegrationRoute = createRoute({
 const createIntegrationRoute = createRoute({
   method: "post",
   path: "/api/v1/workspaces/{workspaceId}/integrations",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.INTEGRATIONS],
   summary: "Create a workspace integration",
   description:
     "Persists a GitHub App installation after callback processing (`provider=github`). Requires admin or owner.",
@@ -206,7 +207,7 @@ const createIntegrationRoute = createRoute({
 const deleteIntegrationRoute = createRoute({
   method: "delete",
   path: "/api/v1/workspaces/{workspaceId}/integrations/{integrationId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.INTEGRATIONS],
   summary: "Disconnect a workspace integration",
   description:
     "Disables all repositories for the integration and removes the integration row. Requires admin or owner.",

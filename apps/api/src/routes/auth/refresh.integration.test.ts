@@ -16,6 +16,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { errorHandler } from "../../middleware/error-handler.js";
+import { uniqueGithubId } from "../../testing/unique-github-id.js";
 import { verifyAccessToken } from "../../services/auth/jwt.js";
 import {
   REFRESH_COOKIE_NAME,
@@ -53,7 +54,7 @@ async function seedUserWithWorkspaces(database: Db): Promise<SeedResult> {
   const [user] = await database
     .insert(users)
     .values({
-      githubId: BigInt(Date.now()) + BigInt(Math.floor(Math.random() * 1000)),
+      githubId: uniqueGithubId(),
       githubLogin: `refresh-user-${suffix}`,
       email: `refresh-${suffix}@example.com`,
       name: "Refresh User",

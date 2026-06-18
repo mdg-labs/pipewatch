@@ -15,6 +15,7 @@ import {
   roleMeetsMinimum,
 } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   InstallCallbackError,
   processGitHubInstallCallback,
@@ -29,7 +30,7 @@ import { ACCESS_COOKIE_NAME, requireJwtSecret } from "../auth/shared.js";
 const githubCallbackRoute = createRoute({
   method: "get",
   path: "/onboarding/github-callback",
-  tags: ["Onboarding"],
+  tags: [OpenApiTags.ONBOARDING],
   summary: "GitHub App install callback",
   description:
     "Accepts GitHub `installation_id` after App install (or CE manual entry), upserts the integration, enqueues backfill, and redirects to onboarding step 3 (PRD §12.1, pages B17).",

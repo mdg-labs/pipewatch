@@ -6,6 +6,7 @@ import type { Db } from "@pipewatch/db";
 
 import { getWorkspaceContext, roleMeetsMinimum } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import { OpenApiTags } from "../../openapi-tags.js";
 import {
   ApiKeyError,
   createWorkspaceApiKey,
@@ -51,7 +52,7 @@ const apiKeyParams = z.object({
 const listApiKeysRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/api-keys",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.API_KEYS],
   summary: "List workspace API keys",
   description:
     "Returns API key metadata (prefix only). Requires admin or owner. Full keys are never returned.",
@@ -92,7 +93,7 @@ const listApiKeysRoute = createRoute({
 const createApiKeyRoute = createRoute({
   method: "post",
   path: "/api/v1/workspaces/{workspaceId}/api-keys",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.API_KEYS],
   summary: "Create a workspace API key",
   description:
     "Creates an API key and returns the full `pw_...` value once. Requires admin or owner.",
@@ -157,7 +158,7 @@ const createApiKeyRoute = createRoute({
 const deleteApiKeyRoute = createRoute({
   method: "delete",
   path: "/api/v1/workspaces/{workspaceId}/api-keys/{keyId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.API_KEYS],
   summary: "Revoke a workspace API key",
   description: "Sets `revoked_at` on the key. Requires admin or owner.",
   security: [{ bearerAuth: [] }],

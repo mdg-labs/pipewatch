@@ -11,6 +11,7 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { errorHandler } from "../../middleware/error-handler.js";
+import { uniqueGithubId } from "../../testing/unique-github-id.js";
 import { signAccessToken } from "../../services/auth/jwt.js";
 import type {
   StripeCheckoutClient,
@@ -67,7 +68,7 @@ async function seedUser(database: Db, loginPrefix: string): Promise<SeedUser> {
   const [user] = await database
     .insert(users)
     .values({
-      githubId: BigInt(Date.now()) + BigInt(Math.floor(Math.random() * 1000)),
+      githubId: uniqueGithubId(),
       githubLogin: `${loginPrefix}-${suffix}`,
       email,
       name: "Billing User",

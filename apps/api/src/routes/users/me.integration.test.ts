@@ -16,6 +16,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { errorHandler } from "../../middleware/error-handler.js";
+import { uniqueGithubId } from "../../testing/unique-github-id.js";
 import { signAccessToken } from "../../services/auth/jwt.js";
 import {
   generateRefreshTokenValue,
@@ -52,7 +53,7 @@ async function seedUser(
   const [user] = await database
     .insert(users)
     .values({
-      githubId: BigInt(Date.now()) + BigInt(Math.floor(Math.random() * 1000)),
+      githubId: uniqueGithubId(),
       githubLogin: `${loginPrefix}-${suffix}`,
       email: `${loginPrefix}-${suffix}@example.com`,
       name: "Profile User",

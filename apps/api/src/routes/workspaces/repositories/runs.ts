@@ -6,6 +6,7 @@ import type { Db } from "@pipewatch/db";
 
 import { getWorkspaceContext, roleMeetsMinimum } from "../../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../../middleware/error-handler.js";
+import { OpenApiTags } from "../../../openapi-tags.js";
 import {
   DEFAULT_PAGE_SIZE,
   deleteWorkspacePipelineRun,
@@ -89,7 +90,7 @@ const listRunsQuerySchema = z.object({
 const listRunsRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/runs",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.PIPELINE_RUNS],
   summary: "List pipeline runs for a repository",
   description:
     "Returns paginated pipeline runs sorted by started_at desc. Filters: branch, workflow, status, trigger, date range.",
@@ -145,7 +146,7 @@ const listRunsRoute = createRoute({
 const getRunRoute = createRoute({
   method: "get",
   path: "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/runs/{runId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.PIPELINE_RUNS],
   summary: "Get pipeline run details",
   description: "Returns full B6 header fields for a single pipeline run.",
   security: [{ bearerAuth: [] }],
@@ -191,7 +192,7 @@ const getRunRoute = createRoute({
 const deleteRunRoute = createRoute({
   method: "delete",
   path: "/api/v1/workspaces/{workspaceId}/repositories/{repoId}/runs/{runId}",
-  tags: ["Workspaces"],
+  tags: [OpenApiTags.PIPELINE_RUNS],
   summary: "Delete a pipeline run",
   description: "Manually purges a pipeline run and cascaded jobs/steps. Requires admin or owner.",
   security: [{ bearerAuth: [] }],
