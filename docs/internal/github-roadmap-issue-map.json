@@ -1,6 +1,7 @@
 {
   "epics": {
     "P21": 24,
+    "P20": 120,
     "P19": 23,
     "P18": 22,
     "P17": 21,
@@ -592,6 +593,48 @@
       "id": 4678688759,
       "node_id": "I_kwDOS8tSvs8AAAABFt8f9w",
       "title": "Page inventory regression checklist (E2E / manual)"
+    },
+    "P20-01": {
+      "number": 121,
+      "id": 4690455082,
+      "node_id": "I_kwDOS8tSvs8AAAABF5KqKg",
+      "title": "Composite setup action + deploy/smoke scripts"
+    },
+    "P20-02": {
+      "number": 122,
+      "id": 4690455311,
+      "node_id": "I_kwDOS8tSvs8AAAABF5KrDw",
+      "title": "Consolidate ci.yml + ReportPortal lifecycle"
+    },
+    "P20-03": {
+      "number": 123,
+      "id": 4690455558,
+      "node_id": "I_kwDOS8tSvs8AAAABF5KsBg",
+      "title": "Refactor orchestrator.yml as sole PR/push entry"
+    },
+    "P20-04": {
+      "number": 124,
+      "id": 4690455904,
+      "node_id": "I_kwDOS8tSvs8AAAABF5KtYA",
+      "title": "Staging deploy pipeline + CF Access smoke"
+    },
+    "P20-05": {
+      "number": 125,
+      "id": 4690456654,
+      "node_id": "I_kwDOS8tSvs8AAAABF5KwTg",
+      "title": "Production deploy + versioned CE images"
+    },
+    "P20-06": {
+      "number": 126,
+      "id": 4690456886,
+      "node_id": "I_kwDOS8tSvs8AAAABF5KxNg",
+      "title": "Extract e2e.yml workflow"
+    },
+    "P20-07": {
+      "number": 127,
+      "id": 4690457122,
+      "node_id": "I_kwDOS8tSvs8AAAABF5KyIg",
+      "title": "CI hygiene, pin actions, PRD §22 sync"
     }
   }
 }

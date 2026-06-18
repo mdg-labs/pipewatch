@@ -1,0 +1,393 @@
+# Playwright e2e tests — runs on staging→main release-candidate PRs,
+# on workflow_dispatch, and as a reusable workflow (spec §22.4).
+#
+# Two jobs: hosted (separate API/web/marketing services) and
+# self-hosted (combined Docker image, single port).
+#
+# App under test uses explicit e2e env only (mirrors scripts/e2e.sh) — never
+# Infisical staging. Infisical is fetched immediately before Playwright so
+# REPORTPORTAL_* creds reach the reporter without polluting API/container env.
+
+name: E2E
+
+on:
+  pull_request:
+    branches: [main]
+
+  workflow_dispatch:
+
+  workflow_call:
+    inputs:
+      mode:
+        description: 'Deployment mode to test'
+        required: true
+        type: string
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # Postgres (shared across modes)
+  DATABASE_URL: postgresql://slugbase:slugbase@localhost:5432/slugbase_e2e
+  # E2E mode flag
+  SLUGBASE_E2E_MODE: 'true'
+  # Test credentials (created by seed fixture)
+  E2E_TEST_EMAIL: e2e@slugbase.test
+  E2E_TEST_PASSWORD: e2e-test-password
+
+jobs:
+  e2e-hosted:
+    name: E2E · Hosted mode
+    # Run on PR, workflow_dispatch, or workflow_call with matching mode
+    if: >
+      !cancelled() && (
+        github.event_name != 'workflow_call'
+        || inputs.mode == ''
+        || inputs.mode == 'hosted'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      E2E_BASE_URL_API: http://localhost:4001
+      E2E_BASE_URL_WEB: http://localhost:4002
+      E2E_BASE_URL_MARKETING: http://localhost:4003
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: slugbase
+          POSTGRES_PASSWORD: slugbase
+          POSTGRES_DB: slugbase_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U slugbase -d slugbase_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: 22.12
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build all packages (hosted VITE flags)
+        env:
+          NODE_ENV: production
+          VITE_BILLING_ENABLED: 'true'
+          VITE_FREE_BOOKMARK_CAP: '50'
+          VITE_MAIL_ADMIN_UI: 'false'
+          VITE_OIDC_ADMIN_UI: 'false'
+          VITE_AI_BYO_CREDENTIAL: 'false'
+        run: pnpm build
+
+      - name: Run DB migrations
+        run: pnpm --filter @slugbase/backend db:migrate
+
+      - name: Start API
+        env:
+          PORT: '4001'
+          SLUGBASE_E2E_MODE: 'true'
+          PUBLIC_REGISTRATION: 'true'
+          SESSION_SECRET: 'ci-e2e-session-secret-at-least-32-chars-long!!'
+          ENCRYPTION_KEY: 'ci-e2e-encryption-key-at-least-32-chars-long!!'
+          APP_BASE_URL: http://localhost:4001
+          FRONTEND_ORIGIN: http://localhost:4002
+        run: |
+          node packages/backend/dist/main.js >> hosted-services-api.log 2>&1 &
+          echo "API_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Start Web (React Router serve)
+        env:
+          PORT: '4002'
+          API_BASE_URL: http://localhost:4001
+        run: |
+          (cd packages/web && npx react-router-serve build/server/index.js) >> hosted-services-web.log 2>&1 &
+          echo "WEB_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Start Marketing (static serve)
+        run: |
+          npx serve packages/marketing/dist -l 4003 >> hosted-services-marketing.log 2>&1 &
+          echo "MARKETING_PID=$!" >> "$GITHUB_ENV"
+
+      - name: Wait for health endpoints
+        run: |
+          echo "Waiting for API at $E2E_BASE_URL_API/health ..."
+          api_ok=false
+          for i in $(seq 1 30); do
+            curl -sf "$E2E_BASE_URL_API/health" >/dev/null 2>&1 && { api_ok=true; break; }
+            sleep 2
+          done
+          $api_ok || { echo "API did not become healthy"; exit 1; }
+          echo "Waiting for Web at $E2E_BASE_URL_WEB/health ..."
+          web_ok=false
+          for i in $(seq 1 30); do
+            curl -sf "$E2E_BASE_URL_WEB/health" >/dev/null 2>&1 && { web_ok=true; break; }
+            sleep 2
+          done
+          $web_ok || { echo "Web did not become healthy"; exit 1; }
+          echo "Waiting for Marketing at $E2E_BASE_URL_MARKETING ..."
+          mktg_ok=false
+          for i in $(seq 1 15); do
+            curl -sf "$E2E_BASE_URL_MARKETING" >/dev/null 2>&1 && { mktg_ok=true; break; }
+            sleep 2
+          done
+          $mktg_ok || { echo "Marketing did not become healthy"; exit 1; }
+
+      - name: Fetch ReportPortal secrets from Infisical
+        uses: Infisical/secrets-action@77ab1f4ccd183a543cb5b42435fbd181189f4995 # v1.0.16
+        with:
+          method: oidc
+          domain: ${{ secrets.INFISICAL_DOMAIN }}
+          identity-id: ${{ secrets.INFISICAL_OIDC_IDENTITY_ID }}
+          project-slug: slugbase-cloud
+          env-slug: staging
+
+      - name: Run Playwright tests (hosted)
+        env:
+          # Re-pin e2e env after Infisical — staging DATABASE_URL etc. must not reach tests.
+          DATABASE_URL: postgresql://slugbase:slugbase@localhost:5432/slugbase_e2e
+          E2E_BASE_URL_API: http://localhost:4001
+          E2E_BASE_URL_WEB: http://localhost:4002
+          E2E_BASE_URL_MARKETING: http://localhost:4003
+        run: bash scripts/e2e-ci-playwright.sh hosted rp-e2e-hosted.log
+
+      - name: Extract ReportPortal launch UUID (hosted)
+        if: always()
+        run: bash scripts/reportportal-ci-summary.sh parse-uuids rp-e2e-hosted.log > rp-e2e-hosted.uuid || true
+
+      - name: Upload ReportPortal launch log (hosted)
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: reportportal-e2e-hosted-log
+          path: |
+            rp-e2e-hosted.log
+            rp-e2e-hosted.uuid
+            hosted-services-api.log
+            hosted-services-web.log
+          if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Stop backgrounded node/serve process trees (npx/react-router-serve spawn children)
+          for pid in "${API_PID:-}" "${WEB_PID:-}" "${MARKETING_PID:-}"; do
+            [ -n "$pid" ] || continue
+            pkill -P "$pid" 2>/dev/null || true
+            kill "$pid" 2>/dev/null || true
+          done
+          # Prune Docker build cache (keeps volumes intact for the job VM)
+          docker builder prune --force 2>/dev/null || true
+
+  e2e-self-hosted:
+    name: E2E · Self-hosted mode
+    # Run on PR, workflow_dispatch, or workflow_call with matching mode
+    if: >
+      !cancelled() && (
+        github.event_name != 'workflow_call'
+        || inputs.mode == ''
+        || inputs.mode == 'self-hosted'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      E2E_BASE_URL_SELF_HOSTED: http://localhost:3000
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: slugbase
+          POSTGRES_PASSWORD: slugbase
+          POSTGRES_DB: slugbase_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U slugbase -d slugbase_e2e"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+        with:
+          version: 9.15.4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+        with:
+          node-version: 22.12
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+
+      - name: Build combined image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          load: true
+          tags: slugbase-e2e:self-hosted
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VITE_BILLING_ENABLED=false
+            VITE_MAIL_ADMIN_UI=true
+            VITE_OIDC_ADMIN_UI=true
+            VITE_AI_BYO_CREDENTIAL=true
+
+      - name: Start combined container
+        run: |
+          docker run -d \
+            --name slugbase-e2e-self \
+            --network host \
+            -e DATABASE_URL="$DATABASE_URL" \
+            -e SLUGBASE_E2E_MODE=true \
+            -e E2E_TEST_EMAIL="$E2E_TEST_EMAIL" \
+            -e E2E_TEST_PASSWORD="$E2E_TEST_PASSWORD" \
+            -e SESSION_SECRET='ci-e2e-session-secret-at-least-32-chars-long!!' \
+            -e ENCRYPTION_KEY='ci-e2e-encryption-key-at-least-32-chars-long!!' \
+            -e APP_BASE_URL='http://localhost:3000' \
+            -e FRONTEND_ORIGIN='http://localhost:3000' \
+            -e API_BASE_URL='http://localhost:3000' \
+            -e PUBLIC_REGISTRATION=true \
+            -e PORT=3000 \
+            slugbase-e2e:self-hosted
+
+      - name: Wait for health endpoint
+        run: |
+          echo "Waiting for API at http://localhost:3000/health ..."
+          ok=false
+          for i in $(seq 1 30); do
+            curl -sf "http://localhost:3000/health" >/dev/null 2>&1 && { ok=true; break; }
+            sleep 2
+          done
+          $ok || { echo "Self-hosted container did not become healthy"; exit 1; }
+
+      - name: Fetch ReportPortal secrets from Infisical
+        uses: Infisical/secrets-action@77ab1f4ccd183a543cb5b42435fbd181189f4995 # v1.0.16
+        with:
+          method: oidc
+          domain: ${{ secrets.INFISICAL_DOMAIN }}
+          identity-id: ${{ secrets.INFISICAL_OIDC_IDENTITY_ID }}
+          project-slug: slugbase-cloud
+          env-slug: staging
+
+      - name: Run Playwright tests (self-hosted)
+        env:
+          DATABASE_URL: postgresql://slugbase:slugbase@localhost:5432/slugbase_e2e
+          E2E_BASE_URL_SELF_HOSTED: http://localhost:3000
+        run: bash scripts/e2e-ci-playwright.sh self-hosted rp-e2e-self-hosted.log
+
+      - name: Extract ReportPortal launch UUID (self-hosted)
+        if: always()
+        run: bash scripts/reportportal-ci-summary.sh parse-uuids rp-e2e-self-hosted.log > rp-e2e-self-hosted.uuid || true
+
+      - name: Upload ReportPortal launch log (self-hosted)
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: reportportal-e2e-self-hosted-log
+          path: |
+            rp-e2e-self-hosted.log
+            rp-e2e-self-hosted.uuid
+          if-no-files-found: ignore
+
+      - name: Cleanup — container
+        if: always()
+        run: |
+          docker stop slugbase-e2e-self 2>/dev/null || true
+          docker rm slugbase-e2e-self 2>/dev/null || true
+
+      - name: Cleanup — builder prune
+        if: always()
+        run: docker builder prune --force 2>/dev/null || true
+
+  reportportal-summary:
+    name: E2E · ReportPortal summary
+    needs: [e2e-hosted, e2e-self-hosted]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
+
+      - name: Download hosted launch log
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        continue-on-error: true
+        with:
+          name: reportportal-e2e-hosted-log
+          path: rp-logs
+
+      - name: Download self-hosted launch log
+        uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        continue-on-error: true
+        with:
+          name: reportportal-e2e-self-hosted-log
+          path: rp-logs
+
+      - name: Record ReportPortal e2e launches
+        if: always()
+        run: |
+          # Prefer dedicated UUID files (avoids GitHub log secret masking in tee output).
+          if [ -s rp-logs/rp-e2e-hosted.uuid ]; then
+            while IFS= read -r uuid; do
+              [ -n "$uuid" ] || continue
+              RP_LAUNCH_UUID="$uuid" bash scripts/reportportal-ci-summary.sh record-env "e2e · hosted"
+            done < rp-logs/rp-e2e-hosted.uuid
+          else
+            bash scripts/reportportal-ci-summary.sh record-log "e2e · hosted" rp-logs/rp-e2e-hosted.log
+          fi
+          if [ -s rp-logs/rp-e2e-self-hosted.uuid ]; then
+            while IFS= read -r uuid; do
+              [ -n "$uuid" ] || continue
+              RP_LAUNCH_UUID="$uuid" bash scripts/reportportal-ci-summary.sh record-env "e2e · self-hosted"
+            done < rp-logs/rp-e2e-self-hosted.uuid
+          else
+            bash scripts/reportportal-ci-summary.sh record-log "e2e · self-hosted" rp-logs/rp-e2e-self-hosted.log
+          fi
+
+      - name: ReportPortal job summary
+        if: always()
+        run: bash scripts/reportportal-ci-summary.sh write-summary e2e
+
+      - name: ReportPortal PR comment
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: bash scripts/reportportal-ci-summary.sh update-pr-comment e2e
