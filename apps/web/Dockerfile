@@ -15,7 +15,10 @@ RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
 COPY apps/web apps/web
-COPY packages packages
+COPY packages/config packages/config
+COPY packages/types packages/types
+COPY packages/ui packages/ui
+COPY packages/utils packages/utils
 COPY tsconfig.json ./
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm turbo build --filter=@pipewatch/web...
