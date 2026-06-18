@@ -15,7 +15,7 @@ import {
   reportPortalMissingKeys,
   reportPortalMode,
   type ReportPortalLayer,
-} from "./reportportal-ci.js";
+} from "../packages/config/reportportal-ci.ts";
 
 type LaunchStatus = "passed" | "failed";
 
