@@ -113,7 +113,13 @@ if [[ -z "${CF_API_TOKEN:-}" ]]; then
   exit 1
 fi
 
+if [[ -z "${CF_ACCOUNT_ID:-}" ]]; then
+  echo "sync-secrets: CF_ACCOUNT_ID must be set" >&2
+  exit 1
+fi
+
 export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
+export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID}"
 
 map_github_storage_to_runtime
 

@@ -1542,6 +1542,7 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `REPORTPORTAL_PROJECT` | ci (var) | CI test jobs | ReportPortal project name |
 | `FLY_API_TOKEN` | staging, production | deploy workflows | Fly.io deploy + `flyctl secrets set` |
 | `CF_API_TOKEN` | staging, production | deploy workflows | Cloudflare Workers deploy + `wrangler secret put` |
+| `CF_ACCOUNT_ID` | staging, production | deploy workflows | Cloudflare account ID for Wrangler (`CLOUDFLARE_ACCOUNT_ID`) |
 | `APP_URL` | staging, production | api | `https://cloud.pipewatch.app` (staging: `https://staging-cloud.pipewatch.app`) |
 | `MARKETING_URL` | staging, production | api | `https://pipewatch.app` |
 | `NODE_ENV` | staging, production | all | `development` \| `staging` \| `production` |

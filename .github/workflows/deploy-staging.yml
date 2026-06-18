@@ -145,6 +145,7 @@ jobs:
       - name: Deploy web to Cloudflare Workers (OpenNext)
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_WORKER_NAME: pipewatch-staging-web
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
@@ -176,6 +177,7 @@ jobs:
       - name: Deploy marketing to Cloudflare Workers (OpenNext)
         env:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_WORKER_NAME: pipewatch-staging-marketing
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}

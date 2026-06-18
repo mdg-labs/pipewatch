@@ -22,6 +22,7 @@ const REPO_ROOT = join(import.meta.dirname, "../..");
 const BASE_YAML = `
           FLY_API_TOKEN: \${{ secrets.FLY_API_TOKEN }}
           CF_API_TOKEN: \${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: \${{ secrets.CF_ACCOUNT_ID }}
           DATABASE_URL: \${{ secrets.DATABASE_URL }}
           GH_APP_ID: \${{ secrets.GH_APP_ID }}
 `;
@@ -132,7 +133,13 @@ describe("validateSyncSecretsManifest", () => {
 
   it("parses yaml, shell, and github map helpers", () => {
     expect(parseSyncSecretsYamlKeys(BASE_YAML)).toEqual(
-      new Set(["FLY_API_TOKEN", "CF_API_TOKEN", "DATABASE_URL", "GH_APP_ID"]),
+      new Set([
+        "FLY_API_TOKEN",
+        "CF_API_TOKEN",
+        "CF_ACCOUNT_ID",
+        "DATABASE_URL",
+        "GH_APP_ID",
+      ]),
     );
     expect(parseSyncSecretsShellArrayKeys(BASE_SHELL, "API_FLY_KEYS")).toEqual(
       new Set(["DATABASE_URL", "REDIS_URL", "GITHUB_APP_ID"]),

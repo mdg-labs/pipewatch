@@ -19,7 +19,13 @@ if [[ -z "${CF_API_TOKEN:-}" ]]; then
   exit 1
 fi
 
+if [[ -z "${CF_ACCOUNT_ID:-}" ]]; then
+  echo "deploy-cf-worker: CF_ACCOUNT_ID must be set" >&2
+  exit 1
+fi
+
 export CLOUDFLARE_API_TOKEN="${CF_API_TOKEN}"
+export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID}"
 
 case "$APP" in
   web)
@@ -57,6 +63,7 @@ if [[ ! -f "$WRANGLER_CONFIG" ]]; then
   cat >"$WRANGLER_CONFIG" <<EOF
 name = "${WORKER_NAME}"
 main = ".open-next/worker.js"
+account_id = "${CF_ACCOUNT_ID}"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 

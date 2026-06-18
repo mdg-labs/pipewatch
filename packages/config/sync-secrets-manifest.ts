@@ -156,8 +156,12 @@ export const SYNC_SECRETS_MANIFEST: readonly ServiceSyncManifest[] = [
   },
 ] as const;
 
-/** Workflow-only credentials — not app runtime env, but required for sync. */
-export const SYNC_WORKFLOW_SECRETS = ["FLY_API_TOKEN", "CF_API_TOKEN"] as const;
+/** Workflow-only credentials — not app runtime env, but required for sync/deploy. */
+export const SYNC_WORKFLOW_SECRETS = [
+  "FLY_API_TOKEN",
+  "CF_API_TOKEN",
+  "CF_ACCOUNT_ID",
+] as const;
 
 export function getServiceManifest(
   service: SyncService,
