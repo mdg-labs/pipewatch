@@ -14,6 +14,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck source=fly-app-helpers.sh
+source "${SCRIPT_DIR}/fly-app-helpers.sh"
 ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 REDIS_FLY_CONFIG="${ROOT}/.github/infra/redis/fly.toml"
 REDIS_VOLUME_NAME="redis_data"
@@ -32,6 +34,8 @@ if [[ -z "${FLY_API_TOKEN:-}" ]]; then
   exit 1
 fi
 
+require_fly_org_for_provision
+
 if [[ $# -lt 1 ]]; then
   usage >&2
   exit 1
@@ -39,39 +43,68 @@ fi
 
 GHA_ENV="$1"
 INFRA_SLUG="$("$SCRIPT_DIR/infra-slug.sh" "$GHA_ENV")"
-FLY_REDIS_APP="pipewatch-${INFRA_SLUG}-redis"
+FLY_REDIS_APP="$(canonical_fly_app_name "$INFRA_SLUG" redis)"
 FLY_REGION="${FLY_REGION:-fra}"
 
 export FLY_REDIS_APP
 
+warn_legacy_fly_app redis "$INFRA_SLUG"
+
 count_machines() {
   local app="$1"
-  flyctl machines list --app "$app" --json 2>/dev/null \
-    | jq 'length' 2>/dev/null \
-    || echo 0
+  local -a org_args=()
+  with_org_args org_args
+
+  local output
+  if ! output="$(flyctl machines list -a "$app" "${org_args[@]}" --json 2>&1)"; then
+    if echo "$output" | grep -qi 'could not find app'; then
+      echo -1
+      return 0
+    fi
+    echo 0
+    return 0
+  fi
+
+  echo "$output" | jq 'length' 2>/dev/null || echo 0
 }
 
 count_running_machines() {
   local app="$1"
-  flyctl machines list --app "$app" --json 2>/dev/null \
+  local total
+  total="$(count_machines "$app")"
+  if [[ "$total" == -1 ]]; then
+    echo -1
+    return 0
+  fi
+  if [[ "$total" == 0 ]]; then
+    echo 0
+    return 0
+  fi
+
+  local -a org_args=()
+  with_org_args org_args
+  flyctl machines list -a "$app" "${org_args[@]}" --json 2>/dev/null \
     | jq '[.[] | select(.state == "started" or .state == "running")] | length' 2>/dev/null \
     || echo 0
 }
 
 ensure_fly_app() {
-  if flyctl apps show "$FLY_REDIS_APP" >/dev/null 2>&1; then
+  if fly_app_exists "$FLY_REDIS_APP"; then
     echo "provision-redis: ${FLY_REDIS_APP} already exists"
     return 0
   fi
 
   echo "provision-redis: creating ${FLY_REDIS_APP}"
-  local -a create_args=("$FLY_REDIS_APP")
-  if [[ -n "${FLY_ORG:-}" ]]; then
-    create_args+=(--org "$FLY_ORG")
+  local -a org_args=()
+  with_org_args org_args
+
+  if ! flyctl apps create "$FLY_REDIS_APP" "${org_args[@]}"; then
+    echo "provision-redis: failed to create ${FLY_REDIS_APP}" >&2
+    exit 1
   fi
 
-  if ! flyctl apps create "${create_args[@]}"; then
-    echo "provision-redis: failed to create ${FLY_REDIS_APP}" >&2
+  if ! wait_for_fly_app_visible "$FLY_REDIS_APP"; then
+    echo "provision-redis: ${FLY_REDIS_APP} not visible after create" >&2
     exit 1
   fi
 
@@ -79,8 +112,16 @@ ensure_fly_app() {
 }
 
 ensure_redis_volume() {
+  local -a org_args=()
+  with_org_args org_args
+
+  if ! fly_app_exists "$FLY_REDIS_APP"; then
+    echo "provision-redis: ${FLY_REDIS_APP} missing before volume create — registering app"
+    ensure_fly_app
+  fi
+
   local existing
-  existing="$(flyctl volumes list --app "$FLY_REDIS_APP" --json 2>/dev/null \
+  existing="$(flyctl volumes list -a "$FLY_REDIS_APP" "${org_args[@]}" --json 2>/dev/null \
     | jq '[.[] | select(.name == "'"${REDIS_VOLUME_NAME}"'")] | length' 2>/dev/null \
     || echo 0)"
 
@@ -90,13 +131,39 @@ ensure_redis_volume() {
   fi
 
   echo "provision-redis: creating volume ${REDIS_VOLUME_NAME} in ${FLY_REGION}"
-  if ! flyctl volumes create "$REDIS_VOLUME_NAME" \
-    --app "$FLY_REDIS_APP" \
+  local create_output
+  if create_output="$(flyctl volumes create "$REDIS_VOLUME_NAME" \
+    -a "$FLY_REDIS_APP" \
+    "${org_args[@]}" \
     --region "$FLY_REGION" \
-    --yes; then
-    echo "provision-redis: failed to create volume ${REDIS_VOLUME_NAME}" >&2
-    exit 1
+    --yes 2>&1)"; then
+    return 0
   fi
+
+  if echo "$create_output" | grep -qi 'could not find app'; then
+    echo "provision-redis: volume API could not resolve ${FLY_REDIS_APP} — re-registering app and retrying"
+    if ! flyctl apps create "$FLY_REDIS_APP" "${org_args[@]}" 2>/dev/null; then
+      : # may already exist in another visibility window
+    fi
+    if ! wait_for_fly_app_visible "$FLY_REDIS_APP"; then
+      echo "provision-redis: ${FLY_REDIS_APP} still not visible after retry" >&2
+      echo "$create_output" >&2
+      exit 1
+    fi
+    if ! flyctl volumes create "$REDIS_VOLUME_NAME" \
+      -a "$FLY_REDIS_APP" \
+      "${org_args[@]}" \
+      --region "$FLY_REGION" \
+      --yes; then
+      echo "provision-redis: failed to create volume ${REDIS_VOLUME_NAME} after app retry" >&2
+      exit 1
+    fi
+    return 0
+  fi
+
+  echo "provision-redis: failed to create volume ${REDIS_VOLUME_NAME}" >&2
+  echo "$create_output" >&2
+  exit 1
 }
 
 deploy_redis_workload() {
@@ -107,23 +174,38 @@ deploy_redis_workload() {
 
   ensure_redis_volume
 
+  local -a org_args=()
+  with_org_args org_args
+  local deploy_config
+  deploy_config="$(mktemp)"
+  # fly.toml app name must match --app or deploy/volume APIs disagree (static file uses placeholder).
+  sed "s/^app = .*/app = \"${FLY_REDIS_APP}\"/" "$REDIS_FLY_CONFIG" >"$deploy_config"
+
   echo "provision-redis: deploying first-time Redis workload to ${FLY_REDIS_APP}"
   if ! flyctl deploy \
-    --app "$FLY_REDIS_APP" \
-    --config "$REDIS_FLY_CONFIG" \
+    -a "$FLY_REDIS_APP" \
+    "${org_args[@]}" \
+    --config "$deploy_config" \
     --remote-only \
     --ha=false \
     --yes; then
+    rm -f "$deploy_config"
     echo "provision-redis: deploy failed for ${FLY_REDIS_APP}" >&2
     exit 1
   fi
 
+  rm -f "$deploy_config"
   echo "provision-redis: ${FLY_REDIS_APP} deployed"
 }
 
 ensure_fly_app
 
 running="$(count_running_machines "$FLY_REDIS_APP")"
+if [[ "$running" == -1 ]]; then
+  echo "provision-redis: ${FLY_REDIS_APP} not found for machines list — registering app"
+  ensure_fly_app
+  running="$(count_running_machines "$FLY_REDIS_APP")"
+fi
 if [[ "$running" -ge 1 ]]; then
   echo "provision-redis: ${FLY_REDIS_APP} healthy (${running} running Machine(s)) — skipping deploy"
   exit 0
@@ -143,4 +225,10 @@ if [[ "$running" -lt 1 ]]; then
   exit 1
 fi
 
+if ! fly_app_exists "$FLY_REDIS_APP"; then
+  echo "provision-redis: verification failed — ${FLY_REDIS_APP} not found in org ${FLY_ORG}" >&2
+  exit 1
+fi
+
+echo "provision-redis: verified ${FLY_REDIS_APP} in org ${FLY_ORG}"
 echo "provision-redis: complete (${GHA_ENV} → ${INFRA_SLUG}, app=${FLY_REDIS_APP})"

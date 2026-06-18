@@ -6,7 +6,8 @@
 # Redis must listen on :: — binding to 0.0.0.0 alone breaks .internal connectivity.
 # See: https://community.fly.io/t/redis-app-refuses-private-connections/1403
 
-app = "pipewatch-redis"
+# Overwritten at deploy time by provision-redis.sh (per-env app name).
+app = "pipewatch-staging-redis"
 primary_region = "fra"
 
 [build]
