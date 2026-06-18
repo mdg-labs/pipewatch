@@ -40,6 +40,10 @@ export interface GitHubWorkflowRun {
   actor?: {
     login?: string | null;
   } | null;
+  /** User who initiated this run attempt (re-run, workflow_dispatch). */
+  triggering_actor?: {
+    login?: string | null;
+  } | null;
 }
 
 /** Canonical `pipeline_runs` insert/upsert shape (excludes generated `id` / `created_at`). */
@@ -100,6 +104,23 @@ export function resolveBranch(headBranch: string | null | undefined): string {
 }
 
 /**
+ * Resolve the login shown as "who triggered" this run.
+ * GitHub exposes both `actor` (original trigger user) and `triggering_actor`
+ * (user who started this attempt — re-run, workflow_dispatch). Prefer
+ * `triggering_actor` when present to match the Actions UI.
+ * @see https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#get-a-workflow-run
+ */
+export function resolveActorLogin(run: GitHubWorkflowRun): string | null {
+  const triggeringLogin = run.triggering_actor?.login?.trim();
+  if (triggeringLogin) {
+    return triggeringLogin;
+  }
+
+  const actorLogin = run.actor?.login?.trim();
+  return actorLogin ? actorLogin : null;
+}
+
+/**
  * Map a GitHub `workflow_run` webhook payload to a canonical pipeline run upsert shape.
  * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_run
  */
@@ -131,7 +152,7 @@ export function mapWorkflowRunPayload(
     branch: resolveBranch(run.head_branch),
     commitSha: run.head_sha,
     commitMessage: run.head_commit?.message ?? null,
-    actorLogin: run.actor?.login ?? null,
+    actorLogin: resolveActorLogin(run),
     triggerType: run.event,
     sourceUrl: run.html_url,
     startedAt,

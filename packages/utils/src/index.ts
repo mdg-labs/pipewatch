@@ -14,6 +14,7 @@ export {
   mapWorkflowRunPayload,
   PIPELINE_NO_BRANCH_LABEL,
   PIPELINE_UNKNOWN_WORKFLOW_LABEL,
+  resolveActorLogin,
   resolveBranch,
   resolvePipelineName,
   type GitHubWorkflowRun,

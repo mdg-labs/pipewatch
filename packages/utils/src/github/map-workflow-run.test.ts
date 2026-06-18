@@ -9,6 +9,7 @@ import {
   mapWorkflowRunPayload,
   PIPELINE_NO_BRANCH_LABEL,
   PIPELINE_UNKNOWN_WORKFLOW_LABEL,
+  resolveActorLogin,
   resolveBranch,
   resolvePipelineName,
 } from "./map-workflow-run.js";
@@ -125,5 +126,61 @@ describe("mapWorkflowRunPayload", () => {
 
     payload.workflow_run.run_attempt = 3;
     expect(mapWorkflowRunPayload(payload, context).runAttempt).toBe(3);
+  });
+
+  it("prefers triggering_actor.login over actor.login when present", () => {
+    const payload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
+    payload.workflow_run.event = "workflow_dispatch";
+    payload.workflow_run.actor = { login: "original-user" };
+    payload.workflow_run.triggering_actor = { login: "dispatch-user" };
+
+    expect(mapWorkflowRunPayload(payload, context).actorLogin).toBe(
+      "dispatch-user",
+    );
+  });
+
+  it("falls back to actor.login when triggering_actor is absent", () => {
+    const payload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
+    payload.workflow_run.actor = { login: "push-user" };
+    delete payload.workflow_run.triggering_actor;
+
+    expect(mapWorkflowRunPayload(payload, context).actorLogin).toBe("push-user");
+  });
+
+  it("falls back to actor.login when triggering_actor.login is empty", () => {
+    const payload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
+    payload.workflow_run.actor = { login: "scheduled-owner" };
+    payload.workflow_run.triggering_actor = { login: "  " };
+
+    expect(mapWorkflowRunPayload(payload, context).actorLogin).toBe(
+      "scheduled-owner",
+    );
+  });
+
+  it("resolveActorLogin trims whitespace from logins", () => {
+    expect(
+      resolveActorLogin({
+        id: 1,
+        name: "CI",
+        path: ".github/workflows/ci.yml",
+        status: "completed",
+        conclusion: "success",
+        head_branch: "main",
+        head_sha: "abc",
+        event: "workflow_dispatch",
+        html_url: "https://example.com",
+        created_at: "2022-01-01T00:00:00Z",
+        updated_at: "2022-01-01T00:01:00Z",
+        run_started_at: "2022-01-01T00:00:00Z",
+        triggering_actor: { login: "  rerunner  " },
+        actor: { login: "original" },
+      }),
+    ).toBe("rerunner");
   });
 });
