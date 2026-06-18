@@ -202,6 +202,9 @@ jobs:
 
   build-ce-image:
     name: Build CE images
+    permissions:
+      contents: read
+      packages: write
     needs: [resolve, get-version, deploy-api, deploy-worker]
     if: >-
       always() &&
