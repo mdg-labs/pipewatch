@@ -13,13 +13,19 @@ export interface GitHubWorkflowRunWebhookPayload {
   workflow_run: GitHubWorkflowRun;
 }
 
+/** Stored when GitHub returns a null `workflow_run.head_branch`. */
+export const PIPELINE_NO_BRANCH_LABEL = "(no branch)" as const;
+
+/** Stored when GitHub returns a null `workflow_run.name` and `path` has no workflow file. */
+export const PIPELINE_UNKNOWN_WORKFLOW_LABEL = "(unknown workflow)" as const;
+
 export interface GitHubWorkflowRun {
   id: number;
-  name: string;
+  name: string | null;
   path: string;
   status: string;
   conclusion: string | null;
-  head_branch: string;
+  head_branch: string | null;
   head_sha: string;
   event: string;
   html_url: string;
@@ -60,6 +66,36 @@ export interface MapWorkflowRunContext {
 }
 
 /**
+ * Resolve a display/stored pipeline name from GitHub `workflow_run.name` and `path`.
+ * GitHub REST + webhooks allow `name: string | null`; fall back to workflow file stem.
+ */
+export function resolvePipelineName(
+  name: string | null | undefined,
+  path: string,
+): string {
+  const trimmed = name?.trim();
+  if (trimmed) {
+    return trimmed;
+  }
+
+  const workflowFile = path.match(/\/([^/]+)\.ya?ml$/i)?.[1];
+  if (workflowFile) {
+    return workflowFile;
+  }
+
+  return PIPELINE_UNKNOWN_WORKFLOW_LABEL;
+}
+
+/**
+ * Resolve a stored branch label from GitHub `workflow_run.head_branch`.
+ * GitHub REST + webhooks allow `head_branch: string | null` (e.g. fork PR edge cases).
+ */
+export function resolveBranch(headBranch: string | null | undefined): string {
+  const trimmed = headBranch?.trim();
+  return trimmed ? trimmed : PIPELINE_NO_BRANCH_LABEL;
+}
+
+/**
  * Map a GitHub `workflow_run` webhook payload to a canonical pipeline run upsert shape.
  * @see https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_run
  */
@@ -81,11 +117,11 @@ export function mapWorkflowRunPayload(
     workspaceId: context.workspaceId,
     repoId: context.repoId,
     externalRunId: String(run.id),
-    pipelineName: run.name,
+    pipelineName: resolvePipelineName(run.name, run.path),
     pipelineDefinitionRef: run.path,
     status,
     conclusion,
-    branch: run.head_branch,
+    branch: resolveBranch(run.head_branch),
     commitSha: run.head_sha,
     commitMessage: run.head_commit?.message ?? null,
     actorLogin: run.actor?.login ?? null,

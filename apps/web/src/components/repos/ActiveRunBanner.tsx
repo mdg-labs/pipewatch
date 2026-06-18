@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { formatElapsedSince } from "@/lib/dashboard-utils";
+import { formatBranchDisplay, formatPipelineNameDisplay } from "@/lib/run-utils";
 
 import "./repo-detail.css";
 
@@ -56,8 +57,10 @@ export function ActiveRunBanner({ runs, workspaceSlug, repoId }: ActiveRunBanner
       <span className="pw-active-run-banner-meta" aria-hidden>
         ·
       </span>
-      <span className="pw-active-run-banner-meta">{activeRun.pipeline_name}</span>
-      <span className="pw-active-run-banner-branch">{activeRun.branch}</span>
+      <span className="pw-active-run-banner-meta">
+        {formatPipelineNameDisplay(activeRun.pipeline_name)}
+      </span>
+      <span className="pw-active-run-banner-branch">{formatBranchDisplay(activeRun.branch)}</span>
       {elapsed ? (
         <>
           <span className="pw-active-run-banner-meta" aria-hidden>

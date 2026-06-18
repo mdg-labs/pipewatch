@@ -37,9 +37,14 @@ function resolveRequestOrigin(requestUrl: string, headers: HeaderGetter): string
   return url.origin;
 }
 
+type ApiPublicUrlEnv = {
+  PUBLIC_API_URL?: string | undefined;
+  NODE_ENV?: string | undefined;
+};
+
 /** Public API origin for OAuth callbacks — explicit env in hosted/CE production. */
 export function resolveApiPublicOrigin(
-  env: { PUBLIC_API_URL?: string; NODE_ENV?: string },
+  env: ApiPublicUrlEnv,
   requestUrl: string,
   headers: HeaderGetter,
 ): string {
@@ -56,7 +61,7 @@ export function resolveApiPublicOrigin(
 
 /** GitHub OAuth `redirect_uri` — must match the GitHub App callback URL exactly. */
 export function buildOAuthCallbackUrl(
-  env: { PUBLIC_API_URL?: string; NODE_ENV?: string },
+  env: ApiPublicUrlEnv,
   requestUrl: string,
   headers: HeaderGetter,
 ): string {

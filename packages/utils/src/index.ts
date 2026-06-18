@@ -11,6 +11,10 @@ export {
 } from "./github/map-workflow-job.js";
 export {
   mapWorkflowRunPayload,
+  PIPELINE_NO_BRANCH_LABEL,
+  PIPELINE_UNKNOWN_WORKFLOW_LABEL,
+  resolveBranch,
+  resolvePipelineName,
   type GitHubWorkflowRun,
   type GitHubWorkflowRunWebhookPayload,
   type MapWorkflowRunContext,

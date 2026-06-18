@@ -14,6 +14,8 @@ import { useMemo } from "react";
 import { formatRelativeTime } from "@/lib/dashboard-utils";
 import { formatDuration } from "@/lib/format-duration";
 import {
+  formatBranchDisplay,
+  formatPipelineNameDisplay,
   formatTriggerLabel,
   githubActorAvatarUrl,
   mapPipelineRunToBadgeStatus,
@@ -35,12 +37,16 @@ export function RunListTable({ runs, workspaceSlug, repoId }: RunListTableProps)
       {
         id: "workflow",
         header: "Workflow",
-        render: (run) => <span className="pw-run-list-workflow">{run.pipeline_name}</span>,
+        render: (run) => (
+          <span className="pw-run-list-workflow">{formatPipelineNameDisplay(run.pipeline_name)}</span>
+        ),
       },
       {
         id: "branch",
         header: "Branch",
-        render: (run) => <span className="pw-run-list-branch">{run.branch}</span>,
+        render: (run) => (
+          <span className="pw-run-list-branch">{formatBranchDisplay(run.branch)}</span>
+        ),
       },
       {
         id: "trigger",

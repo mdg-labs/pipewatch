@@ -20,6 +20,7 @@ import {
   mapRunToBadgeStatus,
   parseRepoFullName,
 } from "@/lib/dashboard-utils";
+import { formatBranchDisplay, formatPipelineNameDisplay } from "@/lib/run-utils";
 
 import "./dashboard.css";
 
@@ -85,8 +86,12 @@ export function DashboardRepoCardView({ repo, workspaceSlug }: DashboardRepoCard
 
         {repo.last_run ? (
           <div className="pw-dashboard-repo-card-meta">
-            <span className="pw-dashboard-repo-card-branch">{repo.last_run.branch}</span>
-            <span className="pw-dashboard-repo-card-workflow">{repo.last_run.pipeline_name}</span>
+            <span className="pw-dashboard-repo-card-branch">
+              {formatBranchDisplay(repo.last_run.branch)}
+            </span>
+            <span className="pw-dashboard-repo-card-workflow">
+              {formatPipelineNameDisplay(repo.last_run.pipeline_name)}
+            </span>
           </div>
         ) : null}
 

@@ -3,6 +3,22 @@ import type { PipelineStatus } from "@pipewatch/ui";
 
 const ACTIVE_STATUSES = new Set(["queued", "in_progress"]);
 
+export function formatPipelineNameDisplay(name: string | null | undefined): string {
+  if (name === null || name === undefined || name.trim() === "") {
+    return "—";
+  }
+
+  return name;
+}
+
+export function formatBranchDisplay(branch: string | null | undefined): string {
+  if (branch === null || branch === undefined || branch.trim() === "") {
+    return "—";
+  }
+
+  return branch;
+}
+
 export function mapPipelineRunToBadgeStatus(run: PipelineRun): PipelineStatus {
   if (ACTIVE_STATUSES.has(run.status)) {
     return "running";

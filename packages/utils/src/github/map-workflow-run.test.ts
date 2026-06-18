@@ -5,7 +5,13 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import type { GitHubWorkflowRunWebhookPayload } from "./map-workflow-run.js";
-import { mapWorkflowRunPayload } from "./map-workflow-run.js";
+import {
+  mapWorkflowRunPayload,
+  PIPELINE_NO_BRANCH_LABEL,
+  PIPELINE_UNKNOWN_WORKFLOW_LABEL,
+  resolveBranch,
+  resolvePipelineName,
+} from "./map-workflow-run.js";
 
 const fixturesDir = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -77,5 +83,35 @@ describe("mapWorkflowRunPayload", () => {
     const result = mapWorkflowRunPayload(payload, context);
 
     expect(result.startedAt).toEqual(new Date("2022-10-11T14:22:25Z"));
+  });
+
+  it("maps null head_branch to the no-branch sentinel", () => {
+    const payload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
+    payload.workflow_run.head_branch = null;
+
+    const result = mapWorkflowRunPayload(payload, context);
+
+    expect(result.branch).toBe(PIPELINE_NO_BRANCH_LABEL);
+  });
+
+  it("maps null workflow name using the workflow file stem from path", () => {
+    const payload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
+    payload.workflow_run.name = null;
+
+    const result = mapWorkflowRunPayload(payload, context);
+
+    expect(result.pipelineName).toBe("ci");
+  });
+
+  it("maps null workflow name and unrecognised path to unknown-workflow sentinel", () => {
+    expect(resolvePipelineName(null, "workflows/ci")).toBe(
+      PIPELINE_UNKNOWN_WORKFLOW_LABEL,
+    );
+    expect(resolveBranch(null)).toBe(PIPELINE_NO_BRANCH_LABEL);
+    expect(resolveBranch("  ")).toBe(PIPELINE_NO_BRANCH_LABEL);
   });
 });

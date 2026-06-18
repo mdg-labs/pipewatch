@@ -25,6 +25,8 @@ import {
   githubCommitUrl,
 } from "@/lib/run-detail-utils";
 import {
+  formatBranchDisplay,
+  formatPipelineNameDisplay,
   formatTriggerLabel,
   githubActorAvatarUrl,
   isActiveRun,
@@ -220,13 +222,15 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
           {repository.full_name}
         </Link>
         <span aria-hidden>/</span>
-        <span className="pw-run-detail-breadcrumb-current">{run.pipeline_name}</span>
+        <span className="pw-run-detail-breadcrumb-current">
+          {formatPipelineNameDisplay(run.pipeline_name)}
+        </span>
       </nav>
 
       <header className="pw-run-detail-header">
         <div className="pw-run-detail-header-top">
           <div className="pw-run-detail-title-row">
-            <h1 className="pw-run-detail-title">{run.pipeline_name}</h1>
+            <h1 className="pw-run-detail-title">{formatPipelineNameDisplay(run.pipeline_name)}</h1>
             <StatusBadge status={mapPipelineRunToBadgeStatus(run)} size="lg" />
           </div>
           {run.source_url ? (
@@ -265,7 +269,7 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
 
         <div className="pw-run-detail-meta">
           <div className="pw-run-detail-commit-row">
-            <span className="pw-run-detail-branch">{run.branch}</span>
+            <span className="pw-run-detail-branch">{formatBranchDisplay(run.branch)}</span>
             {commitHref ? (
               <a
                 href={commitHref}
