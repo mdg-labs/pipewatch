@@ -101,3 +101,19 @@ jobs:
         ${{ needs.meta.outputs.short_sha }}
         main
     secrets: inherit
+
+  e2e:
+    name: E2E
+    if: >-
+      always() &&
+      needs.ci.result == 'success' &&
+      (
+        github.event_name == 'pull_request' ||
+        github.ref == 'refs/heads/main' ||
+        (github.ref == 'refs/heads/staging' && needs.deploy-staging.result == 'success')
+      )
+    needs: [ci, deploy-staging]
+    uses: ./.github/workflows/e2e.yml
+    with:
+      advisory: ${{ github.event_name == 'pull_request' }}
+    secrets: inherit

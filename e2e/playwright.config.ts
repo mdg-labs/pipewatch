@@ -6,6 +6,18 @@ const appUrl = process.env.E2E_APP_URL ?? DEFAULT_E2E_APP_URL;
 const apiUrl = process.env.E2E_API_URL ?? DEFAULT_E2E_API_URL;
 const isStagingTarget = Boolean(process.env.E2E_APP_URL);
 
+function buildExtraHttpHeaders(): Record<string, string> | undefined {
+  const clientId = process.env.CF_ACCESS_CLIENT_ID;
+  const clientSecret = process.env.CF_ACCESS_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    return undefined;
+  }
+  return {
+    "CF-Access-Client-Id": clientId,
+    "CF-Access-Client-Secret": clientSecret,
+  };
+}
+
 function buildReporters(): ReporterDescription[] {
   const reporters: ReporterDescription[] = [["list"]];
 
@@ -74,6 +86,7 @@ export default defineConfig({
   reporter: buildReporters(),
   use: {
     baseURL: appUrl,
+    extraHTTPHeaders: buildExtraHttpHeaders(),
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
