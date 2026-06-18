@@ -97,10 +97,11 @@ jobs:
 
   build-ce-staging:
     name: Build CE images (staging)
+    # CE Docker builds have no migration/Fly/CF dependency — run in parallel with deploy-staging.
     if: >-
       github.event_name == 'push' &&
       github.ref == 'refs/heads/staging'
-    needs: [deploy-staging, meta]
+    needs: [ci, meta]
     permissions:
       contents: read
       packages: write
@@ -186,10 +187,8 @@ jobs:
 
   build-ce-release:
     name: Build CE images (release)
-    if: >-
-      needs.deploy-production.outputs.deployed == 'true' &&
-      github.event_name == 'release'
-    needs: [deploy-production]
+    # CE Docker builds have no migration/Fly/CF dependency — run in parallel with deploy-production.
+    if: github.event_name == 'release'
     permissions:
       contents: read
       packages: write

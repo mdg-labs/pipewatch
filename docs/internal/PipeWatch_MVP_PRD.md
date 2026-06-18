@@ -1168,13 +1168,16 @@ Pull request (staging → main)
   ci → e2e (required, after CI)
 
 Push to staging
-  ci → sync-secrets (staging, stage-only) → deploy-staging → build-and-push-ce-image
+  ci → sync-secrets (staging, stage-only) → deploy-staging
+  ci → build-and-push-ce-image (parallel with deploy chain; no migration dependency)
 
 Push to main
-  ci → prepare-release → build-and-push-ce-image
+  ci → prepare-release
+  ci → build-and-push-ce-image (parallel with prepare-release)
 
 Release published
-  sync-secrets (production, stage-only) → deploy-production → build-and-push-ce-image (if deployed)
+  sync-secrets (production, stage-only) → deploy-production
+  build-and-push-ce-image (parallel with deploy chain; no migration dependency)
 
 Manual dispatch
   sync-secrets.yml  — secrets only (stage-and-deploy Fly mode)
@@ -1225,7 +1228,7 @@ jobs:
 
   build-ce-staging:
     if: push to staging
-    needs: [deploy-staging, meta]
+    needs: [ci, meta]   # parallel with deploy-staging chain
     permissions:
       packages: write
     uses: ./.github/workflows/build-and-push-ce-image.yml
@@ -1272,8 +1275,7 @@ jobs:
     secrets: inherit
 
   build-ce-release:
-    if: release && deploy-production.outputs.deployed == 'true'
-    needs: [deploy-production]
+    if: release
     permissions:
       packages: write
     uses: ./.github/workflows/build-and-push-ce-image.yml
@@ -1337,7 +1339,7 @@ Called from `orchestrator.yml` on `release: published`, after `sync-secrets-prod
 
 Job chain: **check-not-deployed → migrate → derive Sentry release → parallel deploys (api, worker, web, marketing) → smoke → record DEPLOYED_VERSION**.
 
-Outputs `deployed: true` when a new production deploy completed — gates `build-ce-release` in orchestrator.
+Outputs `deployed: true` when a new production deploy completed and `DEPLOYED_VERSION` was recorded. CE image builds run in parallel and do not consume this output.
 
 ```yaml
 on:
@@ -1430,13 +1432,13 @@ jobs:
 
 ### CE Docker Images (`build-and-push-ce-image.yml`)
 
-Builds three images (`pipewatch-api`, `pipewatch-worker`, `pipewatch-web`) to GHCR. No app secrets baked in — CE users provide env at runtime via Docker Compose.
+Builds three images (`pipewatch-api`, `pipewatch-worker`, `pipewatch-web`) to GHCR. No app secrets baked in — CE users provide env at runtime via Docker Compose. Orchestrator starts CE builds after CI on `staging`/`main`, or immediately on release publish — **in parallel** with cloud deploy chains (no migration or hosted-infra dependency).
 
 | Trigger | Tags (per image) |
 |---|---|
 | Push to `staging` (orchestrator) | `dev`, `nightly`, `{short_sha}` |
 | Push to `main` (orchestrator) | `latest`, `{short_sha}`, `main` |
-| Release published + deploy succeeded (orchestrator) | `latest`, `{release_tag}` |
+| Release published (orchestrator) | `latest`, `{release_tag}` |
 
 ```yaml
 on:
@@ -1481,9 +1483,9 @@ Migrations run as a dedicated step in deploy workflows **before** any `flyctl de
 |---|---|---|---|---|---|
 | Pull request (any branch) | ✓ | — | — | — | — |
 | Pull request (staging → main) | ✓ | — | — | — | required (after CI) |
-| Push to `staging` | ✓ | ✓ (staging, stage-only) | staging all services | `dev`, `nightly`, `{short_sha}` | — |
+| Push to `staging` | ✓ | ✓ (staging, stage-only) | staging all services | `dev`, `nightly`, `{short_sha}` (parallel with deploy) | — |
 | Push to `main` | ✓ + draft release if version ≥ 1.0.0 | — | — | `latest`, `{short_sha}`, `main` | — |
-| Release published | — | ✓ (production, stage-only) | production all services (if not already deployed) | `latest`, `{release_tag}` (if deployed) | — |
+| Release published | — | ✓ (production, stage-only) | production all services (if not already deployed) | `latest`, `{release_tag}` (parallel with deploy) | — |
 | Manual `sync-secrets` dispatch | — | ✓ (chosen env, stage-and-deploy) | none | — | — |
 | Manual `e2e` dispatch | — | — | none | — | on-demand |
 
