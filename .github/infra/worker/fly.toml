@@ -1,0 +1,14 @@
+# Fly.io background worker (PRD §4.2).
+# App name is overridden at deploy time via deploy-fly.sh (per-env app name).
+# Secrets are staged by sync-secrets.yml and applied on flyctl deploy.
+
+app = "pipewatch-staging-worker"
+primary_region = "fra"
+
+[build]
+  dockerfile = "apps/worker/Dockerfile"
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

@@ -21,10 +21,10 @@ fi
 
 case "$SERVICE" in
   api)
-    DOCKERFILE="apps/api/Dockerfile"
+    FLY_CONFIG="${ROOT}/.github/infra/api/fly.toml"
     ;;
   worker)
-    DOCKERFILE="apps/worker/Dockerfile"
+    FLY_CONFIG="${ROOT}/.github/infra/worker/fly.toml"
     ;;
   *)
     echo "deploy-fly: unsupported service: ${SERVICE}" >&2
@@ -32,10 +32,20 @@ case "$SERVICE" in
     ;;
 esac
 
+if [[ ! -f "$FLY_CONFIG" ]]; then
+  echo "deploy-fly: missing Fly config: ${FLY_CONFIG}" >&2
+  exit 1
+fi
+
+deploy_config="$(mktemp)"
+# fly.toml app name must match --app or deploy APIs disagree (static file uses placeholder).
+sed "s/^app = .*/app = \"${FLY_APP}\"/" "$FLY_CONFIG" >"$deploy_config"
+trap 'rm -f "$deploy_config"' EXIT
+
 echo "deploy-fly: deploying ${SERVICE} to ${FLY_APP}"
 flyctl deploy \
   --app "$FLY_APP" \
-  --dockerfile "$DOCKERFILE" \
+  --config "$deploy_config" \
   --remote-only \
   --ha=false \
   --yes
