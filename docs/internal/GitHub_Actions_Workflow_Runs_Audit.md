@@ -1,6 +1,7 @@
 # GitHub Actions workflow runs — audit vs PipeWatch
 
 **Date:** 2026-06-18  
+**Last re-verified:** 2026-06-18 (third pass — findings §1–§20)  
 **Scope:** Compare GitHub’s official workflow-run / workflow-job documentation and REST API contracts with PipeWatch’s ingestion, storage, and UI handling.  
 **Method:** Codebase review + GitHub docs (webhooks, REST Actions endpoints, workflow trigger reference). No code changes.
 
@@ -10,11 +11,11 @@ PipeWatch’s core model — ingest `workflow_run` and `workflow_job` webhooks, 
 
 The largest **functional gaps** are:
 
-1. **Re-runs are not modeled** — GitHub keeps the same `run_id` across attempts (`run_attempt` increments); PipeWatch upserts on `external_run_id` only, so a re-run overwrites the prior attempt.
-2. **Backfill/polling ingest runs only** — jobs and steps are webhook-only; historical run detail is incomplete until live events arrive.
-3. **Polling is single-page and date-bucketed** — busy repos can miss runs between poll intervals.
+1. **Re-runs are not modeled** — GitHub keeps the same `run_id` across attempts (`run_attempt` increments); PipeWatch upserts on `external_run_id` only, so the run row reflects the latest attempt while **stale jobs from prior attempts can accumulate** in run detail.
+2. **Backfill/polling ingest runs only** — jobs and steps are webhook-only; historical run detail is incomplete until live events arrive (or forever in polling-only CE).
+3. **Polling is single-page and date-bucketed** — poll fetches only page 1 (newest 100 runs); older runs inside the poll window are missed. Backfill paginates but both paths hit GitHub’s **1,000-result cap** when using `created`.
 4. **Several nullable GitHub fields are required in our schema** — `head_branch` and workflow `name` can be `null` from GitHub but `pipeline_runs.branch` and `pipeline_name` are `NOT NULL`.
-5. **Internal docs drift** — PRD §12.6 lists webhook `action` values that do not match GitHub’s published event types.
+5. **Internal docs drift** — PRD §12.6 lists webhook `action` values that do not match GitHub’s published event types (cloud webhook URLs are correct in `GitHub_App_Setup_Runbook.md`).
 
 Most other differences are **intentional simplifications** (collapsed conclusion values, three-value status model) documented below.
 
@@ -76,7 +77,16 @@ Key fields PipeWatch uses or should be aware of:
 
 ### Re-runs and `run_attempt`
 
-GitHub documents that `github.run_id` is stable across re-runs; `github.run_attempt` increments (starts at 1). Re-run URLs use `/actions/runs/{run_id}/attempts/{attempt_number}`. PipeWatch keys runs only on `run.id`, so **each re-run replaces the stored snapshot of the previous attempt**.
+GitHub documents that `github.run_id` is stable across re-runs; `github.run_attempt` increments (starts at 1). Re-run URLs use `/actions/runs/{run_id}/attempts/{attempt_number}`. PipeWatch keys runs only on `run.id`, so **each re-run overwrites the run row** with the latest attempt’s status/conclusion.
+
+Job handling on re-run depends on how GitHub re-executes:
+
+| Re-run type | GitHub behavior | PipeWatch effect |
+|---|---|---|
+| Full workflow re-run | Same `run_id`; new numeric job IDs per attempt | Run row overwritten; **old attempt jobs remain** in `pipeline_jobs` (unique on `run_id` + `external_job_id`) |
+| Re-run single failed job (`gh run rerun --job`) | Same `run_id` and same job ID re-executed | Run row overwritten; **job row overwritten** via upsert |
+
+GitHub’s jobs list API defaults to `filter=latest` ([changelog](https://github.blog/changelog/2020-03-09-new-filter-parameter-in-workflow-jobs-api/)); PipeWatch has no equivalent filtering — run detail can show a mix of attempts.
 
 ---
 
@@ -143,15 +153,19 @@ Severity: **High** = data loss or incorrect user-visible state; **Medium** = inc
 
 GitHub publishes `waiting` as a distinct job action (runner assignment delay). PipeWatch maps job **status** `waiting` → `queued` in `mapGitHubStatus`, but never documents the action. Processing still works (action is not gated), but operators may not expect `waiting` deliveries.
 
-### 3. `run_attempt` not modeled — re-runs overwrite history — **High**
+### 3. `run_attempt` not modeled — re-runs corrupt run detail — **High**
 
 - Unique key: `(repo_id, external_run_id)` where `external_run_id = String(workflow_run.id)`.
 - GitHub re-runs reuse `id`, increment `run_attempt`.
-- Jobs API defaults to `filter=latest`; re-run creates new job executions under the same run id.
+- Job unique key: `(run_id, external_job_id)` — no `run_attempt` dimension.
 
-**Impact:** After “Re-run failed jobs”, PipeWatch shows only the latest attempt. Prior attempt jobs/steps are replaced or orphaned depending on `external_job_id` reuse.
+**Impact:**
 
-**Recommendation (future):** Store `run_attempt` (and optionally key jobs by attempt), or treat each attempt as a distinct logical run for display.
+- **Run row:** Always reflects the latest attempt (status, conclusion, timestamps overwritten).
+- **Full workflow re-run:** New GitHub job IDs → **stale jobs from prior attempts accumulate** in run detail; UI shows a mix of old and new attempt jobs.
+- **Single-job re-run:** Same job ID → job row overwritten (correct for that job only).
+
+**Recommendation (future):** Store `run_attempt`; on run upsert, replace jobs for that attempt only (or purge jobs not in latest `filter=latest` API response).
 
 ### 4. Backfill and polling do not ingest jobs/steps — **High (UX gap)**
 
@@ -163,11 +177,18 @@ GitHub publishes `waiting` as a distinct job action (runner assignment delay). P
 
 **Recommendation:** Optional backfill phase: for each ingested run, fetch jobs (paginated) and upsert.
 
-### 5. Polling fetches only the first page (max 100 runs) — **High (busy repos)**
+### 5. Poll is single-page; backfill and poll share GitHub’s 1,000-result cap — **High (busy repos)**
 
-`poll-repo.ts` calls `fetchWorkflowRunsPage(..., page: 1, ...)` once per interval.
+**Poll** (`poll-repo.ts`) calls `fetchWorkflowRunsPage(..., page: 1, ...)` once per interval — no pagination loop.
 
-**Impact:** Repos with >100 runs in the poll window (since `last_synced_at` or retention cutoff) miss older-in-window runs. GitHub also caps filtered searches at **1,000 results** when using `created` (documented on list-runs endpoint).
+**Backfill** (`backfill-repo.ts`) paginates until an empty or short page, but uses the same `created=>=…` filter.
+
+**GitHub limit:** List runs returns at most **1,000 results per search** when `created` (or other filter params) is used ([REST docs](https://docs.github.com/en/rest/actions/workflow-runs?apiVersion=2022-11-28#list-workflow-runs-for-a-repository)).
+
+**Impact:**
+
+- **Poll:** Default sort is newest-first → page 1 returns the **latest** 100 runs. Older runs inside the poll window (since `last_synced_at` or retention cutoff) are **never fetched**.
+- **Backfill:** Repos with >1,000 runs inside the retention window cannot be fully backfilled via the current API query.
 
 ### 6. Poll `created` filter uses date-only granularity — **Medium**
 
@@ -182,7 +203,7 @@ GitHub publishes `waiting` as a distinct job action (runner assignment delay). P
 | `workflow_run.name` | string or null | `pipeline_name` NOT NULL |
 | `workflow_run.head_branch` | string or null | `branch` NOT NULL |
 
-**Impact:** Fork-edge cases and certain event types can deliver `null` branch; mapping would insert `null` into NOT NULL columns (runtime/DB error) or coerced empty string (misleading UI).
+**Impact:** Fork-edge cases and certain event types can deliver `null` branch. Mapper passes values through with no fallback (`map-workflow-run.ts`). TypeScript types incorrectly declare `head_branch: string` (non-null) despite GitHub allowing null — runtime JSON `null` would violate the DB constraint.
 
 ### 8. `completed_at` derived from `updated_at` — **Low–Medium**
 
@@ -243,9 +264,29 @@ GitHub distinguishes the user who triggered the run (especially `schedule`, `wor
 
 Not handled (returns 200, no enqueue): `check_run`, `check_suite`, `workflow_dispatch`, `installation`, `push`, etc. Correct for GitHub Actions–centric MVP; workflows triggered only via `workflow_dispatch` still produce `workflow_run` events.
 
-### 18. CE webhook URL path vs API routing — **Verify ops**
+### 18. Webhook URL documentation split across CE vs cloud — **Low (mostly documented)**
 
-PRD §16 examples use `https://pipewatch.yourdomain.com/webhooks/github`. API route is `POST /webhooks/github` on the API host (`api.pipewatch.app` in cloud). Ensure CE/docs distinguish **web app origin vs API origin** for webhook configuration.
+| Context | Webhook URL guidance | Status |
+|---|---|---|
+| Cloud staging/prod | `https://*-api.pipewatch.app/webhooks/github` | **Correct** in `docs/internal/GitHub_App_Setup_Runbook.md` |
+| CE (PRD §16) | `https://pipewatch.yourdomain.com/webhooks/github` | **Correct** when domain points at API container (port 3000 in `docker-compose.yml`) |
+| CE web app | `localhost:3001` (Next.js) | **Not** the webhook target — web is separate from API |
+
+**Impact:** Low ops risk. PRD §16 CE example is valid for self-hosted; cloud operators should use the runbook, not PRD §16. No code mismatch — route is `POST /webhooks/github` on the API app (`apps/api/src/routes/webhooks/github.ts`).
+
+### 19. Poll does not advance `last_synced_at` on empty results — **Medium**
+
+`poll-repo.ts` only calls `markRepositorySynced` when `runsIngested > 0`.
+
+**Impact:** Quiet repos (or windows where GitHub returns zero matching runs) never advance `last_synced_at`. Poll keeps re-querying the same date bucket on every interval (wasteful; pairs badly with §6 date-only granularity).
+
+**Recommendation:** Always update `last_synced_at` after a successful poll, even when zero runs are returned.
+
+### 20. GitHub-side run deletion not synced — **Low**
+
+GitHub allows deleting workflow runs via API/UI. PipeWatch has no webhook handler or poll tombstone for deleted runs.
+
+**Impact:** Runs deleted on GitHub remain in `pipeline_runs` until PipeWatch retention cleanup or manual delete. Stale rows link to dead GitHub URLs.
 
 ---
 
@@ -261,7 +302,7 @@ PRD §16 examples use `https://pipewatch.yourdomain.com/webhooks/github`. API ro
 | Job completed + steps | `workflow_job` `completed` + `steps[]` | Upsert job; replace steps |
 | Historical runs | REST list runs | Backfill + poll (runs only) |
 | Historical jobs | REST list jobs for run | **Not implemented** |
-| Re-run attempts | Same `run_id`, new `run_attempt` | **Overwrites** |
+| Re-run attempts | Same `run_id`, new `run_attempt` | Run row **overwritten**; jobs **accumulate** (full re-run) or **overwrite** (single-job re-run) |
 | Run logs | REST logs redirect | Link via `source_url` only (PRD Decision #6) |
 | Delete run on GitHub | Admin delete API | **No tombstone** — stale row remains |
 | Webhook signature | `X-Hub-Signature-256` | Enforced (`github-webhook-signature.ts`) |
@@ -280,39 +321,56 @@ PRD §16 examples use `https://pipewatch.yourdomain.com/webhooks/github`. API ro
 
 ---
 
-## Verification log (second pass)
+## Verification log
 
-Re-read this document against GitHub docs and codebase on 2026-06-18:
+### Second pass (2026-06-18)
+
+Initial audit written and cross-checked against GitHub docs + codebase.
+
+### Third pass (2026-06-18)
+
+Independent re-verification of all findings; corrections applied to §3, §5, §18; added §19–§20.
 
 | Claim | Re-verified |
 |---|---|
-| `workflow_run` actions are `requested`, `in_progress`, `completed` | Yes — [GitHub webhook docs](https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_run), octokit/webhooks.js schema |
+| `workflow_run` actions are `requested`, `in_progress`, `completed` | Yes — [GitHub webhook docs](https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_run) (refreshed 2026-06-18) |
 | `workflow_job` includes `waiting` action | Yes — same webhook docs §workflow_job |
 | `head_branch` nullable on REST | Yes — list-runs response schema (`string or null`) |
 | `name` nullable on REST | Yes — list-runs response schema |
 | `run_attempt` on workflow run object | Yes — REST schema includes `run_attempt` |
+| Re-run: run row overwritten | Yes — upsert on `(repo_id, external_run_id)` |
+| Re-run: full re-run accumulates jobs | Yes — new job IDs per attempt; no purge of old jobs |
+| Re-run: single-job re-run overwrites job | Yes — same `external_job_id` upsert path |
 | PipeWatch poll uses page 1 only | Yes — `poll-repo.ts` line 79 |
+| Backfill paginates but shares 1,000 cap | Yes — `backfill-repo.ts` loop + REST docs |
+| Poll skips `last_synced_at` when zero runs | Yes — `poll-repo.ts` lines 85–87 |
 | Job handler requires parent run | Yes — `process-pipeline-job.ts` + integration test |
 | Conclusion mapping | Yes — `github-status.ts` |
 | PRD §12.6 `created` action | Yes — `PipeWatch_MVP_PRD.md` line 749 |
+| Cloud webhook URL in runbook | Yes — `GitHub_App_Setup_Runbook.md` |
+| No `X-GitHub-Delivery` dedup | Yes — not referenced in `github.ts` |
+| SSE `completed_at` bug | Yes — `run-utils.ts`, `run-detail-utils.ts` |
 | Webhook events subscribed | Yes — `SUPPORTED_GITHUB_EVENTS` in `github.ts` |
 
 ---
 
 ## Suggested follow-ups (issues, not implemented here)
 
-1. **Model `run_attempt`** or document “latest attempt only” as explicit product limitation.
-2. **Backfill jobs** via `GET /actions/runs/{id}/jobs` for complete run detail.
-3. **Fix poll pagination** — loop pages until empty or cursor, respect rate limits.
-4. **Harden null `head_branch` / `name`** — nullable columns or sentinels.
-5. **PRD correction** — `requested` not `created`; add `waiting` for jobs.
-6. **SSE payload** — include `completed_at` in `PipelineRunSummary`; fix client patch logic.
-7. **Unknown status handling** — fail safe instead of defaulting to `completed`.
+1. **Model `run_attempt`** — purge or scope jobs per attempt; document “latest attempt only” if scope stays limited.
+2. **Backfill jobs** via `GET /actions/runs/{id}/jobs?filter=latest` for complete run detail.
+3. **Fix poll pagination** — loop pages until empty; always advance `last_synced_at` (§19).
+4. **Backfill retention window** — handle GitHub’s 1,000-result `created` cap (narrower date ranges or branch/workflow filters).
+5. **Harden null `head_branch` / `name`** — nullable columns or sentinels; fix TS types.
+6. **PRD correction** — `requested` not `created`; add `waiting` for jobs.
+7. **SSE payload** — include `completed_at` in `PipelineRunSummary`; fix client patch logic (§15).
+8. **Unknown status handling** — fail safe instead of defaulting to `completed` (§10).
+9. **GitHub run deletion** — optional poll/tombstone or document as known staleness (§20).
 
 ---
 
 ## References
 
 - PipeWatch PRD §4.4, §6, §12.6, §16, §18 — `docs/internal/PipeWatch_MVP_PRD.md`
+- GitHub App setup (cloud) — `docs/internal/GitHub_App_Setup_Runbook.md`
 - PipeWatch run lifecycle (customer docs) — `apps/marketing/content/docs/concepts/run-lifecycle.mdx`
 - Test fixtures — `packages/utils/src/github/fixtures/`
