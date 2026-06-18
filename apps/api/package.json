@@ -22,12 +22,12 @@
     "@pipewatch/utils": "workspace:*",
     "@pipewatch/worker": "workspace:*",
     "@scalar/hono-api-reference": "^0.11.3",
-    "@sentry/node": "^9.15.0",
+    "@sentry/node": "^10.58.0",
     "drizzle-orm": "^0.45.2",
     "hono": "catalog:",
     "ioredis": "^5.10.1",
     "jose": "^6.0.11",
-    "nodemailer": "^9.0.0",
+    "nodemailer": "^9.0.1",
     "stripe": "^22.2.1"
   },
   "devDependencies": {

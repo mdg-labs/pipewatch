@@ -20,6 +20,14 @@
     "db:generate": "turbo db:generate --filter=@pipewatch/db",
     "db:migrate": "turbo db:migrate --filter=@pipewatch/db"
   },
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.10",
+      "uuid": ">=11.1.1",
+      "@opentelemetry/core": ">=2.8.0",
+      "esbuild": ">=0.28.1"
+    }
+  },
   "devDependencies": {
     "@playwright/test": "^1.51.1",
     "@reportportal/agent-js-playwright": "^5.1.11",

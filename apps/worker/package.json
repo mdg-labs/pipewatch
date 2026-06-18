@@ -51,7 +51,7 @@
     "@pipewatch/db": "workspace:*",
     "@pipewatch/types": "workspace:*",
     "@pipewatch/utils": "workspace:*",
-    "@sentry/node": "^9.15.0",
+    "@sentry/node": "^10.58.0",
     "bullmq": "^5.41.0",
     "drizzle-orm": "^0.45.2",
     "ioredis": "^5.10.1",
