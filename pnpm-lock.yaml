@@ -105,6 +105,9 @@ importers:
       '@pipewatch/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@pipewatch/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       '@pipewatch/utils':
         specifier: workspace:*
         version: link:../../packages/utils

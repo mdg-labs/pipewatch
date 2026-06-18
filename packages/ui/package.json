@@ -8,7 +8,19 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./components/logo": {
+      "types": "./dist/components/logo.d.ts",
+      "default": "./dist/components/logo.js"
+    },
+    "./components/logo-wordmark": {
+      "types": "./dist/components/logo-wordmark.d.ts",
+      "default": "./dist/components/logo-wordmark.js"
+    },
+    "./components/button": {
+      "types": "./dist/components/button.d.ts",
+      "default": "./dist/components/button.js"
+    }
   },
   "scripts": {
     "build": "tsc --build",

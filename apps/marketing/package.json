@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@pipewatch/config": "workspace:*",
+    "@pipewatch/ui": "workspace:*",
     "@pipewatch/utils": "workspace:*",
     "@sentry/nextjs": "^9.15.0",
     "next": "catalog:",
