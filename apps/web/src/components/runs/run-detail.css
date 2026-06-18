@@ -1,0 +1,437 @@
+.pw-run-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pw-run-detail-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pw-run-detail-breadcrumb-link {
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.pw-run-detail-breadcrumb-link:hover {
+  color: var(--text-primary);
+}
+
+.pw-run-detail-breadcrumb-current {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.pw-run-detail-header {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pw-run-detail-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.pw-run-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.pw-run-detail-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+}
+
+.pw-run-detail-github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default);
+  background: var(--bg-elevated);
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.pw-run-detail-github-link:hover {
+  border-color: var(--border-strong);
+  color: var(--text-primary);
+}
+
+.pw-run-detail-stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.pw-run-detail-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.pw-run-detail-stat-label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pw-run-detail-stat-value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.pw-run-detail-duration-live {
+  color: var(--status-running);
+}
+
+.pw-run-detail-trigger {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  padding: 1px 7px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.pw-run-detail-meta {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.pw-run-detail-commit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.pw-run-detail-branch {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.pw-run-detail-sha {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-accent);
+  background: oklch(70% 0.195 55 / 0.08);
+  border: 1px solid var(--border-accent);
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-decoration: none;
+}
+
+.pw-run-detail-sha:hover {
+  background: oklch(70% 0.195 55 / 0.14);
+}
+
+.pw-run-detail-commit-message {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 480px;
+}
+
+.pw-run-detail-actor {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pw-run-section-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pw-job-graph-canvas-wrap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 24px;
+  overflow-x: auto;
+}
+
+.pw-job-graph-canvas {
+  position: relative;
+  min-width: 240px;
+}
+
+.pw-job-graph-edges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pw-job-graph-edge {
+  stroke: var(--border-strong);
+  stroke-width: 1.5;
+}
+
+.pw-job-graph-edge-skipped {
+  stroke: oklch(60% 0.09 298 / 0.45);
+  stroke-dasharray: 5 3;
+}
+
+.pw-job-graph-arrow {
+  fill: var(--border-strong);
+}
+
+.pw-job-graph-arrow-skipped {
+  fill: oklch(60% 0.09 298 / 0.45);
+}
+
+.pw-job-graph-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--status-success-muted);
+  background: var(--status-success-subtle);
+  text-align: left;
+  cursor: pointer;
+}
+
+.pw-job-graph-node:hover {
+  border-color: var(--border-strong);
+}
+
+.pw-job-graph-node-failed {
+  border: 1.5px solid var(--status-failure-muted);
+  background: var(--status-failure-subtle);
+  box-shadow: var(--glow-failure);
+}
+
+.pw-job-graph-node-skipped {
+  border-color: oklch(60% 0.09 298 / 0.22);
+  background: var(--status-skipped-subtle);
+  opacity: 0.72;
+}
+
+.pw-job-graph-node-selected {
+  outline: 2px solid var(--pw-amber-500);
+  outline-offset: 2px;
+}
+
+.pw-job-graph-node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.pw-job-graph-node-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pw-job-graph-node-duration {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.pw-job-graph-node-runner {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pw-run-detail-jobs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pw-run-detail-job-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pw-run-detail-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pw-job-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.pw-job-panel-failed {
+  border-color: var(--status-failure-muted);
+}
+
+.pw-job-panel-highlighted {
+  box-shadow: 0 0 0 2px oklch(70% 0.195 55 / 0.35);
+}
+
+.pw-job-panel-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: none;
+  background: var(--bg-elevated);
+  cursor: pointer;
+  text-align: left;
+}
+
+.pw-job-panel-failed .pw-job-panel-header {
+  background: var(--status-failure-subtle);
+}
+
+.pw-job-panel-header:hover {
+  background: var(--bg-overlay);
+}
+
+.pw-job-panel-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+}
+
+.pw-job-panel-duration {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pw-job-panel-failed .pw-job-panel-duration {
+  color: var(--status-failure);
+}
+
+.pw-job-panel-elapsed {
+  color: var(--status-running);
+}
+
+.pw-job-panel-runner {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  background: var(--bg-elevated);
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-subtle);
+}
+
+.pw-job-panel-chevron {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  transition: transform 120ms ease;
+}
+
+.pw-job-panel-chevron-open {
+  transform: rotate(180deg);
+}
+
+.pw-job-panel-steps {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pw-job-panel-empty {
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.pw-step-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pw-step-row-failed {
+  background: var(--status-failure-subtle);
+}
+
+.pw-step-row-number {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.pw-step-row-name {
+  font-size: 13px;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pw-step-row-duration {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
