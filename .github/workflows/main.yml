@@ -1,0 +1,54 @@
+name: Main
+
+# Push to main — CI gate, draft release preparation, and CE image builds. No deploy (PRD §22).
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  meta:
+    name: Resolve commit metadata
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.sha.outputs.short_sha }}
+    steps:
+      - id: sha
+        run: echo "short_sha=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+  prepare-release:
+    name: Prepare release
+    needs: [ci]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/prepare-release.yml
+    secrets: inherit
+
+  ce-images:
+    name: Build CE images (main)
+    needs: [ci, meta]
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-and-push-ce-image.yml
+    with:
+      tags: |
+        latest
+        ${{ needs.meta.outputs.short_sha }}
+        main
+    secrets: inherit

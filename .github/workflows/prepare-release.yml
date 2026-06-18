@@ -1,6 +1,6 @@
 name: Prepare Release
 
-# Release preparation — called from orchestrator.yml after CI passes on main.
+# Release preparation — called from main.yml after CI passes on main.
 # Creates a draft GitHub Release + git tag when version >= 1.0.0 and v{version} does not exist.
 # Secrets come from the GitHub Actions environment (Phase-synced) — no runtime Phase fetch.
 

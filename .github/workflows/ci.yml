@@ -1,7 +1,7 @@
 name: CI
 
 # Reusable CI gate — lint, typecheck, unit, build, integration, audit.
-# Called by orchestrator.yml on PR/push; never triggered directly (PRD §22).
+# Called by pr.yml, staging.yml, and main.yml; never triggered directly (PRD §22).
 
 on:
   workflow_call:

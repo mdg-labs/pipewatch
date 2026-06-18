@@ -23,7 +23,7 @@ describe("github-actions-secrets policy", () => {
   it("allows DEPLOYED_VERSION via vars", () => {
     const issues = findForbiddenWorkflowVars(
       'DEPLOYED="${{ vars.DEPLOYED_VERSION }}"',
-      "deploy-production.yml",
+      "release.yml",
     );
     expect(issues).toHaveLength(0);
   });
@@ -37,7 +37,7 @@ describe("github-actions-secrets policy", () => {
         `,
       },
       {
-        path: ".github/workflows/deploy-production.yml",
+        path: ".github/workflows/release.yml",
         content: `
           DEPLOYED="\${{ vars.DEPLOYED_VERSION }}"
         `,

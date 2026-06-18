@@ -1,0 +1,57 @@
+name: Staging
+
+# Push to staging — CI gate, then deploy and CE image builds in parallel (PRD §22).
+
+on:
+  push:
+    branches: [staging]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  meta:
+    name: Resolve commit metadata
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.sha.outputs.short_sha }}
+    steps:
+      - id: sha
+        run: echo "short_sha=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    name: Deploy staging
+    needs: [ci]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: staging
+    secrets: inherit
+
+  ce-images:
+    name: Build CE images (staging)
+    # CE Docker builds have no migration/Fly/CF dependency — run in parallel with deploy.
+    needs: [ci, meta]
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-and-push-ce-image.yml
+    with:
+      tags: |
+        dev
+        nightly
+        ${{ needs.meta.outputs.short_sha }}
+    secrets: inherit

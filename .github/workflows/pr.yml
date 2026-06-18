@@ -1,0 +1,42 @@
+name: PR
+
+# Pull request entry point — CI, version check, and staging→main E2E (PRD §22).
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  version-check:
+    name: Version check
+    permissions:
+      contents: read
+    uses: ./.github/workflows/version-check.yml
+
+  e2e:
+    name: E2E
+    if: >-
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.ref == 'staging'
+    needs: [ci]
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: ./.github/workflows/e2e.yml
+    with:
+      advisory: false
+    secrets: inherit

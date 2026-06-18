@@ -1,0 +1,78 @@
+name: Release
+
+# Published release — production deploy (no CI gate) and CE image tags (PRD §22).
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  check-not-deployed:
+    name: Production · 0 · Check deploy needed
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      should_deploy: ${{ steps.compare.outputs.should_deploy }}
+      release_tag: ${{ steps.compare.outputs.release_tag }}
+    steps:
+      - name: Compare release tag to deployed version
+        id: compare
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          DEPLOYED="${{ vars.DEPLOYED_VERSION }}"
+          echo "release_tag=${TAG}" >> "$GITHUB_OUTPUT"
+          if [ -n "$DEPLOYED" ] && [ "$TAG" = "$DEPLOYED" ]; then
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${TAG} already deployed — skipping"
+          else
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+            echo "Deploying release ${TAG}"
+          fi
+
+  deploy:
+    name: Deploy production
+    needs: [check-not-deployed]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: production
+      ref: ${{ github.event.release.tag_name }}
+      should_deploy: ${{ needs.check-not-deployed.outputs.should_deploy }}
+    secrets: inherit
+
+  record-deployed-version:
+    name: Production · 5 · Record deployed version
+    needs: [check-not-deployed, deploy]
+    if: >-
+      needs.check-not-deployed.outputs.should_deploy == 'true'
+      && needs.deploy.result == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      actions: write
+    steps:
+      - name: Update DEPLOYED_VERSION
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh variable set DEPLOYED_VERSION --body "${{ github.event.release.tag_name }}"
+
+  ce-images:
+    name: Build CE images (release)
+    # CE Docker builds have no migration/Fly/CF dependency — run in parallel with deploy.
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-and-push-ce-image.yml
+    with:
+      tags: |
+        latest
+        ${{ github.event.release.tag_name }}
+    secrets: inherit
