@@ -1,0 +1,29 @@
+---
+title: Webhook vs polling mode
+description: Choose real-time webhook ingestion or periodic polling when GitHub cannot reach your PipeWatch endpoint.
+---
+
+## Webhook mode (default)
+
+When GitHub can POST signed events to your API, PipeWatch ingests runs in near real time. This is the recommended path for Cloud and publicly reachable CE deployments.
+
+## When to poll
+
+Enable **polling** per repository when:
+
+- Your CE instance cannot expose a public HTTPS webhook URL
+- A corporate firewall blocks inbound GitHub traffic
+- You are validating PipeWatch before tunnel setup completes
+
+## Polling interval
+
+Polling defaults to **60 seconds** with a minimum of **30 seconds** (`polling_interval_seconds` on the repository record). Polling uses the GitHub REST API and respects rate limits.
+
+## Trade-offs
+
+| Mode | Latency | Requirements |
+|---|---|---|
+| Webhooks | Seconds | Public HTTPS endpoint + shared secret |
+| Polling | Interval-based | Outbound GitHub API access only |
+
+Configure webhooks when possible — polling is a fallback, not the primary ingestion path.

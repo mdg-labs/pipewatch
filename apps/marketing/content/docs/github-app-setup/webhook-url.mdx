@@ -1,0 +1,30 @@
+---
+title: Webhook URL
+description: Point your GitHub App webhook at PipeWatch and configure the shared secret used for HMAC verification.
+---
+
+## Webhook endpoint
+
+Set the GitHub App **Webhook URL** to:
+
+```
+{API_URL}/webhooks/github
+```
+
+For PipeWatch Cloud, use `https://api.pipewatch.app/webhooks/github`. For CE, use your public API base URL.
+
+## Webhook secret
+
+Generate a strong random secret in GitHub and set the same value as `GITHUB_WEBHOOK_SECRET` in PipeWatch. The API rejects unsigned or incorrectly signed payloads with **401** — there is no bypass flag.
+
+## Delivery troubleshooting
+
+In GitHub → App → **Advanced**, inspect recent deliveries. Common issues:
+
+- DNS or TLS misconfiguration on self-hosted endpoints
+- Reverse proxy stripping the `X-Hub-Signature-256` header
+- Secret mismatch between GitHub and PipeWatch env
+
+## Self-hosted reachability
+
+CE instances must be reachable from GitHub over HTTPS. If you cannot expose a public port, use a [Cloudflare Tunnel](/docs/github-app-setup/cloudflare-tunnel).

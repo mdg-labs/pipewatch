@@ -1,0 +1,33 @@
+---
+title: Permissions and events
+description: Required GitHub App permissions and webhook events for PipeWatch to ingest workflow runs and jobs.
+---
+
+## Repository permissions
+
+PipeWatch needs read access to Actions metadata and repository metadata:
+
+| Permission | Access | Purpose |
+|---|---|---|
+| **Actions** | Read | List workflow runs and jobs |
+| **Metadata** | Read | Repository names, default branch, visibility |
+| **Contents** | Read (optional) | Workflow file paths for display |
+
+## Organization permissions
+
+No elevated organization permissions are required for MVP. Install the app on each org you want to monitor.
+
+## Subscribe to events
+
+Enable these webhook events on the GitHub App:
+
+- `workflow_run`
+- `workflow_job`
+- `installation`
+- `installation_repositories`
+
+PipeWatch validates every payload with `X-Hub-Signature-256` before processing.
+
+## Polling fallback
+
+If webhooks are unavailable, enable polling per repository in PipeWatch settings. See [Webhook vs polling mode](/docs/concepts/webhook-vs-polling).

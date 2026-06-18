@@ -1,0 +1,34 @@
+---
+title: CE quickstart
+description: Run PipeWatch Community Edition locally with Docker Compose and connect your GitHub App in a few steps.
+---
+
+## Prerequisites
+
+You need **Docker** and **Docker Compose v2**, a publicly reachable HTTPS endpoint for GitHub webhooks, and a GitHub App configured for PipeWatch.
+
+## Clone and configure
+
+```bash
+git clone https://github.com/mdg-labs/pipewatch.git
+cd pipewatch
+cp .env.example .env
+```
+
+Set required secrets in `.env` — see the [environment variables](/docs/ce-reference/environment-variables) reference for the full list.
+
+## Start the stack
+
+```bash
+docker compose up -d
+```
+
+The API applies database migrations on startup. Open the dashboard URL from your Compose configuration (default `http://localhost:3000`).
+
+## Bootstrap the first user
+
+Visit `/setup` when no users exist. Create the owner account, then connect GitHub under **Settings → Integrations**.
+
+## Production notes
+
+For internet-facing CE instances, use a reverse proxy or [Cloudflare Tunnel](/docs/github-app-setup/cloudflare-tunnel) so GitHub can deliver signed webhooks reliably.

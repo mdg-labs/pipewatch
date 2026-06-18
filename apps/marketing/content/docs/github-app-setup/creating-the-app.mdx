@@ -1,0 +1,27 @@
+---
+title: Creating the GitHub App
+description: Register a GitHub App for PipeWatch with the correct metadata, callback URLs, and webhook endpoint.
+---
+
+## Register the app
+
+In GitHub → **Settings → Developer settings → GitHub Apps**, create a new app owned by your organization or user account.
+
+Use a clear name such as **PipeWatch (Your Org)** and set the homepage URL to your PipeWatch instance or `https://pipewatch.app`.
+
+## OAuth and setup URLs
+
+Configure these URLs for your environment:
+
+- **Callback URL:** `{APP_URL}/api/v1/auth/github/callback`
+- **Setup URL (optional):** `{APP_URL}/settings/integrations`
+
+Replace `{APP_URL}` with your Cloud or CE base URL.
+
+## Generate credentials
+
+Download the **private key** (.pem) and note the **App ID**. Store the private key as `GITHUB_APP_PRIVATE_KEY` — never commit it to git.
+
+## Install the app
+
+Install the app on target organizations, then enable repositories inside PipeWatch. See [Permissions & events](/docs/github-app-setup/permissions-and-events) for required scopes.

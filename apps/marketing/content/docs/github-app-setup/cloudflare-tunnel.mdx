@@ -1,0 +1,36 @@
+---
+title: Cloudflare Tunnel guide
+description: Expose a self-hosted PipeWatch CE API securely to GitHub webhooks using Cloudflare Tunnel.
+---
+
+## Why use a tunnel
+
+GitHub delivers webhooks over the public internet. CE deployments behind NAT or private networks need a stable HTTPS endpoint. Cloudflare Tunnel provides one without opening inbound firewall ports.
+
+## Create a tunnel
+
+Install `cloudflared` on the host running PipeWatch (or a nearby gateway) and authenticate with your Cloudflare account.
+
+```bash
+cloudflared tunnel create pipewatch-ce
+cloudflared tunnel route dns pipewatch-ce api.your-domain.example
+```
+
+## Route to the API
+
+Point the tunnel service to your PipeWatch API listener (for example `http://localhost:8787`):
+
+```yaml
+ingress:
+  - hostname: api.your-domain.example
+    service: http://localhost:8787
+  - service: http_status:404
+```
+
+## Update GitHub App settings
+
+Set the GitHub App webhook URL to `https://api.your-domain.example/webhooks/github` and confirm deliveries succeed in the GitHub App advanced settings.
+
+## Security
+
+Terminate TLS at Cloudflare, restrict tunnel tokens, and rotate `GITHUB_WEBHOOK_SECRET` if a delivery endpoint was ever misconfigured.

@@ -1,0 +1,26 @@
+---
+title: Upgrading
+description: Safely upgrade a self-hosted PipeWatch CE deployment with migrations and minimal downtime.
+---
+
+## Pull new images
+
+Update to the release tag you want to deploy, then recreate containers:
+
+```bash
+git pull origin staging
+docker compose pull
+docker compose up -d
+```
+
+## Migrations
+
+The API runs `drizzle-kit migrate` on startup. Watch API logs for migration success before routing production traffic.
+
+## Worker compatibility
+
+Upgrade API and worker together so job payload schemas stay aligned. A brief queue pause during rolling restarts is normal.
+
+## Rollback
+
+If a release fails validation, check out the previous git tag, pull matching container images, and restart Compose. Database rollbacks require restoring from backup — forward-only migrations are the default path.

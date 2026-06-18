@@ -1,0 +1,24 @@
+---
+title: Run lifecycle
+description: How workflow runs move from queued to completed in PipeWatch and map to GitHub Actions statuses.
+---
+
+## Pipeline run model
+
+PipeWatch normalizes GitHub workflow runs into **pipeline runs** with vendor-neutral fields: `status`, `conclusion`, timestamps, branch, and commit metadata.
+
+## Status vs conclusion
+
+While a run is active, `status` reflects execution state (`queued`, `in_progress`, `completed`). When finished, `conclusion` captures the outcome (`success`, `failure`, `cancelled`, `skipped`, etc.).
+
+## Jobs and steps
+
+Each run contains **pipeline jobs** (GitHub workflow jobs) and optional **pipeline steps** when step-level detail is available. The run detail view groups jobs for quick scanning.
+
+## Real-time updates
+
+The dashboard and run detail pages subscribe to server-sent events (SSE) for live updates when webhooks arrive. A connection indicator shows stream health.
+
+## Retention
+
+Historical runs are retained according to workspace plan limits on Cloud or local policy on CE. Raw logs are not stored — links point to GitHub.
