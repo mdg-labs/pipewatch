@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/node";
 import { SignJWT, importPKCS8 } from "jose";
 import { and, eq } from "drizzle-orm";
 
@@ -23,6 +24,17 @@ const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_BACKOFF_MS = 1_000;
 const REPOS_PER_PAGE = 100;
 const RUNS_PER_PAGE = 100;
+
+/** GitHub caps filtered list-runs searches at 1,000 results (REST docs). */
+export const GITHUB_RUNS_SEARCH_CAP = 1000;
+export const GITHUB_RUNS_MAX_PAGES = GITHUB_RUNS_SEARCH_CAP / RUNS_PER_PAGE;
+/** Minimum window span before giving up and flagging truncation (audit §5). */
+export const MIN_BACKFILL_WINDOW_MS = 60 * 60 * 1000;
+
+export type BackfillTimeWindow = {
+  start: string;
+  end: string;
+};
 
 export class GitHubBackfillError extends Error {
   readonly status: number;
@@ -373,6 +385,75 @@ export function retentionCreatedSince(retentionDays: number, now = new Date()): 
   return cutoff.toISOString().slice(0, 10);
 }
 
+export function retentionWindowStart(retentionDays: number, now = new Date()): Date {
+  return new Date(retentionCreatedSince(retentionDays, now) + "T00:00:00.000Z");
+}
+
+/** GitHub `created` filter for incremental poll / date-only since queries. */
+export function formatCreatedSinceFilter(since: string): string {
+  return `>=${since}`;
+}
+
+/** GitHub `created` filter for a bounded date-time range (search syntax). */
+export function formatCreatedRangeFilter(start: Date, end: Date): string {
+  return `${start.toISOString()}..${end.toISOString()}`;
+}
+
+export function backfillWindowDurationMs(window: BackfillTimeWindow): number {
+  return Date.parse(window.end) - Date.parse(window.start);
+}
+
+export function isWindowAtSearchCap(totalCount: number): boolean {
+  return totalCount >= GITHUB_RUNS_SEARCH_CAP;
+}
+
+export function canSubdivideBackfillWindow(window: BackfillTimeWindow): boolean {
+  return backfillWindowDurationMs(window) > MIN_BACKFILL_WINDOW_MS;
+}
+
+/** Split a time window in half — right half starts 1 ms after midpoint to avoid duplicates. */
+export function bisectBackfillWindow(window: BackfillTimeWindow): [BackfillTimeWindow, BackfillTimeWindow] {
+  const startMs = Date.parse(window.start);
+  const endMs = Date.parse(window.end);
+  const midMs = Math.floor((startMs + endMs) / 2);
+
+  return [
+    { start: window.start, end: new Date(midMs).toISOString() },
+    { start: new Date(midMs + 1).toISOString(), end: window.end },
+  ];
+}
+
+export function buildInitialBackfillWindow(
+  retentionDays: number,
+  now = new Date(),
+): BackfillTimeWindow {
+  return {
+    start: retentionWindowStart(retentionDays, now).toISOString(),
+    end: now.toISOString(),
+  };
+}
+
+export function logBackfillHistoryTruncated(
+  fullName: string,
+  window: BackfillTimeWindow,
+  totalCount: number,
+): void {
+  Sentry.captureMessage(
+    `GitHub workflow run backfill truncated at search cap for ${fullName}`,
+    {
+      level: "warning",
+      tags: { component: "backfill-repo" },
+      extra: {
+        fullName,
+        windowStart: window.start,
+        windowEnd: window.end,
+        totalCount,
+        searchCap: GITHUB_RUNS_SEARCH_CAP,
+      },
+    },
+  );
+}
+
 export async function loadIntegrationRecord(
   database: Db,
   integrationId: string,
@@ -495,14 +576,14 @@ export async function upsertDiscoveredRepository(
 export async function fetchWorkflowRunsPage(
   fullName: string,
   page: number,
-  createdSince: string,
+  createdFilter: string,
   deps: GitHubFetchDeps,
 ): Promise<GitHubWorkflowRunsResponse> {
   const encodedRepo = encodeURIComponent(fullName).replace(/%2F/g, "/");
   const url =
     `${GITHUB_API_BASE}/repos/${encodedRepo}/actions/runs` +
     `?per_page=${String(RUNS_PER_PAGE)}&page=${String(page)}` +
-    `&created=${encodeURIComponent(`>=${createdSince}`)}`;
+    `&created=${encodeURIComponent(createdFilter)}`;
 
   const response = await githubFetch(url, { method: "GET" }, deps);
   return parseJsonResponse<GitHubWorkflowRunsResponse>(

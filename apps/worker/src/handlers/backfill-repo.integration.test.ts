@@ -171,6 +171,7 @@ function createJob<T>(data: T) {
       jobData = next;
       return undefined;
     }),
+    log: vi.fn(async () => undefined),
     get currentData() {
       return jobData;
     },
@@ -255,9 +256,10 @@ describe("backfill-repo integration", () => {
     });
 
     expect(result.runsIngested).toBe(101);
+    expect(result.historyTruncated).toBe(false);
     expect(calls).toHaveLength(2);
     expect(calls[0]).toContain("page=1");
-    expect(calls[0]).toContain("created=%3E%3D");
+    expect(calls[0]).toContain("created=");
     expect(calls[1]).toContain("page=2");
 
     const runs = await database
@@ -301,6 +303,7 @@ describe("backfill-repo integration", () => {
     });
 
     expect(result.runsIngested).toBe(1);
+    expect(result.historyTruncated).toBe(false);
     expect(calls).toHaveLength(1);
     expect(calls[0]).toContain("page=2");
 
@@ -339,6 +342,240 @@ describe("backfill-repo integration", () => {
     });
 
     expect(result.runsIngested).toBe(0);
+    expect(result.historyTruncated).toBe(false);
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("ingests more than 1000 runs across chunked time windows", async () => {
+    const seed = await seedRepository(database);
+    const runOne = loadFixtureRun("workflow-run-completed.json");
+
+    const runsPerWindow = 501;
+    let windowIndex = 0;
+
+    const fetchImpl = vi.fn(async (input: string | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+
+      if (!url.includes(`/repos/${seed.fullName}/actions/runs`)) {
+        return new Response("not found", { status: 404 });
+      }
+
+      const pageMatch = /[?&]page=(\d+)/.exec(url);
+      const page = pageMatch ? Number(pageMatch[1]) : 1;
+      const baseId = 3_000_000 + windowIndex * 10_000;
+
+      const runs =
+        page === 1
+          ? Array.from({ length: 100 }, (_, index) => ({
+              ...runOne,
+              id: baseId + index,
+            }))
+          : page === 2
+            ? Array.from({ length: 100 }, (_, index) => ({
+                ...runOne,
+                id: baseId + 100 + index,
+              }))
+            : page === 3
+              ? Array.from({ length: 100 }, (_, index) => ({
+                  ...runOne,
+                  id: baseId + 200 + index,
+                }))
+              : page === 4
+                ? Array.from({ length: 100 }, (_, index) => ({
+                    ...runOne,
+                    id: baseId + 300 + index,
+                  }))
+                : page === 5
+                  ? Array.from({ length: 100 }, (_, index) => ({
+                      ...runOne,
+                      id: baseId + 400 + index,
+                    }))
+                  : page === 6
+                    ? Array.from({ length: 1 }, (_, index) => ({
+                        ...runOne,
+                        id: baseId + 500 + index,
+                      }))
+                    : [];
+
+      if (page === 1) {
+        windowIndex += 1;
+      }
+
+      return new Response(
+        JSON.stringify({
+          total_count: runsPerWindow,
+          workflow_runs: runs,
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }) as typeof fetch;
+
+    const job = createJob({
+      repoId: seed.repoId,
+      workspaceId: seed.workspaceId,
+      integrationId: seed.integrationId,
+      pendingWindows: [
+        {
+          start: "2026-06-17T00:00:00.000Z",
+          end: "2026-06-17T12:00:00.000Z",
+        },
+        {
+          start: "2026-06-17T12:00:00.001Z",
+          end: "2026-06-18T00:00:00.000Z",
+        },
+      ],
+    });
+
+    const result = await backfillRepo(job, {
+      db: database,
+      env: workerEnv,
+      fetchImpl,
+    });
+
+    expect(result.runsIngested).toBe(1002);
+    expect(result.historyTruncated).toBe(false);
+    expect(fetchImpl).toHaveBeenCalledTimes(12);
+
+    const runs = await database
+      .select()
+      .from(pipelineRuns)
+      .where(eq(pipelineRuns.repoId, seed.repoId));
+
+    expect(runs).toHaveLength(1002);
+  });
+
+  it("subdivides a window when GitHub total_count reaches the search cap", async () => {
+    const seed = await seedRepository(database);
+    const runOne = loadFixtureRun("workflow-run-completed.json");
+
+    const fetchImpl = vi.fn(async (input: string | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+
+      if (!url.includes(`/repos/${seed.fullName}/actions/runs`)) {
+        return new Response("not found", { status: 404 });
+      }
+
+      const createdMatch = /[?&]created=([^&]+)/.exec(url);
+      const created = decodeURIComponent(createdMatch?.[1] ?? "");
+      const rangeMatch = /^(.+)\.\.(.+)$/.exec(created);
+      const durationMs = rangeMatch
+        ? Date.parse(rangeMatch[2]) - Date.parse(rangeMatch[1])
+        : Number.POSITIVE_INFINITY;
+
+      if (durationMs > 60 * 60 * 1000) {
+        return new Response(
+          JSON.stringify({
+            total_count: 1500,
+            workflow_runs: [],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+
+      const pageMatch = /[?&]page=(\d+)/.exec(url);
+      const page = pageMatch ? Number(pageMatch[1]) : 1;
+      const runs =
+        page === 1
+          ? Array.from({ length: 100 }, (_, index) => ({
+              ...runOne,
+              id: 4_000_000 + index,
+            }))
+          : page === 2
+            ? Array.from({ length: 50 }, (_, index) => ({
+                ...runOne,
+                id: 4_000_100 + index,
+              }))
+            : [];
+
+      return new Response(
+        JSON.stringify({
+          total_count: 150,
+          workflow_runs: runs,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const job = createJob({
+      repoId: seed.repoId,
+      workspaceId: seed.workspaceId,
+      integrationId: seed.integrationId,
+      pendingWindows: [
+        {
+          start: "2026-06-01T00:00:00.000Z",
+          end: "2026-06-01T02:00:00.000Z",
+        },
+      ],
+    });
+
+    const result = await backfillRepo(job, {
+      db: database,
+      env: workerEnv,
+      fetchImpl,
+    });
+
+    expect(result.runsIngested).toBe(300);
+    expect(result.historyTruncated).toBe(false);
+    expect(fetchImpl.mock.calls.some(([request]) => {
+      const url = typeof request === "string" ? request : request.toString();
+      return url.includes("created=") && decodeURIComponent(url).includes("..");
+    })).toBe(true);
+    expect(job.log).not.toHaveBeenCalled();
+  });
+
+  it("signals truncation when the minimum window still exceeds the search cap", async () => {
+    const seed = await seedRepository(database);
+    const runOne = loadFixtureRun("workflow-run-completed.json");
+
+    const fetchImpl = vi.fn(async (input: string | URL) => {
+      const url = typeof input === "string" ? input : input.toString();
+
+      if (!url.includes(`/repos/${seed.fullName}/actions/runs`)) {
+        return new Response("not found", { status: 404 });
+      }
+
+      const pageMatch = /[?&]page=(\d+)/.exec(url);
+      const page = pageMatch ? Number(pageMatch[1]) : 1;
+      const runs =
+        page <= 10
+          ? Array.from({ length: 100 }, (_, index) => ({
+              ...runOne,
+              id: 5_000_000 + page * 100 + index,
+            }))
+          : [];
+
+      return new Response(
+        JSON.stringify({
+          total_count: 1200,
+          workflow_runs: runs,
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }) as typeof fetch;
+
+    const job = createJob({
+      repoId: seed.repoId,
+      workspaceId: seed.workspaceId,
+      integrationId: seed.integrationId,
+      pendingWindows: [
+        {
+          start: "2026-06-01T00:00:00.000Z",
+          end: "2026-06-01T00:30:00.000Z",
+        },
+      ],
+    });
+
+    const result = await backfillRepo(job, {
+      db: database,
+      env: workerEnv,
+      fetchImpl,
+    });
+
+    expect(result.runsIngested).toBe(1000);
+    expect(result.historyTruncated).toBe(true);
+    expect(job.log).toHaveBeenCalled();
   });
 });

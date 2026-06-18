@@ -9,6 +9,7 @@ import {
 } from "../queues/polling.js";
 import {
   fetchWorkflowRunsPage,
+  formatCreatedSinceFilter,
   gitHubAppConfigFromWorkerEnv,
   ingestWorkflowRuns,
   loadIntegrationRecord,
@@ -87,7 +88,7 @@ export async function pollRepo(
     const response = await fetchWorkflowRunsPage(
       repository.fullName,
       page,
-      createdSince,
+      formatCreatedSinceFilter(createdSince),
       fetchDeps,
     );
     const batch = response.workflow_runs;
