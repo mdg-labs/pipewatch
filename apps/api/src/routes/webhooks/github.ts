@@ -62,6 +62,8 @@ export type WebhookJobPayload = {
   repoId: string;
   action: string;
   payload: unknown;
+  /** Globally unique delivery id from `X-GitHub-Delivery` (webhook redelivery dedup). */
+  deliveryId?: string;
 };
 
 export type EnqueueWebhookEvent = (
@@ -239,14 +241,18 @@ export function registerGitHubWebhookRoute(
 
     const action = envelope?.action ?? "";
     const payload: unknown = JSON.parse(rawBody);
+    const deliveryId = c.req.header("X-GitHub-Delivery") ?? undefined;
+
+    const jobPayload: WebhookJobPayload = {
+      workspaceId: repository.workspaceId,
+      repoId: repository.repoId,
+      action,
+      payload,
+      ...(deliveryId ? { deliveryId } : {}),
+    };
 
     try {
-      await resolved.enqueueWebhookEvent!(jobName, {
-        workspaceId: repository.workspaceId,
-        repoId: repository.repoId,
-        action,
-        payload,
-      });
+      await resolved.enqueueWebhookEvent!(jobName, jobPayload);
     } catch (error) {
       if (error instanceof Error && error.message === "REDIS_URL is not configured") {
         return c.json(apiError("SERVICE_UNAVAILABLE", "Webhook queue is unavailable"), 503);

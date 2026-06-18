@@ -63,6 +63,7 @@ export interface PipelineRunUpsert {
 export interface MapWorkflowRunContext {
   workspaceId: string;
   repoId: string;
+  onUnknownStatus?: (status: string) => void;
 }
 
 /**
@@ -104,7 +105,10 @@ export function mapWorkflowRunPayload(
   context: MapWorkflowRunContext,
 ): PipelineRunUpsert {
   const run = payload.workflow_run;
-  const status = mapGitHubStatus(run.status);
+  const status = mapGitHubStatus(
+    run.status,
+    context.onUnknownStatus ? { onUnknown: context.onUnknownStatus } : undefined,
+  );
   const conclusion = mapGitHubConclusion(run.conclusion, run.status);
 
   const startedAt = parseGitHubTimestamp(

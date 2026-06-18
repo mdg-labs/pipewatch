@@ -320,6 +320,7 @@ describe("GitHub webhook receiver integration", () => {
         "Content-Type": "application/json",
         "X-GitHub-Event": "workflow_run",
         "X-Hub-Signature-256": signature,
+        "X-GitHub-Delivery": "72d3162e-cc78-11e3-81ab-4c9367dc0958",
       },
       body,
     });
@@ -332,6 +333,7 @@ describe("GitHub webhook receiver integration", () => {
         workspaceId: context.workspaceId,
         repoId: context.repoId,
         action: "completed",
+        deliveryId: "72d3162e-cc78-11e3-81ab-4c9367dc0958",
       }),
     );
   });

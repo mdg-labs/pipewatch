@@ -1,6 +1,6 @@
 import type { WorkerEnv } from "@pipewatch/config/env";
 import { getDb } from "@pipewatch/db";
-import { Worker, type Processor } from "bullmq";
+import { DelayedError, Worker, type Processor } from "bullmq";
 
 import { backfillIntegration } from "./handlers/backfill-integration.js";
 import { backfillRepo } from "./handlers/backfill-repo.js";
@@ -9,7 +9,10 @@ import {
   BACKFILL_REPO_JOB_NAME,
 } from "./queues/backfill.js";
 import {
+  PARENT_RUN_DEFER_DELAY_MS,
+  PARENT_RUN_DEFER_MAX_ATTEMPTS,
   PROCESS_PIPELINE_JOB_JOB_NAME,
+  ParentRunNotFoundError,
   processPipelineJob,
 } from "./handlers/process-pipeline-job.js";
 import {
@@ -37,17 +40,46 @@ export type WorkerRuntime = {
   close: () => Promise<void>;
 };
 
-function createWebhookEventsProcessor(): Processor {
+function createWebhookEventsProcessor(env: WorkerEnv): Processor {
   const db = getDb();
+  const handlerDeps = env.REDIS_URL ? { db, redisUrl: env.REDIS_URL } : { db };
 
   return async (job) => {
-    switch (job.name) {
-      case PROCESS_PIPELINE_RUN_JOB_NAME:
-        return processPipelineRun(job.data, { db });
-      case PROCESS_PIPELINE_JOB_JOB_NAME:
-        return processPipelineJob(job.data, { db });
-      default:
-        throw new Error(`Unknown webhook-events job: ${job.name}`);
+    try {
+      switch (job.name) {
+        case PROCESS_PIPELINE_RUN_JOB_NAME:
+          return processPipelineRun(job.data, handlerDeps);
+        case PROCESS_PIPELINE_JOB_JOB_NAME:
+          return processPipelineJob(job.data, handlerDeps);
+        default:
+          throw new Error(`Unknown webhook-events job: ${job.name}`);
+      }
+    } catch (error) {
+      if (
+        error instanceof ParentRunNotFoundError &&
+        job.name === PROCESS_PIPELINE_JOB_JOB_NAME
+      ) {
+        const maxQuickAttempts = job.opts.attempts ?? 3;
+        const deferCount =
+          typeof job.data.parentRunDeferCount === "number"
+            ? job.data.parentRunDeferCount
+            : 0;
+
+        if (job.attemptsMade < maxQuickAttempts) {
+          throw error;
+        }
+
+        if (deferCount < PARENT_RUN_DEFER_MAX_ATTEMPTS) {
+          await job.updateData({
+            ...job.data,
+            parentRunDeferCount: deferCount + 1,
+          });
+          await job.moveToDelayed(Date.now() + PARENT_RUN_DEFER_DELAY_MS, job.token);
+          throw new DelayedError();
+        }
+      }
+
+      throw error;
     }
   };
 }
@@ -103,7 +135,7 @@ function createMaintenanceProcessor(env: WorkerEnv): Processor {
 
 function resolveProcessor(queueName: string, env: WorkerEnv): Processor {
   if (queueName === QUEUE_NAMES.WEBHOOK_EVENTS) {
-    return createWebhookEventsProcessor();
+    return createWebhookEventsProcessor(env);
   }
 
   if (queueName === QUEUE_NAMES.BACKFILL) {

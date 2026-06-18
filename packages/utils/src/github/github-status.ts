@@ -1,7 +1,33 @@
 import type { PipelineConclusion, PipelineStatus } from "@pipewatch/types";
 
-/** Map GitHub Actions status strings to canonical pipeline status. */
-export function mapGitHubStatus(status: string): PipelineStatus {
+/** GitHub Actions status strings PipeWatch recognizes (jobs, runs, steps). */
+export const KNOWN_GITHUB_STATUSES = new Set([
+  "queued",
+  "waiting",
+  "requested",
+  "pending",
+  "in_progress",
+  "completed",
+]);
+
+export type MapGitHubStatusOptions = {
+  /** Invoked when `status` is not a known GitHub Actions status string. */
+  onUnknown?: (status: string) => void;
+};
+
+/** Returns whether `status` is a known GitHub Actions status string. */
+export function isKnownGitHubStatus(status: string): boolean {
+  return KNOWN_GITHUB_STATUSES.has(status);
+}
+
+/**
+ * Map GitHub Actions status strings to canonical pipeline status.
+ * Unknown values map to `in_progress` (never `completed`) so UI cannot show false success.
+ */
+export function mapGitHubStatus(
+  status: string,
+  options?: MapGitHubStatusOptions,
+): PipelineStatus {
   switch (status) {
     case "queued":
     case "waiting":
@@ -10,8 +36,11 @@ export function mapGitHubStatus(status: string): PipelineStatus {
       return "queued";
     case "in_progress":
       return "in_progress";
-    default:
+    case "completed":
       return "completed";
+    default:
+      options?.onUnknown?.(status);
+      return "in_progress";
   }
 }
 

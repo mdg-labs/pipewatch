@@ -20,7 +20,7 @@ import type {
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { processPipelineJob } from "./process-pipeline-job.js";
+import { processPipelineJob, ParentRunNotFoundError } from "./process-pipeline-job.js";
 import { processPipelineRun } from "./process-pipeline-run.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -340,11 +340,15 @@ describe("process-pipeline-job integration", () => {
     expect(jobs[0]?.name).toBe("build (updated)");
   });
 
-  it("fails when the parent pipeline run is missing", async () => {
+  it("self-heals when workflow_job arrives before workflow_run", async () => {
     const seed = await seedRepository(database);
+    const runPayload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
     const jobPayload = loadFixture<GitHubWorkflowJobWebhookPayload>(
       "workflow-job-completed.json",
     );
+    const publishSse = vi.fn(async () => undefined);
 
     await expect(
       processPipelineJob(
@@ -354,8 +358,39 @@ describe("process-pipeline-job integration", () => {
           action: jobPayload.action,
           payload: jobPayload,
         },
-        { db: database },
+        { db: database, publishSse },
       ),
-    ).rejects.toThrow(/Pipeline run not found/);
+    ).rejects.toBeInstanceOf(ParentRunNotFoundError);
+
+    expect(publishSse).not.toHaveBeenCalled();
+
+    await processPipelineRun(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: runPayload.action,
+        payload: runPayload,
+      },
+      { db: database },
+    );
+
+    const result = await processPipelineJob(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: jobPayload.action,
+        payload: jobPayload,
+      },
+      { db: database, publishSse },
+    );
+
+    const [job] = await database
+      .select()
+      .from(pipelineJobs)
+      .where(eq(pipelineJobs.id, result.jobId));
+
+    expect(job).toBeDefined();
+    expect(job?.id).toBe(result.jobId);
+    expect(publishSse).toHaveBeenCalledOnce();
   });
 });

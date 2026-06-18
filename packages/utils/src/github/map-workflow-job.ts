@@ -68,13 +68,18 @@ export interface MapWorkflowJobResult {
 export interface MapWorkflowJobContext {
   workspaceId: string;
   runId: string;
+  onUnknownStatus?: (status: string) => void;
 }
 
 function mapWorkflowJobStep(
   step: GitHubWorkflowJobStep,
   jobStartedAt: Date,
+  onUnknownStatus?: (status: string) => void,
 ): PipelineStepUpsert {
-  const status = mapGitHubStatus(step.status);
+  const status = mapGitHubStatus(
+    step.status,
+    onUnknownStatus ? { onUnknown: onUnknownStatus } : undefined,
+  );
   const conclusion = mapGitHubConclusion(step.conclusion, step.status);
 
   const startedAt = step.started_at
@@ -105,7 +110,10 @@ export function mapWorkflowJobPayload(
   context: MapWorkflowJobContext,
 ): MapWorkflowJobResult {
   const job = payload.workflow_job;
-  const status = mapGitHubStatus(job.status);
+  const status = mapGitHubStatus(
+    job.status,
+    context.onUnknownStatus ? { onUnknown: context.onUnknownStatus } : undefined,
+  );
   const conclusion = mapGitHubConclusion(job.conclusion, job.status);
 
   const startedAt = parseGitHubTimestamp(job.started_at);
@@ -128,7 +136,7 @@ export function mapWorkflowJobPayload(
   };
 
   const steps = (job.steps ?? []).map((step) =>
-    mapWorkflowJobStep(step, startedAt),
+    mapWorkflowJobStep(step, startedAt, context.onUnknownStatus),
   );
 
   return { job: jobUpsert, steps };

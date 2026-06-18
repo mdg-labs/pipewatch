@@ -1,5 +1,6 @@
+import * as Sentry from "@sentry/node";
 import type { Db } from "@pipewatch/db";
-import type { PipelineConclusion, PipelineRunSummary, PipelineStatus } from "@pipewatch/types";
+import type { PipelineConclusion, PipelineRunSummary, PipelineStatus, SseEventType } from "@pipewatch/types";
 import {
   mapWorkflowRunPayload,
   type GitHubWorkflowRunWebhookPayload,
@@ -10,7 +11,7 @@ import {
   publishSseEvent,
   type PublishSseEventInput,
 } from "../lib/sse-publish.js";
-import type { SseEventType } from "@pipewatch/types";
+import { claimWebhookDeliveryForSse } from "../lib/webhook-delivery-idempotency.js";
 
 export const PROCESS_PIPELINE_RUN_JOB_NAME = "process-pipeline-run";
 
@@ -19,11 +20,13 @@ export type ProcessPipelineRunJobPayload = {
   repoId: string;
   action: string;
   payload: GitHubWorkflowRunWebhookPayload;
+  deliveryId?: string;
 };
 
 export type ProcessPipelineRunDeps = {
   db: Db;
   publishSse?: (input: PublishSseEventInput) => Promise<void>;
+  redisUrl?: string;
 };
 
 function toRunSummary(run: {
@@ -58,6 +61,13 @@ function resolveRunSseEventType(action: string): SseEventType {
   }
 }
 
+function logUnknownGitHubStatus(status: string): void {
+  Sentry.captureMessage(`Unknown GitHub Actions status: ${status}`, {
+    level: "warning",
+    tags: { component: "process-pipeline-run" },
+  });
+}
+
 /** Consume a `workflow_run` webhook job — map, upsert, publish SSE stub. */
 export async function processPipelineRun(
   data: ProcessPipelineRunJobPayload,
@@ -67,17 +77,25 @@ export async function processPipelineRun(
   const mapped = mapWorkflowRunPayload(data.payload, {
     workspaceId: data.workspaceId,
     repoId: data.repoId,
+    onUnknownStatus: logUnknownGitHubStatus,
   });
 
   const run = await upsertPipelineRun(deps.db, mapped);
-  const publish = deps.publishSse ?? publishSseEvent;
 
-  await publish({
-    workspaceId: data.workspaceId,
-    repoId: data.repoId,
-    type: resolveRunSseEventType(action),
-    data: toRunSummary(run),
-  });
+  const shouldPublish = await claimWebhookDeliveryForSse(
+    data.deliveryId,
+    deps.redisUrl ?? process.env.REDIS_URL,
+  );
+
+  if (shouldPublish) {
+    const publish = deps.publishSse ?? publishSseEvent;
+    await publish({
+      workspaceId: data.workspaceId,
+      repoId: data.repoId,
+      type: resolveRunSseEventType(action),
+      data: toRunSummary(run),
+    });
+  }
 
   return { runId: run.id };
 }
