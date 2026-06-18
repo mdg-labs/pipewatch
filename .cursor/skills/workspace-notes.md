@@ -1,5 +1,61 @@
 # PipeWatch workspace notes
 
+## 2026-06-18 — P22 epic #128 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `e008377`
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #129 P22-01 sync-secrets Fly modes | Done | `99eea7a` |
+| #130 P22-02 inline deploy-staging | Done | `b247621` |
+| #131 P22-03 inline deploy-production | Done | `f4757ef` |
+| #132 P22-04 orchestrator + CE rename | Done | `7accee0` |
+| #133 P22-05 delete obsolete workflows | Done | `b1450fa` |
+| #134 P22-06 PRD §22 + Decision #34 | Done | `4b3ea00` |
+| #128 epic parent | Done | closes via #134 `fixes #128` |
+
+**Notes:**
+- Epic order: #129 → #130 → #131 → #132 → #133 → #134 (Lane S serial)
+- Flat nine-file layout; only `orchestrator.yml` calls reusable workflows
+- Deploy workflows inline jobs only (no nested `uses:`)
+- `sync-secrets`: `stage-only` (pipeline) vs `stage-and-deploy` (manual dispatch)
+- `release: published` on orchestrator; `deploy-production` workflow_call only
+- Deleted per-service deploy workflows + obsolete `manual-sync-secrets.yml`
+- `build-ce-image.yml` → `build-and-push-ce-image.yml`
+- PRD §10/§22 + Decision #34 updated
+- No new DB migrations
+- `staging` 15 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to origin to exercise new orchestrator routing
+
+## 2026-06-18 — P20 epic #120 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON
+
+| Issue | Status | Commit(s) |
+|---|---|---|
+| #121 P20-01 Composite setup + deploy scripts | Done | `f3a29e8` |
+| #122 P20-02 Consolidate ci.yml + ReportPortal | Done | `378401c` |
+| #123 P20-03 Orchestrator sole PR/push entry | Done | `3be8cfd` |
+| #124 P20-04 Staging deploy + CF Access smoke | Done | `962ca43` |
+| #125 P20-05 Production deploy + versioned CE | Done | `06f3a45` |
+| #30 P0-06 Sentry releases + source maps | Done | `1b78378` |
+| #126 P20-06 Extract e2e.yml workflow | Done | `eda36e2` |
+| #127 P20-07 CI hygiene + PRD §22 sync | Done | `e008377` |
+| #120 epic parent | Done | closes via #127 `fixes #120` |
+
+**Notes:**
+- Epic order: #121 → #122 → #123 → #124 → #125 → #30 → #126 → #127 (Lane S serial)
+- orchestrator.yml sole PR/push entry; ci.yml workflow_call only; deploy-production on release published
+- Phase→GHA env sync model; sync-secrets first in staging/production deploy chains
+- Sentry wired into deploy-staging + deploy-production; graceful skip without secrets
+- e2e.yml reusable (cloud staging smoke + CE ephemeral); advisory on PRs
+- Orphaned lint/test-unit/test-integration workflows removed; actions SHA-pinned
+- No new DB migrations
+- `staging` 9 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to origin, or unblocked backlog items
+
 ## 2026-06-18 — P19 epic #23 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON
