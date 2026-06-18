@@ -60,8 +60,13 @@ jobs:
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
       CI: "true"
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
       - name: Setup workspace
         uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
 
       - name: Run Playwright (cloud)
         run: bash scripts/e2e-ci-playwright.sh cloud rp-e2e-cloud.log
@@ -99,8 +104,13 @@ jobs:
       REPORTPORTAL_PROJECT: ${{ vars.REPORTPORTAL_PROJECT }}
       CI: "true"
     steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
       - name: Setup workspace
         uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
 
       - name: Run Playwright (CE)
         run: bash scripts/e2e-ci-playwright.sh ce rp-e2e-ce.log
