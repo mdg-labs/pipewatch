@@ -1549,6 +1549,7 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `CF_ACCOUNT_ID` | staging, production | deploy workflows | Cloudflare account ID for Wrangler (`CLOUDFLARE_ACCOUNT_ID`) |
 | `APP_URL` | staging, production | api | `https://cloud.pipewatch.app` (staging: `https://staging-cloud.pipewatch.app`) |
 | `MARKETING_URL` | staging, production | api | `https://pipewatch.app` |
+| `PUBLIC_API_URL` | staging, production | api | Public API origin for OAuth callbacks — runtime key; Phase/GHA storage: `NEXT_PUBLIC_API_URL` (same value as web). Staging: `https://staging-api.pipewatch.app`; production: `https://api.pipewatch.app` |
 | `NODE_ENV` | staging, production | all | `development` \| `staging` \| `production` |
 | `UMAMI_SCRIPT_URL` | staging, production | marketing | Self-hosted Umami script URL |
 | `UMAMI_WEBSITE_ID` | staging, production | marketing | PipeWatch-specific site ID in Umami |

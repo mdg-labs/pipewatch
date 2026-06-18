@@ -123,6 +123,11 @@ export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID}"
 
 map_github_storage_to_runtime
 
+# API public origin — same Phase/GHA value as web `NEXT_PUBLIC_API_URL`.
+if [[ -n "${NEXT_PUBLIC_API_URL-}" ]]; then
+  export PUBLIC_API_URL="${NEXT_PUBLIC_API_URL}"
+fi
+
 # Required GHA storage keys per service — must match packages/config/sync-secrets-manifest.ts
 # (validated by scripts/validate-sync-secrets-manifest.ts in CI).
 preflight_required_gha_keys() {
@@ -146,6 +151,7 @@ preflight_required_gha_keys() {
         GH_APP_SLUG
         APP_URL
         MARKETING_URL
+        NEXT_PUBLIC_API_URL
       )
       if [[ "$edition" == "cloud" ]]; then
         keys+=(
@@ -226,6 +232,7 @@ API_FLY_KEYS=(
   GITHUB_APP_SLUG
   APP_URL
   MARKETING_URL
+  PUBLIC_API_URL
   SMTP_HOST
   SMTP_PORT
   SMTP_USER

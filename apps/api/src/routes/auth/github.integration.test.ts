@@ -35,6 +35,7 @@ const baseEnv: Record<string, string> = {
   GITHUB_CLIENT_ID: "test-client-id",
   GITHUB_CLIENT_SECRET: "test-client-secret",
   APP_URL: "http://localhost:3000",
+  PUBLIC_API_URL: "http://localhost:3001",
   DATABASE_URL: "",
 };
 
@@ -62,6 +63,7 @@ function createTestApp(
   options?: {
     oauthClient?: GitHubOAuthClient;
     sendEmailFn?: typeof sendEmail;
+    envOverrides?: Record<string, string>;
   },
 ) {
   const app = new OpenAPIHono<ApiEnv>();
@@ -70,6 +72,7 @@ function createTestApp(
   const env = parseApiEnv(
     {
       ...baseEnv,
+      ...options?.envOverrides,
       PIPEWATCH_EDITION: edition,
       DATABASE_URL: process.env.DATABASE_URL,
     },
@@ -185,6 +188,32 @@ describe("github oauth integration", () => {
 
     expect(state.length).toBeGreaterThan(10);
     expect(cookieHeader).toMatch(/^pw_oauth_state=/);
+  });
+
+  it("uses PUBLIC_API_URL for https redirect_uri on hosted environments", async () => {
+    const app = createTestApp(database, "ce", {
+      envOverrides: {
+        NODE_ENV: "staging",
+        PUBLIC_API_URL: "https://staging-api.pipewatch.app",
+        DATABASE_URL: process.env.DATABASE_URL ?? "",
+        REDIS_URL: "redis://localhost:6379",
+        ENCRYPTION_KEY: testSecret,
+        GITHUB_APP_ID: "123456",
+        GITHUB_APP_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nkey\n-----END PRIVATE KEY-----",
+        GITHUB_WEBHOOK_SECRET: "webhook-secret",
+        GITHUB_APP_SLUG: "pipewatch",
+        MARKETING_URL: "https://pipewatch.app",
+      },
+    });
+    const initiate = await app.request("http://internal/auth/github");
+
+    expect(initiate.status).toBe(302);
+
+    const location = initiate.headers.get("location");
+    expect(location).toContain("github.com/login/oauth/authorize");
+
+    const redirectUri = new URL(location!).searchParams.get("redirect_uri");
+    expect(redirectUri).toBe("https://staging-api.pipewatch.app/auth/github/callback");
   });
 
   it("bootstraps CE first user, stores hashed refresh token, and redirects to onboarding step 2", async () => {

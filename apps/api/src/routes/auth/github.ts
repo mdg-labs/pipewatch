@@ -8,6 +8,7 @@ import type { ApiEnv as ParsedApiEnv } from "@pipewatch/config/env";
 import { parseApiEnv } from "@pipewatch/config/env";
 import { getDb, type Db } from "@pipewatch/db";
 
+import { buildOAuthCallbackUrl } from "../../lib/api-public-url.js";
 import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
 import { OpenApiTags } from "../../openapi-tags.js";
 import { ACCESS_TOKEN_TTL_SECONDS, signAccessToken } from "../../services/auth/jwt.js";
@@ -116,14 +117,6 @@ function resolveSecureCookies(env: ParsedApiEnv): boolean {
   return env.NODE_ENV !== "development";
 }
 
-function callbackUrl(requestUrl: string): string {
-  const url = new URL(requestUrl);
-  url.pathname = "/auth/github/callback";
-  url.search = "";
-  url.hash = "";
-  return url.toString();
-}
-
 function clearOAuthStateCookie(c: Context, secure: boolean): void {
   setCookie(c, OAUTH_STATE_COOKIE_NAME, "", {
     httpOnly: true,
@@ -174,7 +167,9 @@ export function registerGitHubAuthRoutes(
     const config = requireOAuthConfig(env);
     const { next } = c.req.valid("query");
     const { state, cookieValue } = createOAuthState(config.refreshSecret, next);
-    const redirectUri = callbackUrl(c.req.url);
+    const redirectUri = buildOAuthCallbackUrl(env, c.req.url, {
+      get: (name) => c.req.header(name),
+    });
     const authorizeUrl = buildGitHubAuthorizeUrl(config.clientId, redirectUri, state);
     const secure = resolveSecureCookies(env);
 
@@ -204,7 +199,9 @@ export function registerGitHubAuthRoutes(
 
       const oauthState = verifyOAuthState(config.refreshSecret, state, stateCookie);
 
-      const redirectUri = callbackUrl(c.req.url);
+      const redirectUri = buildOAuthCallbackUrl(env, c.req.url, {
+        get: (name) => c.req.header(name),
+      });
       const profile = await oauthClient.exchangeCode(code, redirectUri);
       const wasFirstUser = (await countUsers(db)) === 0;
       const upserted = await upsertGitHubUser(db, profile, wasFirstUser);

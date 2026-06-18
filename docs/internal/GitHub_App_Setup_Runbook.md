@@ -204,7 +204,8 @@ Also confirm hosted URL vars align with the environment:
 |---|---|---|
 | `APP_URL` | `https://staging-cloud.pipewatch.app` | `https://cloud.pipewatch.app` |
 | `MARKETING_URL` | `https://staging.pipewatch.app` | `https://pipewatch.app` |
-| `NEXT_PUBLIC_API_URL` (web worker) | `https://staging-api.pipewatch.app` | `https://api.pipewatch.app` |
+| `PUBLIC_API_URL` (API runtime) | `https://staging-api.pipewatch.app` | `https://api.pipewatch.app` |
+| `NEXT_PUBLIC_API_URL` (web; same Phase value) | `https://staging-api.pipewatch.app` | `https://api.pipewatch.app` |
 | `NEXT_PUBLIC_APP_URL` (marketing worker) | `https://staging-cloud.pipewatch.app` | `https://cloud.pipewatch.app` |
 | `PIPEWATCH_EDITION` | `cloud` | `cloud` |
 
@@ -280,7 +281,8 @@ Expect `{"status":"ok",...}` with correct `edition`.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| OAuth `redirect_uri` mismatch | Callback URL points at dashboard or `/api/v1/...` | Set Callback URL to `{API_URL}/auth/github/callback` |
+| OAuth `redirect_uri` mismatch | Callback URL uses `https://` but OAuth sends `http://` | Set `PUBLIC_API_URL` on API (hosted: synced from Phase `NEXT_PUBLIC_API_URL`). Must match GitHub App callback host/scheme exactly. |
+| OAuth `redirect_uri` mismatch | Callback URL points at dashboard or `/api/v1/...` | Set Callback URL to `{PUBLIC_API_URL}/auth/github/callback` |
 | Install callback **401** | No `pw_access` cookie on API host | Sign in via API OAuth; complete install in same browser session |
 | Install callback **403** | User not admin/owner of active workspace | Use workspace owner account; ensure workspace context in JWT |
 | Install callback **409** | Installation already linked to another workspace | Remove integration from other workspace or use different installation |
@@ -331,7 +333,7 @@ Customer docs: `apps/marketing/content/docs/github-app-setup/`
 - [ ] Webhook events subscribed (4 events)
 - [ ] App visibility: **Private**
 - [ ] All six `GH_*` keys set in Phase Staging + Production
-- [ ] `APP_URL`, `NEXT_PUBLIC_API_URL` match environment hostnames
+- [ ] `APP_URL`, `PUBLIC_API_URL` / `NEXT_PUBLIC_API_URL` match environment hostnames
 - [ ] `sync-secrets` succeeded for both environments
 - [ ] OAuth sign-in tested on staging
 - [ ] App install + repo sync tested on staging

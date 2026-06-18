@@ -29,6 +29,7 @@ const baseApiEnv = {
   GITHUB_APP_SLUG: "pipewatch",
   APP_URL: "https://cloud.pipewatch.app",
   MARKETING_URL: "https://pipewatch.app",
+  PUBLIC_API_URL: "https://api.pipewatch.app",
 } as const;
 
 const baseWorkerEnv = {
@@ -44,7 +45,7 @@ const baseWorkerEnv = {
 const baseWebEnv = {
   NODE_ENV: "production",
   PIPEWATCH_EDITION: "ce",
-  NEXT_PUBLIC_API_URL: "https://cloud.pipewatch.app",
+  NEXT_PUBLIC_API_URL: "https://api.pipewatch.app",
 } as const;
 
 const baseMarketingEnv = {

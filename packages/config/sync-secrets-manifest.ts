@@ -103,6 +103,7 @@ export const SYNC_SECRETS_MANIFEST: readonly ServiceSyncManifest[] = [
       github("GH_APP_SLUG", { required: true }),
       gha("APP_URL", { required: true }),
       gha("MARKETING_URL", { required: true }),
+      gha("PUBLIC_API_URL", { required: true, ghaStorageKey: "NEXT_PUBLIC_API_URL" }),
       gha("SMTP_HOST"),
       gha("SMTP_PORT"),
       gha("SMTP_USER"),

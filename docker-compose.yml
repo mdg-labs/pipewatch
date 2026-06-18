@@ -26,6 +26,7 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       APP_URL: ${APP_URL:-http://localhost:3001}
       MARKETING_URL: ${MARKETING_URL:-http://localhost:3001}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3000}
       # Email (optional — features degrade gracefully if SMTP_HOST is unset)
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}

@@ -14,6 +14,7 @@ export const API_STRICT_FIELDS = [
   "GITHUB_APP_SLUG",
   "APP_URL",
   "MARKETING_URL",
+  "PUBLIC_API_URL",
 ] as const;
 
 export const API_CLOUD_STRICT_FIELDS = [
