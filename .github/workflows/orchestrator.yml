@@ -1,0 +1,103 @@
+name: Orchestrator
+
+# Sole PR/push entry — CI gate, then branch-specific deploy/release/CE image builds (PRD §22, Decision #34–#35).
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: orchestrator-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: CI
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  version-check:
+    name: Version check
+    if: github.event_name == 'pull_request'
+    uses: ./.github/workflows/version-check.yml
+
+  meta:
+    name: Resolve commit metadata
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/staging' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.sha.outputs.short_sha }}
+    steps:
+      - id: sha
+        run: echo "short_sha=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+  deploy-staging:
+    name: Deploy staging
+    if: >-
+      always() &&
+      needs.ci.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/staging'
+    needs: [ci]
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/deploy-staging.yml
+    secrets: inherit
+
+  build-ce-staging:
+    name: Build CE images (staging)
+    if: >-
+      always() &&
+      needs.ci.result == 'success' &&
+      needs.deploy-staging.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/staging'
+    needs: [ci, deploy-staging, meta]
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-ce-image.yml
+    with:
+      tags: |
+        dev
+        nightly
+        ${{ needs.meta.outputs.short_sha }}
+    secrets: inherit
+
+  prepare-release:
+    name: Prepare release
+    if: >-
+      always() &&
+      needs.ci.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    needs: [ci]
+    permissions:
+      contents: write
+    uses: ./.github/workflows/prepare-release.yml
+    secrets: inherit
+
+  build-ce-main:
+    name: Build CE images (main)
+    if: >-
+      always() &&
+      needs.ci.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    needs: [ci, meta]
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-ce-image.yml
+    with:
+      tags: |
+        latest
+        ${{ needs.meta.outputs.short_sha }}
+        main
+    secrets: inherit

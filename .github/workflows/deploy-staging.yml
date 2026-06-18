@@ -1,0 +1,26 @@
+name: Deploy Staging
+
+# Staging deploy pipeline — reusable workflow called from orchestrator.yml after CI passes.
+# Full sync-secrets → migrate → deploy chain lands in #124.
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  placeholder:
+    name: Staging deploy (pending #124)
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Placeholder
+        run: echo "Staging deploy steps (sync-secrets, migrate, deploy) land in #124"
