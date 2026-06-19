@@ -554,19 +554,19 @@ Usage-based rather than seat-based — price scales with what actually matters: 
 
 ## 9. Observability — Sentry
 
-Full Sentry integration from day one across all services.
+Full Sentry integration from day one on hosted backend and app services (api, worker, web). The marketing site does not use Sentry — analytics are Umami-only (Decision #15).
 
 | Feature | Where | Notes |
 |---|---|---|
-| Error tracking | API, Worker, Frontend | Automatic exception capture |
+| Error tracking | API, Worker, Web | Automatic exception capture |
 | Performance tracing | API, Worker | Distributed traces across services |
 | Source map upload | CI/CD (GitHub Actions) | Upload on every build, map minified errors to source |
 | Logs (GA) | API, Worker | Structured log ingestion via Sentry SDK |
-| Session replay | Frontend | Capture UI errors in context |
+| Session replay | Web | Capture UI errors in context |
 | Release tracking | CI/CD | Tag releases in Sentry on deploy |
 | Alerts | Sentry | Error spike, new issue, regression alerts |
 
-Sentry DSN and org/project config managed via Phase — one DSN per Sentry project (`SENTRY_DSN_API`, `SENTRY_DSN_WORKER`, `SENTRY_DSN_WEB` in Phase/GHA; runtime `SENTRY_DSN` on each Fly/Wrangler target). Source map upload token stored as CI secret synced via Phase → GitHub Actions.
+Sentry DSN and org/project config managed via Phase — one DSN per Sentry project (`SENTRY_DSN_API`, `SENTRY_DSN_WORKER`, `SENTRY_DSN_WEB` in Phase/GHA; runtime `SENTRY_DSN` on each Fly/Wrangler target). Marketing has no Sentry DSN or error tracking. Source map upload token stored as CI secret synced via Phase → GitHub Actions.
 
 All services register `beforeSend: scrubSentryEvent` from `@pipewatch/utils` to redact `Authorization`, `Cookie`, and known secret patterns before events leave the process. Platform access logs are separate — see `docs/internal/access-log-redaction.md` for Fly/Cloudflare operator guidance on redacting SSE `token=` query params.
 

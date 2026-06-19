@@ -220,7 +220,7 @@ jobs:
     if: inputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: [migrate, derive-sentry-release]
+    needs: [migrate]
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -249,11 +249,6 @@ jobs:
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
           UMAMI_SCRIPT_URL: ${{ secrets.UMAMI_SCRIPT_URL }}
           UMAMI_WEBSITE_ID: ${{ secrets.UMAMI_WEBSITE_ID }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: pipewatch-marketing
-          SENTRY_RELEASE: ${{ needs.derive-sentry-release.outputs.release }}
-          SENTRY_ENVIRONMENT: ${{ inputs.environment }}
         run: bash .github/scripts/deploy-cf-worker.sh marketing
 
   smoke:

@@ -14,8 +14,6 @@
   "dependencies": {
     "@pipewatch/config": "workspace:*",
     "@pipewatch/ui": "workspace:*",
-    "@pipewatch/utils": "workspace:*",
-    "@sentry/nextjs": "^10.58.0",
     "next": "catalog:",
     "next-mdx-remote": "^6.0.0",
     "react": "catalog:",
