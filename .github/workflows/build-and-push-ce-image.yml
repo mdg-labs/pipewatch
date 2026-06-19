@@ -73,4 +73,6 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=registry,ref=${{ matrix.image }}:buildcache
+          cache-to: type=registry,ref=${{ matrix.image }}:buildcache,mode=max
           # No build-args or secrets — CE users provide env at runtime (PRD §22)
