@@ -1,5 +1,45 @@
 # PipeWatch workspace notes
 
+## 2026-06-18 — #153 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `549c59e`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #153 Marketing changelog/docs HTTP 500 | Done | `91f1a55` |
+
+**Notes:**
+- Regression from #104/#105 — runtime `node:fs` on OpenNext CF Workers
+- Fix: `content-sources.ts` webpack `require.context` + `asset/source` rule; `force-static` on changelog/docs/legal routes
+- No DB migrations
+- `staging` 13 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy marketing fix to staging CF Worker
+
+## 2026-06-18 — P141 epic #141 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `c45d2ac`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #142 run_attempt + purge stale jobs | Done | `39cef2b` |
+| #148 SSE completedAt fix | Done | `1a422cf` |
+| #151 triggering_actor mapping | Done | `eb2357a` |
+| #150 tombstone deleted runs | Done | `549c59e` |
+| #141 epic parent | Done | closes via #150 `fixes #141` |
+
+**Notes:**
+- Epic #141 resumed mid-flight: #149–#143 already Done; batches 3–6 executed (#142 → #148 → #151 → #150)
+- User requirement: all execution agents verified against live GitHub docs (REST/webhook/CLI)
+- #142: orchestrator FF-merge fixed detached HEAD (`staging` was at `c45d2ac`, commit on orphan chain)
+- #148: `completedAt` in SSE summary; GitHub has no run-level `completed_at` — derived from `updated_at`
+- #151: `resolveActorLogin` prefers `triggering_actor` over `actor`; no schema change
+- #150: poll/backfill reconciliation — no GitHub deletion webhook; hard-delete scoped orphans
+- Migration `0004` for `run_attempt` in #142
+- `staging` 12 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging`; operator exercise poll reconciliation against staging
+
 ## 2026-06-18 — P21 epic #24 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `244ec68`
