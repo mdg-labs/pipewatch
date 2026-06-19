@@ -5,6 +5,7 @@ import { getDb, type Db } from "@pipewatch/db";
 
 import { requireCloud } from "../middleware/edition-guards.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../middleware/error-handler.js";
+import { createRateLimitMiddleware, type RateLimitDependencies } from "../middleware/rate-limit.js";
 import { OpenApiTags } from "../openapi-tags.js";
 import type { EmailTransport } from "../services/email/send-email.js";
 import {
@@ -150,6 +151,7 @@ export type WaitlistRouteDependencies = {
   db: Db;
   env: WaitlistServiceEnv;
   transport?: EmailTransport | undefined;
+  rateLimit?: Partial<RateLimitDependencies>;
 };
 
 function resolveWaitlistDeps(deps?: WaitlistRouteDependencies): WaitlistRouteDependencies {
@@ -181,6 +183,8 @@ export function registerWaitlistRoutes(
 ): void {
   app.use("/api/v1/waitlist", requireCloud);
   app.use("/api/v1/waitlist/*", requireCloud);
+  app.use("/api/v1/waitlist", createRateLimitMiddleware("waitlist", deps?.rateLimit));
+  app.use("/api/v1/waitlist/*", createRateLimitMiddleware("waitlist", deps?.rateLimit));
 
   app.openapi(subscribeRoute, async (c) => {
     const { db, env, transport } = resolveWaitlistDeps(deps);

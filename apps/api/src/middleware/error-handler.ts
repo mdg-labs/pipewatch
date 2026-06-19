@@ -31,6 +31,8 @@ function statusToCode(status: number): string {
       return "CONFLICT";
     case 422:
       return "VALIDATION_ERROR";
+    case 429:
+      return "RATE_LIMITED";
     default:
       return status >= 500 ? "INTERNAL_ERROR" : "HTTP_ERROR";
   }

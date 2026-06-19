@@ -126,7 +126,7 @@ function createTestApp(database: Db) {
   );
 
   const deps = { env, db: database };
-  registerRefreshRoute(app, deps);
+  registerRefreshRoute(app, { ...deps, rateLimit: { disabled: true } });
   registerLogoutRoutes(app, deps);
   registerSwitchWorkspaceRoute(app, deps);
 

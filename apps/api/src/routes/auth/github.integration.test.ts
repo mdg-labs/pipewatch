@@ -83,6 +83,7 @@ function createTestApp(
     env,
     db: database,
     oauthClient: options?.oauthClient ?? createMockOAuthClient(),
+    rateLimit: { disabled: true },
     ...(options?.sendEmailFn ? { sendEmailFn: options.sendEmailFn } : {}),
   });
 

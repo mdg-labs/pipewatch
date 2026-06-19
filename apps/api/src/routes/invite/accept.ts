@@ -9,6 +9,8 @@ import { getDb, type Db } from "@pipewatch/db";
 
 import { resolveAuthIdentity } from "../../lib/workspace-context.js";
 import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
+import type { RateLimitDependencies } from "../../middleware/rate-limit.js";
+import { createRateLimitMiddleware } from "../../middleware/rate-limit.js";
 import { OpenApiTags } from "../../openapi-tags.js";
 import {
   acceptWorkspaceInvite,
@@ -153,6 +155,7 @@ const acceptInviteRoute = createRoute({
 export type InviteAcceptDependencies = {
   env: ParsedApiEnv;
   db: Db;
+  rateLimit?: Partial<RateLimitDependencies>;
 };
 
 function resolveDatabase(deps?: Partial<InviteAcceptDependencies>): Db {
@@ -198,6 +201,9 @@ export function registerInviteAcceptRoutes(
   app: OpenAPIHono<ApiEnv>,
   deps?: Partial<InviteAcceptDependencies>,
 ): void {
+  const rateLimitDeps = deps?.rateLimit ?? (deps?.env ? { env: deps.env } : undefined);
+  app.use("/invite/*", createRateLimitMiddleware("invite", rateLimitDeps));
+
   const resolveDeps = (): InviteAcceptDependencies => ({
     env: deps?.env ?? parseApiEnv(),
     db: resolveDatabase(deps),

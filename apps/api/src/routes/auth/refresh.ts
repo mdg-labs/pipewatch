@@ -8,6 +8,8 @@ import { parseApiEnv } from "@pipewatch/config/env";
 import { getDb, type Db } from "@pipewatch/db";
 
 import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
+import type { RateLimitDependencies } from "../../middleware/rate-limit.js";
+import { createRateLimitMiddleware } from "../../middleware/rate-limit.js";
 import { OpenApiTags } from "../../openapi-tags.js";
 import {
   AuthError,
@@ -30,6 +32,7 @@ import {
 export type RefreshAuthDependencies = {
   env: ParsedApiEnv;
   db: Db;
+  rateLimit?: Partial<RateLimitDependencies>;
 };
 
 const refreshRoute = createRoute({
@@ -80,6 +83,9 @@ export function registerRefreshRoute(
   app: OpenAPIHono<ApiEnv>,
   deps?: Partial<RefreshAuthDependencies>,
 ): void {
+  const rateLimitDeps = deps?.rateLimit ?? (deps?.env ? { env: deps.env } : undefined);
+  app.use("/auth/refresh", createRateLimitMiddleware("refresh", rateLimitDeps));
+
   const resolveDeps = (): RefreshAuthDependencies => ({
     env: deps?.env ?? parseApiEnv(),
     db: resolveDatabase(deps),

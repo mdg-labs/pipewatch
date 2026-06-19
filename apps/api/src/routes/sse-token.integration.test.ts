@@ -68,7 +68,7 @@ function createTestApp() {
     "cloud",
   );
 
-  registerSseTokenRoute(app, { env, redis });
+  registerSseTokenRoute(app, { env, redis, rateLimit: { disabled: true } });
 
   return app;
 }

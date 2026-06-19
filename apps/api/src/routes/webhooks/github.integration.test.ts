@@ -171,7 +171,7 @@ function createTestApp(database: Db, redisUrl: string) {
     "cloud",
   );
 
-  registerGitHubWebhookRoute(app, { env, db: database });
+  registerGitHubWebhookRoute(app, { env, db: database, rateLimit: { disabled: true } });
   return app;
 }
 
@@ -312,6 +312,7 @@ describe("GitHub webhook receiver integration", () => {
       env,
       db: database,
       enqueueWebhookEvent,
+      rateLimit: { disabled: true },
     });
 
     const response = await app.request("http://localhost/webhooks/github", {
@@ -365,6 +366,7 @@ describe("GitHub webhook receiver integration", () => {
       env,
       db: database,
       enqueueWebhookEvent,
+      rateLimit: { disabled: true },
     });
 
     const response = await app.request("http://localhost/webhooks/github", {

@@ -133,7 +133,7 @@ function createTestApp(database: Db) {
   );
 
   registerWorkspaceRoutes(app, { env, db: database });
-  registerInviteAcceptRoutes(app, { env, db: database });
+  registerInviteAcceptRoutes(app, { env, db: database, rateLimit: { disabled: true } });
 
   return app;
 }

@@ -51,7 +51,7 @@ function createTestApp(database: Db, transport?: EmailTransport) {
     "cloud",
   );
 
-  const routeDeps: WaitlistRouteDependencies = { env, db: database };
+  const routeDeps: WaitlistRouteDependencies = withRateLimitDisabled({ env, db: database });
   if (transport) {
     routeDeps.transport = transport;
   }
@@ -59,6 +59,15 @@ function createTestApp(database: Db, transport?: EmailTransport) {
   registerWaitlistRoutes(app, routeDeps);
 
   return app;
+}
+
+function withRateLimitDisabled(
+  routeDeps: WaitlistRouteDependencies,
+): WaitlistRouteDependencies {
+  return {
+    ...routeDeps,
+    rateLimit: { disabled: true },
+  };
 }
 
 let containerId = "";
@@ -191,7 +200,7 @@ describe("waitlist integration", () => {
       "cloud",
     );
 
-    registerWaitlistRoutes(app, { env, db: database, transport: { sendMail } });
+    registerWaitlistRoutes(app, withRateLimitDisabled({ env, db: database, transport: { sendMail } }));
 
     const response = await app.request("http://localhost/api/v1/waitlist", {
       method: "POST",

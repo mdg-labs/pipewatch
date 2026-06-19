@@ -10,6 +10,7 @@ import { getDb, type Db } from "@pipewatch/db";
 
 import { buildOAuthCallbackUrl } from "../../lib/api-public-url.js";
 import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
+import { createRateLimitMiddleware, type RateLimitDependencies } from "../../middleware/rate-limit.js";
 import { OpenApiTags } from "../../openapi-tags.js";
 import {
   buildAuthCookieOptions,
@@ -48,6 +49,7 @@ export type GitHubAuthDependencies = {
   db: Db;
   oauthClient: GitHubOAuthClient;
   sendEmailFn?: typeof sendEmail;
+  rateLimit?: Partial<RateLimitDependencies>;
 };
 
 const githubInitRoute = createRoute({
@@ -148,6 +150,10 @@ export function registerGitHubAuthRoutes(
   app: OpenAPIHono<ApiEnv>,
   deps?: Partial<GitHubAuthDependencies>,
 ): void {
+  const rateLimitDeps = deps?.rateLimit ?? (deps?.env ? { env: deps.env } : undefined);
+  app.use("/auth/github", createRateLimitMiddleware("auth", rateLimitDeps));
+  app.use("/auth/github/*", createRateLimitMiddleware("auth", rateLimitDeps));
+
   const resolveDeps = (): GitHubAuthDependencies => {
     const env = deps?.env ?? parseApiEnv();
 

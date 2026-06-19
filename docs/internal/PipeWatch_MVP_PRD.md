@@ -898,7 +898,21 @@ The marketing site ships before the app is ready. In pre-launch mode:
 | CE data retention | 30 days default | Configurable via `RETENTION_DAYS` env var |
 | GitHub API rate limit handling | Graceful backoff + retry | Respect `X-RateLimit-Remaining` |
 | Webhook signature validation | Always enforced, no bypass | Security non-negotiable |
+| Application rate limiting | Per-IP Redis counters on abusable endpoints | See table below; requires `REDIS_URL`; returns `429` with `Retry-After` |
 | All API routes workspace-scoped | 100% | No cross-workspace data leakage possible |
+
+**Application rate limits (per client IP, fixed 60s window):**
+
+| Endpoint group | Path(s) | Default max / window | Notes |
+|---|---|---|---|
+| GitHub OAuth | `GET /auth/github`, `GET /auth/github/callback` | 20 / 60s | Brute-force and redirect abuse protection |
+| Token refresh | `POST /auth/refresh` | 30 / 60s | Refresh cookie brute-force protection |
+| Waitlist | `POST /api/v1/waitlist`, confirm/unsubscribe GETs | 5 / 60s | Cloud only; SMTP spam protection |
+| Workspace invites | `GET /invite/{token}`, `POST /invite/{token}/accept` | 30 / 60s | Token enumeration protection |
+| SSE token mint | `GET /api/v1/sse-token` | 60 / 60s | Authenticated but abusable token issuance |
+| GitHub webhooks | `POST /webhooks/github` | 300 / 60s | Enforced **after** HMAC signature validation (volume cap) |
+
+Limits are implemented in `apps/api/src/middleware/rate-limit.ts` (`RATE_LIMIT_DEFAULTS`). When `REDIS_URL` is unset or Redis is unreachable, rate limiting is skipped (requests proceed).
 
 ---
 

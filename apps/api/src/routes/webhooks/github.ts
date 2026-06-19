@@ -13,6 +13,8 @@ import { and, eq } from "drizzle-orm";
 
 import { verifyGitHubWebhookSignature } from "../../lib/github-webhook-signature.js";
 import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import type { RateLimitDependencies } from "../../middleware/rate-limit.js";
+import { enforceRateLimit } from "../../middleware/rate-limit.js";
 import { OpenApiTags } from "../../openapi-tags.js";
 import type { ApiEnv } from "../../types.js";
 
@@ -75,6 +77,7 @@ export type GitHubWebhookDependencies = {
   env: ParsedApiEnv;
   db: Db;
   enqueueWebhookEvent?: EnqueueWebhookEvent;
+  rateLimit?: Partial<RateLimitDependencies>;
 };
 
 function resolveDatabase(deps?: Partial<GitHubWebhookDependencies>): Db {
@@ -191,6 +194,7 @@ export function registerGitHubWebhookRoute(
       env,
       db: resolveDatabase(deps),
       enqueueWebhookEvent: resolveEnqueueWebhookEvent(env, deps?.enqueueWebhookEvent),
+      ...(deps?.rateLimit ? { rateLimit: deps.rateLimit } : {}),
     };
   };
 
@@ -208,6 +212,14 @@ export function registerGitHubWebhookRoute(
 
     if (!verifyGitHubWebhookSignature(rawBody, signatureHeader, webhookSecret)) {
       return c.json(apiError("UNAUTHORIZED", "Invalid webhook signature"), 401);
+    }
+
+    const rateLimited = await enforceRateLimit(c, "webhook", {
+      env: resolved.env,
+      ...resolved.rateLimit,
+    });
+    if (rateLimited) {
+      return rateLimited;
     }
 
     const eventType = c.req.header("X-GitHub-Event") ?? "";
