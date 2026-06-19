@@ -1,5 +1,25 @@
 # PipeWatch workspace notes
 
+## 2026-06-19 — P183 epic #183 orchestrator run (complete)
+
+**Lane:** S serial (#184 → #185) · **GitHub sync:** ON · **Base:** `3247149`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #184 Map per-service Sentry DSN Phase keys | Done | `f6f975e` |
+| #185 Remove Sentry from marketing app | Done | `d149919` |
+| #183 epic parent | Done | closes via #185 `fixes #183` |
+
+**Notes:**
+- Serialized Lane S — both leaves touch `sync-secrets-manifest.ts` + PRD (epic suggested parallel rejected)
+- #184: `SENTRY_DSN_API`/`_WORKER`/`_WEB` Phase storage keys → runtime `SENTRY_DSN` per Fly/Wrangler target via `github-secret-map.sh`; single `SENTRY_DSN` retired from sync manifest
+- #185: removed `@sentry/nextjs` from marketing, deploy Sentry steps, env schema; PRD §9 Umami-only for marketing
+- No DB migrations
+- Operator follow-up: rename Phase Staging/Production `SENTRY_DSN` → three per-service keys; create Sentry projects for api/worker/web if not already
+- `staging` 2 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy; operator migrate Phase Sentry DSN keys
+
 ## 2026-06-19 — #182 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `1145ff5`
