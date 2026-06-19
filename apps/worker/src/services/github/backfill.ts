@@ -1,5 +1,7 @@
+import { createPrivateKey, type KeyObject } from "node:crypto";
+
 import * as Sentry from "@sentry/node";
-import { SignJWT, importPKCS8 } from "jose";
+import { SignJWT } from "jose";
 import { and, eq } from "drizzle-orm";
 
 import { flags } from "@pipewatch/config/edition";
@@ -157,18 +159,50 @@ function normalizePrivateKey(rawKey: string): string {
   );
 }
 
-async function createAppJwt(config: GitHubAppConfig): Promise<string> {
-  const privateKey = await importPKCS8(
-    normalizePrivateKey(config.privateKey),
-    "RS256",
-  );
+function importSigningKey(rawKey: string): KeyObject {
+  let pem: string;
+  try {
+    pem = normalizePrivateKey(rawKey);
+  } catch (error) {
+    if (error instanceof GitHubBackfillError) {
+      throw error;
+    }
 
-  return new SignJWT({})
-    .setProtectedHeader({ alg: "RS256" })
-    .setIssuedAt()
-    .setIssuer(config.appId)
-    .setExpirationTime(`${String(APP_JWT_TTL_SECONDS)}s`)
-    .sign(privateKey);
+    throw new GitHubBackfillError(
+      "GITHUB_APP_PRIVATE_KEY is not a valid PEM key",
+      500,
+      "INVALID_GITHUB_APP_PRIVATE_KEY",
+    );
+  }
+
+  try {
+    return createPrivateKey(pem);
+  } catch {
+    throw new GitHubBackfillError(
+      "GITHUB_APP_PRIVATE_KEY is not a valid PEM key",
+      500,
+      "INVALID_GITHUB_APP_PRIVATE_KEY",
+    );
+  }
+}
+
+async function createAppJwt(config: GitHubAppConfig): Promise<string> {
+  const privateKey = importSigningKey(config.privateKey);
+
+  try {
+    return await new SignJWT({})
+      .setProtectedHeader({ alg: "RS256" })
+      .setIssuedAt()
+      .setIssuer(config.appId)
+      .setExpirationTime(`${String(APP_JWT_TTL_SECONDS)}s`)
+      .sign(privateKey);
+  } catch {
+    throw new GitHubBackfillError(
+      "Failed to sign GitHub App JWT with private key",
+      500,
+      "INVALID_GITHUB_APP_PRIVATE_KEY",
+    );
+  }
 }
 
 function isInstallationTokenExpired(

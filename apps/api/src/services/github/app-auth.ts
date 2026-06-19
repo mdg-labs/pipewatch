@@ -1,4 +1,6 @@
-import { SignJWT, importPKCS8 } from "jose";
+import { createPrivateKey, type KeyObject } from "node:crypto";
+
+import { SignJWT } from "jose";
 import { eq } from "drizzle-orm";
 
 import type { ApiEnv } from "@pipewatch/config/env";
@@ -99,19 +101,52 @@ export function normalizePrivateKey(rawKey: string): string {
   );
 }
 
+/** Import PEM private key — accepts PKCS#1 (`RSA PRIVATE KEY`) and PKCS#8 (`PRIVATE KEY`). */
+function importSigningKey(rawKey: string): KeyObject {
+  let pem: string;
+  try {
+    pem = normalizePrivateKey(rawKey);
+  } catch (error) {
+    if (error instanceof GitHubAppAuthError) {
+      throw error;
+    }
+
+    throw new GitHubAppAuthError(
+      "GITHUB_APP_PRIVATE_KEY is not a valid PEM key",
+      500,
+      "INVALID_GITHUB_APP_PRIVATE_KEY",
+    );
+  }
+
+  try {
+    return createPrivateKey(pem);
+  } catch {
+    throw new GitHubAppAuthError(
+      "GITHUB_APP_PRIVATE_KEY is not a valid PEM key",
+      500,
+      "INVALID_GITHUB_APP_PRIVATE_KEY",
+    );
+  }
+}
+
 /** Sign a short-lived RS256 JWT for GitHub App authentication (PRD §4.4). */
 export async function createAppJwt(config: GitHubAppConfig): Promise<string> {
-  const privateKey = await importPKCS8(
-    normalizePrivateKey(config.privateKey),
-    "RS256",
-  );
+  const privateKey = importSigningKey(config.privateKey);
 
-  return new SignJWT({})
-    .setProtectedHeader({ alg: "RS256" })
-    .setIssuedAt()
-    .setIssuer(config.appId)
-    .setExpirationTime(`${String(APP_JWT_TTL_SECONDS)}s`)
-    .sign(privateKey);
+  try {
+    return await new SignJWT({})
+      .setProtectedHeader({ alg: "RS256" })
+      .setIssuedAt()
+      .setIssuer(config.appId)
+      .setExpirationTime(`${String(APP_JWT_TTL_SECONDS)}s`)
+      .sign(privateKey);
+  } catch {
+    throw new GitHubAppAuthError(
+      "Failed to sign GitHub App JWT with private key",
+      500,
+      "INVALID_GITHUB_APP_PRIVATE_KEY",
+    );
+  }
 }
 
 /** True when the token is missing or expires within the refresh buffer. */

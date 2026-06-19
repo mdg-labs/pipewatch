@@ -174,6 +174,8 @@ After creating each app, collect:
 2. Base64-encode the PEM for Phase: `base64 -w0 app.private-key.pem` (Linux) or `base64 -i app.private-key.pem` (macOS).
 3. Store the base64 string as `GH_APP_PRIVATE_KEY` in Phase — `sync-secrets.sh` decodes before `flyctl secrets set`.
 
+GitHub downloads PKCS#1 RSA PEM (`-----BEGIN RSA PRIVATE KEY-----`). PipeWatch accepts this format directly — no PKCS#8 conversion required.
+
 Never commit PEM files or secrets to git.
 
 ---
