@@ -4,6 +4,8 @@ import { Github } from "lucide-react";
 
 import { Card, LogoWordmark } from "@pipewatch/ui";
 
+import { CUSTOMER_DOCS_URL } from "@/lib/customer-docs";
+
 import "./bootstrap.css";
 
 export type BootstrapCardProps = {
@@ -47,7 +49,12 @@ export function BootstrapCard({ oauthUrl, marketingUrl }: BootstrapCardProps) {
         </Card>
 
         <div className="pw-bootstrap-help">
-          <a className="pw-bootstrap-help-link" href={`${marketingUrl}/docs`}>
+          <a
+            className="pw-bootstrap-help-link"
+            href={CUSTOMER_DOCS_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Need help? Read the CE setup guide →
           </a>
         </div>

@@ -372,5 +372,5 @@ Independent re-verification of all findings; corrections applied to §3, §5, §
 
 - PipeWatch PRD §4.4, §6, §12.6, §16, §18 — `docs/internal/PipeWatch_MVP_PRD.md`
 - GitHub App setup (cloud) — `docs/internal/GitHub_App_Setup_Runbook.md`
-- PipeWatch run lifecycle (customer docs) — `apps/marketing/content/docs/concepts/run-lifecycle.mdx`
+- PipeWatch run lifecycle (customer docs) — `pipewatch-docs/concepts/run-lifecycle.mdx`
 - Test fixtures — `packages/utils/src/github/fixtures/`

@@ -30,9 +30,20 @@ test.describe("page inventory — marketing smoke @all-editions", () => {
     await expectPageHeading(page, `${marketingUrl}/pricing`, /Simple, usage-based pricing/i);
   });
 
-  test("A3 docs index loads", async ({ page }) => {
-    await expectRouteOk(page, `${marketingUrl}/docs`);
-    await expect(page.getByRole("searchbox").first()).toBeVisible();
+  test("A3 docs redirect to external docs", async ({ request }) => {
+    const response = await request.get(`${marketingUrl}/docs`, {
+      maxRedirects: 0,
+    });
+    expect([301, 307, 308]).toContain(response.status());
+    expect(response.headers().location).toMatch(/^https:\/\/docs\.pipewatch\.app\/?/);
+
+    const nested = await request.get(`${marketingUrl}/docs/getting-started/ce-quickstart`, {
+      maxRedirects: 0,
+    });
+    expect([301, 307, 308]).toContain(nested.status());
+    expect(nested.headers().location).toBe(
+      "https://docs.pipewatch.app/getting-started/ce-quickstart",
+    );
   });
 
   test("A4 changelog loads", async ({ page }) => {

@@ -67,6 +67,8 @@ scripts/          Test orchestration and tooling
 
 See `docs/internal/PipeWatch_MVP_PRD.md` for architecture and product specification.
 
+**Customer documentation:** [docs.pipewatch.app](https://docs.pipewatch.app) — source repo [`mdg-labs/pipewatch-docs`](https://github.com/mdg-labs/pipewatch-docs).
+
 ## PipeWatch CE — container images (GHCR)
 
 Self-hosted CE images are published to GitHub Container Registry under `ghcr.io/mdg-labs/`:

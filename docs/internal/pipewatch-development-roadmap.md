@@ -1355,12 +1355,13 @@ P21 + all ──► P19 E2E & launch hardening
 - [ ] **P16-04** — Docs site (A3)
   - **Domain:** `domain:operations` | **Deps:** P16-01 | **Effort:** L
   - **Doc ref:** `pages A3`
-  - **Routes:** `/docs`, `/docs/*`
+  - **Hosting:** `docs.pipewatch.app` via Documentation.AI (`mdg-labs/pipewatch-docs`)
+  - **Marketing:** `/docs` and `/docs/*` redirect to external docs
   - **Acceptance criteria:**
-    - 3-column layout: collapsible sidebar nav, MDX content, right TOC with scroll-spy
-    - Content tree: Getting Started (cloud + CE quickstart), GitHub App Setup, Concepts, CE Reference, API link
-    - Client-side search; copy-to-clipboard on code blocks; "Edit on GitHub" per page
-  - **Tests:** MDX compile all doc pages
+    - Content tree: Getting Started (cloud + CE quickstart), GitHub App Setup, Concepts, CE Reference, API link (Scalar)
+    - MDX + `documentation.json` in `pipewatch-docs`; operator setup in repo README
+    - Marketing nav/CTAs point to `docs.pipewatch.app`
+  - **Tests:** redirect smoke; Documentation.AI build on `pipewatch-docs` push
 
 - [ ] **P16-05** — Changelog page (A4)
   - **Domain:** `domain:operations` | **Deps:** P16-01 | **Effort:** S

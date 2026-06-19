@@ -14,6 +14,20 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@pipewatch/config", "@pipewatch/ui"],
   productionBrowserSourceMaps: true,
+  async redirects() {
+    return [
+      {
+        source: "/docs",
+        destination: "https://docs.pipewatch.app",
+        permanent: true,
+      },
+      {
+        source: "/docs/:path*",
+        destination: "https://docs.pipewatch.app/:path*",
+        permanent: true,
+      },
+    ];
+  },
   webpack(config) {
     config.module.rules.push({
       test: /\.(md|mdx)$/,

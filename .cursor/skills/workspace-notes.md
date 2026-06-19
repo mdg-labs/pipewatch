@@ -219,7 +219,7 @@
 **Notes:**
 - Epic order: #101 → #102 → #103 → #105 → #107 → #104 → #106 (Lane S serial)
 - #101 verifier FAIL (3c2): `NEXT_PUBLIC_APP_URL` missing from `marketingEnvSchema` — fixed `b8e5a1b`
-- All `apps/marketing`; MDX via `next-mdx-remote` (#107 legal, #104 docs)
+- Customer docs migrated to **`mdg-labs/pipewatch-docs`** (Documentation.AI at `docs.pipewatch.app`); marketing `/docs` redirects; in-app docs stack removed from `apps/marketing`
 - Waitlist pages integrate #73 API; middleware guards `WAITLIST_ENABLED` / `LAUNCH_MODE=live`
 - No new DB migrations
 - `pnpm audit --audit-level=high` passes on this run

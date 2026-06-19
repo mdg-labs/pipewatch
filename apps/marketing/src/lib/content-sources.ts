@@ -28,10 +28,6 @@ export const changelogSources = loadContentDirectory(
   webpackRequire.context("../../content/changelog", false, /\.md$/),
 );
 
-export const docSources = loadContentDirectory(
-  webpackRequire.context("../../content/docs", true, /\.mdx$/),
-);
-
 export const legalSources = loadContentDirectory(
   webpackRequire.context("../../content/legal", false, /\.mdx$/),
 );

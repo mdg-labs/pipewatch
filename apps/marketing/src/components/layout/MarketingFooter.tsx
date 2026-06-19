@@ -27,11 +27,23 @@ export function MarketingFooter() {
         </div>
 
         <div className="marketing-footer-links">
-          {productLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="marketing-footer-link">
-              {link.label}
-            </Link>
-          ))}
+          {productLinks.map((link) =>
+            "external" in link && link.external ? (
+              <a
+                key={link.href}
+                href={link.href}
+                className="marketing-footer-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link key={link.href} href={link.href} className="marketing-footer-link">
+                {link.label}
+              </Link>
+            ),
+          )}
 
           {marketingFooterLegalLinks.map((link) => (
             <Link key={link.href} href={link.href} className="marketing-footer-link">

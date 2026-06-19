@@ -850,7 +850,7 @@ Separate deployment from the app — independent release cycle, no shared infra 
 |---|---|
 | `/` | Hero, value prop, feature highlights, pricing table, CTA |
 | `/pricing` | Detailed pricing breakdown, plan comparison, FAQ |
-| `/docs` | Getting started, self-hosted setup guide, GitHub App setup |
+| `docs.pipewatch.app` | Customer docs (Documentation.AI) — getting started, self-hosted setup, GitHub App setup |
 | `/changelog` | Release notes — markdown-driven |
 | `/waitlist` | Email capture before launch — Postmark double opt-in, stored in `subscribers` table |
 

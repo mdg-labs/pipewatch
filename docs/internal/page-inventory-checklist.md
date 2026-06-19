@@ -25,7 +25,7 @@ E2E_MARKETING_URL=https://staging.pipewatch.app pnpm test:e2e specs/page-invento
 |---|---|---|---|---|
 | A1 | `/` | Marketing | E2E when `E2E_MARKETING_URL` set | Staging smoke |
 | A2 | `/pricing` | Marketing | E2E when `E2E_MARKETING_URL` set | Plan CTA + billing toggle |
-| A3 | `/docs`, `/docs/*` | Marketing | E2E index smoke | Nested doc pages, search, TOC |
+| A3 | `/docs` → `docs.pipewatch.app` | Marketing redirect | E2E redirect smoke | External docs on Documentation.AI |
 | A4 | `/changelog` | Marketing | E2E when `E2E_MARKETING_URL` set | Anchor links per version |
 | A5 | `/waitlist` | Marketing (cloud) | E2E skip if 404 | Submit + confirm flow |
 | A6 | `/privacy`, `/terms` | Marketing | E2E route smoke | Legal TOC anchors |
@@ -60,7 +60,7 @@ E2E_MARKETING_URL=https://staging.pipewatch.app pnpm test:e2e specs/page-invento
 
 - [ ] **A1 Homepage** — hero, feature blocks, editions section, footer; no 5xx
 - [ ] **A2 Pricing** — plan cards, comparison table, FAQ; no 5xx
-- [ ] **A3 Docs** — sidebar nav, sample nested page, code copy; no 5xx
+- [ ] **A3 Docs** — `/docs` redirects to `docs.pipewatch.app`; nav links to external docs; no 5xx
 - [ ] **A4 Changelog** — timeline entries render; no 5xx
 - [ ] **A5 Waitlist** — form or redirect when `LAUNCH_MODE=live`; no 5xx
 - [ ] **A6 Legal** — privacy + terms prose; no 5xx

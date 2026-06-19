@@ -1,6 +1,6 @@
 # GitHub App Setup Runbook (Internal)
 
-Operator runbook for creating and wiring the PipeWatch GitHub App on **staging** and **production**. Customer-facing CE instructions live in the marketing docs (`/docs/github-app-setup/*`); this document is the source of truth for MDG Labs hosted environments.
+Operator runbook for creating and wiring the PipeWatch GitHub App on **staging** and **production**. Customer-facing CE instructions live at [docs.pipewatch.app/github-app-setup](https://docs.pipewatch.app/github-app-setup/creating-the-app) (`pipewatch-docs/github-app-setup/*`); this document is the source of truth for MDG Labs hosted environments.
 
 **Related specs:** `PipeWatch_MVP_PRD.md` §4.3–§4.4, §12.1, §12.6, §20, §23 · Decision #1, #4, #9, #33
 
@@ -309,7 +309,7 @@ CE users create and own their GitHub App. Operator steps do not apply except whe
 | No public webhook | Set `PIPEWATCH_MODE=polling` or use Cloudflare Tunnel (see customer docs) |
 | Manual install | Enter `installation_id` in onboarding UI → `{API_URL}/onboarding/github-callback` |
 
-Customer docs: `apps/marketing/content/docs/github-app-setup/`
+Customer docs: `pipewatch-docs/github-app-setup/`
 
 ---
 
@@ -351,4 +351,4 @@ Customer docs: `apps/marketing/content/docs/github-app-setup/`
 | OAuth implementation | `apps/api/src/routes/auth/github.ts` |
 | Install callback | `apps/api/src/routes/onboarding/github-callback.ts` |
 | Webhook receiver | `apps/api/src/routes/webhooks/github.ts` |
-| Customer CE/Cloud setup | `apps/marketing/content/docs/github-app-setup/` |
+| Customer CE/Cloud setup | `pipewatch-docs/github-app-setup/` |

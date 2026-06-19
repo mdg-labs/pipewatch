@@ -4,10 +4,11 @@ import { getAppUrl, isWaitlistMode } from "./env";
 
 export const GITHUB_REPO_URL = "https://github.com/mdg-labs/pipewatch";
 export const MDG_LABS_GITHUB_URL = "https://github.com/mdg-labs";
+export const CUSTOMER_DOCS_URL = "https://docs.pipewatch.app";
 
 export const marketingNavLinks = [
   { href: "/pricing", label: "Pricing" },
-  { href: "/docs", label: "Docs" },
+  { href: CUSTOMER_DOCS_URL, label: "Docs", external: true },
   { href: "/changelog", label: "Changelog" },
 ] as const;
 

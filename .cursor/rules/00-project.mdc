@@ -47,7 +47,9 @@ Secrets from GitHub Actions environments (`staging`, `production`, `ci`) — syn
 
 ## Repository state
 
-This repo currently contains **docs only**. Application code is built task-by-task from the GitHub project board (PipeWatch Roadmap, project **#5**) and `docs/internal/PipeWatch_MVP_PRD.md`. A phased development roadmap file may be added later; until then, PRD sections and GitHub issues are the execution source of truth.
+This repo is a **pnpm workspace monorepo** with **Turborepo** (`mdg-labs/pipewatch`).
+
+**Customer documentation** lives in the sibling repo [`mdg-labs/pipewatch-docs`](https://github.com/mdg-labs/pipewatch-docs), published at [docs.pipewatch.app](https://docs.pipewatch.app) via Documentation.AI. **Engineering specs** stay in `docs/internal/` in this monorepo.
 
 ## Spec doc precedence (when docs conflict)
 

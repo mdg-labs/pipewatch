@@ -29,7 +29,7 @@ pnpm test:integration
 
 - [ ] A1 Homepage — no 5xx
 - [ ] A2 Pricing — no 5xx
-- [ ] A3 Docs — no 5xx
+- [ ] A3 Docs — `/docs` redirects to `docs.pipewatch.app`; no 5xx
 - [ ] A4 Changelog — no 5xx
 - [ ] A5 Waitlist — no 5xx (or live redirect)
 - [ ] A6 Privacy + Terms — no 5xx

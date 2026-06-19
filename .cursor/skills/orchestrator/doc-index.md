@@ -14,6 +14,7 @@ Sub-agents read these files themselves — never paste content into prompts.
 |---|---|---|
 | `prd` | `docs/internal/PipeWatch_MVP_PRD.md` | Full product & architecture spec |
 | `pages` | `docs/internal/PipeWatch_Page_Inventory.md` | Marketing + app page inventory |
+| `customer-docs` | `pipewatch-docs/` (sibling repo) | Public MDX at docs.pipewatch.app |
 
 Reference sections as `§N` or heading, e.g. `prd §7.1`, `prd §17`, `pages B3`.
 

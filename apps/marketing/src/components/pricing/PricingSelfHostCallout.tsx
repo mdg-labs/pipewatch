@@ -1,6 +1,6 @@
-import Link from "next/link";
-
 import { buttonClassName } from "@pipewatch/ui/components/button";
+
+import { CUSTOMER_DOCS_URL } from "@/lib/marketing-links";
 
 import "./pricing.css";
 
@@ -17,13 +17,15 @@ export function PricingSelfHostCallout() {
             no licence key, all features included — forever.
           </p>
         </div>
-        <Link
-          href="/docs"
+        <a
+          href={CUSTOMER_DOCS_URL}
           className={buttonClassName({ variant: "secondary", size: "md" })}
           data-umami-event="pricing-ce-docs-cta"
+          target="_blank"
+          rel="noopener noreferrer"
         >
           View CE docs →
-        </Link>
+        </a>
       </div>
     </section>
   );

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { buttonClassName } from "@pipewatch/ui/components/button";
 import { Logo } from "@pipewatch/ui/components/logo";
 
-import { getMarketingCta } from "@/lib/marketing-links";
+import { CUSTOMER_DOCS_URL, getMarketingCta } from "@/lib/marketing-links";
 
 import { SectionViewTracker } from "./SectionViewTracker";
 
@@ -53,14 +53,16 @@ export function HomeEditionsSection() {
               <li><CheckIcon /> Your data, your infrastructure</li>
             </ul>
 
-            <Link
-              href="/docs"
+            <a
+              href={CUSTOMER_DOCS_URL}
               className={buttonClassName({ variant: "secondary", size: "md" })}
               data-umami-event="home-cta-docs"
               data-umami-event-location="editions-ce"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Read the docs →
-            </Link>
+            </a>
           </article>
 
           <article className="home-edition-card home-edition-card-accent">

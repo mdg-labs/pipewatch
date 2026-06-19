@@ -40,11 +40,23 @@ export async function MarketingNav() {
         </Link>
 
         <nav className="marketing-nav" aria-label="Primary">
-          {marketingNavLinks.map((link) => (
-            <Link key={link.href} href={link.href} className="marketing-nav-link">
-              {link.label}
-            </Link>
-          ))}
+          {marketingNavLinks.map((link) =>
+            "external" in link && link.external ? (
+              <a
+                key={link.href}
+                href={link.href}
+                className="marketing-nav-link"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {link.label}
+              </a>
+            ) : (
+              <Link key={link.href} href={link.href} className="marketing-nav-link">
+                {link.label}
+              </Link>
+            ),
+          )}
 
           <a
             href={GITHUB_REPO_URL}

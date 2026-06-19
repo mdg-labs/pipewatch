@@ -83,25 +83,26 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 
 ---
 
-## A3. Docs `/docs` (and nested `/docs/*`)
+## A3. Docs `docs.pipewatch.app` (Documentation.AI)
 
-**Purpose:** Getting-started and self-hosted reference.
+**Purpose:** Getting-started and self-hosted reference for customers and operators.
 
-**Layout:** 3-column — left sidebar (collapsible nav tree), center content (MDX), right "on this page" TOC. Top: search box (client-side filter for MVP), breadcrumb.
+**Hosting:** [`mdg-labs/pipewatch-docs`](https://github.com/mdg-labs/pipewatch-docs) → Documentation.AI at **https://docs.pipewatch.app**. Authored as MDX + `documentation.json` (not in the marketing app).
+
+**Marketing redirect:** `pipewatch.app/docs` and `pipewatch.app/docs/*` → 308 to `docs.pipewatch.app` (preserves bookmarks).
 
 **Content tree:**
 - Getting Started → Cloud quickstart, CE quickstart (Docker Compose)
 - GitHub App Setup → creating the app, permissions & events, webhook URL, Cloudflare Tunnel guide
 - Concepts → Workspaces, Integrations, Run lifecycle, Webhook vs Polling mode, Editions
 - Self-Hosted (CE) Reference → environment variables, Docker Compose config, upgrading, backups
-- API Reference → link to `cloud.pipewatch.app/api/docs` (Scalar)
+- API Reference → link to `api.pipewatch.app/api/docs` (Scalar)
 
-**Functions:**
-- Sidebar nav (collapsible, active-state highlight)
-- Right-rail TOC with scroll-spy
-- Copy-to-clipboard on code blocks
-- "Edit on GitHub" per page
-- Client-side search/filter
+**Functions (Documentation.AI platform):**
+- Sidebar navigation, search, on-page TOC
+- Copy-to-clipboard on code blocks (platform)
+- Edit via GitHub / Documentation.AI editor
+- Navbar links to GitHub repo and PipeWatch Cloud
 
 ---
 
@@ -490,7 +491,7 @@ Live run/job updates. Auth via one-time query token (`GET /api/v1/sse-token`). H
 |---|---|---|---|---|---|
 | A1 | `/` | Marketing | No | | ✓ |
 | A2 | `/pricing` | Marketing | No | | ✓ |
-| A3 | `/docs`, `/docs/*` | Marketing | No | | ✓ |
+| A3 | `docs.pipewatch.app` (external) | Marketing redirects `/docs` | No | | ✓ |
 | A4 | `/changelog` | Marketing | No | | ✓ |
 | A5 | `/waitlist` | Marketing | No | Cloud (`WAITLIST_ENABLED`) | ✓ |
 | A6 | `/privacy`, `/terms` | Marketing | No | | ✓ |
