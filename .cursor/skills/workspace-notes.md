@@ -1,5 +1,22 @@
 # PipeWatch workspace notes
 
+## 2026-06-19 — #154 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `91f1a55`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #154 Auth OAuth state cookie missing on staging | Done | `09f9a76` |
+
+**Notes:**
+- Regression from #45 — `pw_oauth_state` had `SameSite=Strict`; browser withheld cookie on GitHub→API cross-site redirect
+- Fix: `SameSite=Lax` on OAuth state cookie set+clear; refresh/access remain `Strict` per PRD §20
+- Integration tests: Lax assertion + callback without cookie returns 401
+- No DB migrations
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy API fix; retest GitHub sign-in on staging-cloud
+
 ## 2026-06-18 — #153 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `549c59e`
