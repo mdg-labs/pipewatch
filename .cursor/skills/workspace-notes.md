@@ -1,5 +1,47 @@
 # PipeWatch workspace notes
 
+## 2026-06-19 — #171 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `f6113b5`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #171 Auth staging post-login redirect + API 404 | Done | `15d5107` |
+
+**Notes:**
+- Four root causes: missing `NEXT_PUBLIC_API_URL` at OpenNext build; `pw_access` `SameSite=Strict` blocking cookies on OAuth redirect; placeholder `ws_mock_mdg` session; silent empty `publicApiUrl` → same-origin 404
+- Fix: deploy-web build env; `pw_access` → Lax (refresh Strict); `server-session.ts` real API fetch; tests updated
+- Related to #154 but distinct — `pw_oauth_state` Lax unchanged
+- No DB migrations
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy web fix; verify OAuth → dashboard without manual reload on staging-cloud
+
+## 2026-06-19 — P159 epic #159 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `0580bf6`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #160 CORS allowlist | Done | `3a680af` |
+| #161 Rate limiting | Done | `27b9aff` |
+| #164 CE bootstrap race | Done | `92e889f` |
+| #168 CE Docker secrets | Done | `311a92e` |
+| #162 API key timing-safe | Done | `a0f6827` |
+| #163 Refresh reuse detection | Done | `1a7fb44` |
+| #165 Webhook enqueue dedup | Done | `45ec5c7` |
+| #166 GitHub fetch allowlist | Done | `3dce69a` |
+| #167 Sentry/access-log redaction | Done | `f6113b5` |
+| #159 epic parent | Done | closes via #167 `fixes #159` |
+
+**Notes:**
+- Security audit remediation (Jun 2026) — all 9 child tasks complete
+- #168 also committed `7a93303` in `pipewatch-docs` (CE secret generation docs)
+- No new DB migrations in this epic
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy security hardening; push `pipewatch-docs` for CE docs; operator review `docs/internal/access-log-redaction.md` for Fly/CF log config
+
 ## 2026-06-19 — #154 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `91f1a55`

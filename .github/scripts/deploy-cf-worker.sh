@@ -85,13 +85,12 @@ APP_DIR="${ROOT}/apps/${APP}"
 pnpm install --frozen-lockfile
 
 echo "deploy-cf-worker: building ${FILTER} workspace dependencies"
-"${BUILD_ENV[@]}" pnpm exec turbo run build --filter="${FILTER}^..."
+env "${BUILD_ENV[@]}" pnpm exec turbo run build --filter="${FILTER}^..."
 
 echo "deploy-cf-worker: OpenNext build for ${FILTER}"
 (
   cd "$APP_DIR"
-  "${BUILD_ENV[@]}" \
-    SKIP_WRANGLER_CONFIG_CHECK=yes \
+  env "${BUILD_ENV[@]}" SKIP_WRANGLER_CONFIG_CHECK=yes \
     pnpm exec opennextjs-cloudflare build
 )
 
