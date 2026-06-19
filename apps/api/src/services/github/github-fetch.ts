@@ -1,4 +1,8 @@
 import type { Db } from "@pipewatch/db";
+import {
+  createGuardedGitHubFetch,
+  GitHubFetchGuardError,
+} from "@pipewatch/utils";
 
 import {
   type GitHubAppConfig,
@@ -102,7 +106,7 @@ export async function githubFetch(
   init: RequestInit | undefined,
   deps: GitHubFetchDeps,
 ): Promise<Response> {
-  const fetchImpl = deps.fetchImpl ?? fetch;
+  const fetchImpl = createGuardedGitHubFetch(deps.fetchImpl ?? fetch);
   const maxRetries = deps.maxRetries ?? DEFAULT_MAX_RETRIES;
 
   let token: string;
@@ -114,6 +118,9 @@ export async function githubFetch(
       fetchImpl,
     );
   } catch (error) {
+    if (error instanceof GitHubFetchGuardError) {
+      throw new GitHubFetchError(error.message, 400, error.code);
+    }
     if (error instanceof GitHubAppAuthError) {
       throw new GitHubFetchError(error.message, error.status, error.code);
     }
@@ -124,10 +131,18 @@ export async function githubFetch(
   let backoffMs = DEFAULT_BACKOFF_MS;
 
   while (true) {
-    const response = await fetchImpl(url, {
-      ...init,
-      headers: githubRequestHeaders(token, init),
-    });
+    let response: Response;
+    try {
+      response = await fetchImpl(url, {
+        ...init,
+        headers: githubRequestHeaders(token, init),
+      });
+    } catch (error) {
+      if (error instanceof GitHubFetchGuardError) {
+        throw new GitHubFetchError(error.message, 400, error.code);
+      }
+      throw error;
+    }
 
     if (!isRateLimited(response) || attempt >= maxRetries) {
       return response;

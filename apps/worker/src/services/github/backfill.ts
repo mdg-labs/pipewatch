@@ -8,8 +8,10 @@ import type { Db } from "@pipewatch/db";
 import { integrations, repositories, workspaces } from "@pipewatch/db/schema";
 import type { WorkspacePlan } from "@pipewatch/types";
 import {
+  createGuardedGitHubFetch,
   decrypt,
   encrypt,
+  GitHubFetchGuardError,
   mapRestWorkflowJob,
   mapWorkflowRunPayload,
   type GitHubWorkflowJob,
@@ -328,7 +330,7 @@ export async function githubFetch(
   init: RequestInit | undefined,
   deps: GitHubFetchDeps,
 ): Promise<Response> {
-  const fetchImpl = deps.fetchImpl ?? fetch;
+  const fetchImpl = createGuardedGitHubFetch(deps.fetchImpl ?? fetch);
   const maxRetries = deps.maxRetries ?? DEFAULT_MAX_RETRIES;
 
   let token: string;
@@ -340,6 +342,9 @@ export async function githubFetch(
       fetchImpl,
     );
   } catch (error) {
+    if (error instanceof GitHubFetchGuardError) {
+      throw new GitHubBackfillError(error.message, 400, error.code);
+    }
     if (error instanceof GitHubBackfillError) {
       throw error;
     }
@@ -350,10 +355,18 @@ export async function githubFetch(
   let backoffMs = DEFAULT_BACKOFF_MS;
 
   while (true) {
-    const response = await fetchImpl(url, {
-      ...init,
-      headers: githubRequestHeaders(token, init),
-    });
+    let response: Response;
+    try {
+      response = await fetchImpl(url, {
+        ...init,
+        headers: githubRequestHeaders(token, init),
+      });
+    } catch (error) {
+      if (error instanceof GitHubFetchGuardError) {
+        throw new GitHubBackfillError(error.message, 400, error.code);
+      }
+      throw error;
+    }
 
     if (!isRateLimited(response) || attempt >= maxRetries) {
       return response;

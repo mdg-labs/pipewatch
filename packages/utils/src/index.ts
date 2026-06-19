@@ -11,6 +11,12 @@ export {
   type PipelineStepUpsert,
 } from "./github/map-workflow-job.js";
 export {
+  assertGitHubAllowedUrl,
+  createGuardedGitHubFetch,
+  GITHUB_ALLOWED_HOSTS,
+  GitHubFetchGuardError,
+} from "./github/github-fetch-guard.js";
+export {
   mapWorkflowRunPayload,
   PIPELINE_NO_BRANCH_LABEL,
   PIPELINE_UNKNOWN_WORKFLOW_LABEL,

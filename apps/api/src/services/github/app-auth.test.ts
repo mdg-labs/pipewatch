@@ -249,4 +249,25 @@ describe("githubFetch", () => {
 
     vi.useRealTimers();
   });
+
+  it("rejects disallowed hosts", async () => {
+    const integration = createIntegration();
+    const database = createMockDb(integration);
+
+    await expect(
+      githubFetch(
+        "https://evil.com/repos/acme/demo/actions/runs",
+        { method: "GET" },
+        {
+          database,
+          config: appConfig,
+          integration,
+        },
+      ),
+    ).rejects.toMatchObject({
+      name: "GitHubFetchError",
+      status: 400,
+      code: "GITHUB_FETCH_HOST_NOT_ALLOWED",
+    });
+  });
 });
