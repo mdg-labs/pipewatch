@@ -1608,8 +1608,8 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `FLY_API_TOKEN` | staging, production | deploy workflows | Fly.io deploy + `flyctl secrets set` |
 | `CF_API_TOKEN` | staging, production | deploy workflows | Cloudflare Workers deploy + `wrangler secret put` |
 | `CF_ACCOUNT_ID` | staging, production | deploy workflows | Cloudflare account ID for Wrangler (`CLOUDFLARE_ACCOUNT_ID`) |
-| `APP_URL` | staging, production | api | `https://cloud.pipewatch.app` (staging: `https://staging-cloud.pipewatch.app`) |
-| `MARKETING_URL` | staging, production | api | `https://pipewatch.app` |
+| `APP_URL` | staging, production | api | Dashboard origin (`https://cloud.pipewatch.app`; staging: `https://staging-cloud.pipewatch.app`) — also a CORS allowlist entry for credentialed browser requests |
+| `MARKETING_URL` | staging, production | api | Marketing site origin (`https://pipewatch.app`) — also a CORS allowlist entry for credentialed browser requests |
 | `PUBLIC_API_URL` | staging, production | api | Public API origin for OAuth callbacks — runtime key; Phase/GHA storage: `NEXT_PUBLIC_API_URL` (same value as web). Staging: `https://staging-api.pipewatch.app`; production: `https://api.pipewatch.app` |
 | `NODE_ENV` | staging, production | all | `development` \| `staging` \| `production` |
 | `UMAMI_SCRIPT_URL` | staging, production | marketing | Self-hosted Umami script URL |

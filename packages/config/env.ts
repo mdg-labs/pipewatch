@@ -55,8 +55,8 @@ const apiEnvSchema = z.object({
   GITHUB_CLIENT_ID: z.string().min(1).optional(),
   GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
   GITHUB_APP_SLUG: z.string().min(1).optional(),
-  APP_URL: z.string().url().optional(),
-  MARKETING_URL: z.string().url().optional(),
+  APP_URL: z.string().url().optional().describe("Dashboard origin; CORS allowlist entry"),
+  MARKETING_URL: z.string().url().optional().describe("Marketing origin; CORS allowlist entry"),
   PUBLIC_API_URL: z.string().url().optional(),
   COOKIE_DOMAIN: z
     .string()

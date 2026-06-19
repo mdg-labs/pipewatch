@@ -1,6 +1,7 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { registerCERoutes, registerCloudRoutes } from "./edition-features.js";
+import { createCorsMiddleware } from "./middleware/cors.js";
 import { apiError, errorHandler } from "./middleware/error-handler.js";
 import { requestIdMiddleware } from "./middleware/request-id.js";
 import { sentryTraceMiddleware } from "./middleware/sentry.js";
@@ -28,6 +29,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
     },
   });
 
+  app.use("*", createCorsMiddleware());
   app.use("*", requestIdMiddleware);
   app.use("*", sentryTraceMiddleware);
   app.onError(errorHandler);
