@@ -1,5 +1,39 @@
 # PipeWatch workspace notes
 
+## 2026-06-19 — #174 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `53e779f`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #174 API client JSON mutations drop Content-Type | Done | `5aba72b` |
+
+**Notes:**
+- Regression from #173 — `apiFetch` overwrote `buildRequestInit` headers, dropping `Content-Type: application/json` on all POST/PATCH with body (11 mutation paths)
+- Fix: merge `Authorization` into `buildRequestInit` headers instead of replacing; unit tests for post+token and patch without token
+- No DB migrations
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy; retest onboarding workspace create + settings mutations on staging-cloud
+
+## 2026-06-19 — #172 + #173 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `c01f359`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #173 Onboarding workspace create VALIDATION_ERROR | Done | `671b7ce` |
+| #172 Onboarding slug field label overlaps input | Done | `53e779f` |
+
+**Notes:**
+- Serial Lane S (#173 first — High functional blocker, then #172 UI regression); shared hot file `CreateWorkspaceStep.tsx` avoided conflict by sequencing
+- #173: aligned OpenAPI slug schema with service `WORKSPACE_SLUG_PATTERN`; improved `defaultHook` Zod messages; CreateWorkspaceStep surfaces API errors + FORBIDDEN title for CE
+- #172: Input prefix switched from absolute overlay to flex adornment layout; onboarding card body `gap: var(--space-4)`; `input-prefix.test.tsx`
+- No DB migrations
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy onboarding fixes; retest workspace create (MDG-Labs/mdg-labs) on CE Docker
+
 ## 2026-06-19 — #171 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `f6113b5`
