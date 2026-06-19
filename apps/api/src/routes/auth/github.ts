@@ -121,7 +121,7 @@ function clearOAuthStateCookie(c: Context, secure: boolean): void {
   setCookie(c, OAUTH_STATE_COOKIE_NAME, "", {
     httpOnly: true,
     secure,
-    sameSite: "Strict",
+    sameSite: "Lax",
     path: "/auth/github",
     maxAge: 0,
   });
@@ -176,7 +176,7 @@ export function registerGitHubAuthRoutes(
     setCookie(c, OAUTH_STATE_COOKIE_NAME, cookieValue, {
       httpOnly: true,
       secure,
-      sameSite: "Strict",
+      sameSite: "Lax",
       path: "/auth/github",
       maxAge: 10 * 60,
     });

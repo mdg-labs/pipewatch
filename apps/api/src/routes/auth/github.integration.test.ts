@@ -184,10 +184,20 @@ afterAll(async () => {
 describe("github oauth integration", () => {
   it("redirects to GitHub with a signed state cookie", async () => {
     const app = createTestApp(database);
-    const { state, cookieHeader } = await startOAuthFlow(app);
+    const initiate = await app.request("http://localhost:3001/auth/github");
 
-    expect(state.length).toBeGreaterThan(10);
-    expect(cookieHeader).toMatch(/^pw_oauth_state=/);
+    expect(initiate.status).toBe(302);
+
+    const location = initiate.headers.get("location");
+    expect(location).toContain("github.com/login/oauth/authorize");
+
+    const setCookie = initiate.headers.get("set-cookie");
+    expect(setCookie).toContain("pw_oauth_state=");
+    expect(setCookie).toContain("SameSite=Lax");
+
+    const state = new URL(location!).searchParams.get("state");
+    expect(state).toBeTruthy();
+    expect(state!.length).toBeGreaterThan(10);
   });
 
   it("uses PUBLIC_API_URL for https redirect_uri on hosted environments", async () => {
@@ -346,5 +356,19 @@ describe("github oauth integration", () => {
     const tokenRows = await database.select().from(refreshTokens);
     const tokenCountBefore = tokenRows.length;
     expect(tokenCountBefore).toBeGreaterThanOrEqual(1);
+  });
+
+  it("rejects callbacks without the OAuth state cookie", async () => {
+    const app = createTestApp(database);
+    const { state } = await startOAuthFlow(app);
+
+    const callback = await app.request(
+      `http://localhost:3001/auth/github/callback?code=test-code&state=${state}`,
+    );
+
+    expect(callback.status).toBe(401);
+    const body = (await callback.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("UNAUTHORIZED");
+    expect(body.error.message).toBe("Missing OAuth state cookie");
   });
 });
