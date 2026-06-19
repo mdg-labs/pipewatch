@@ -5,12 +5,12 @@ import { AppShell } from "@/components/app-shell/AppShell";
 import { LiveStreamOverrideProvider } from "@/contexts/live-stream-override-context";
 import { ApiAuthProvider } from "@/hooks/use-api";
 import { ACCESS_COOKIE_NAME } from "@/lib/auth-cookies";
-import { getPlaceholderSession } from "@/lib/placeholder-session";
+import { fetchAppSession } from "@/lib/server-session";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
-  const session = getPlaceholderSession();
   const cookieStore = await cookies();
   const initialAccessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value ?? null;
+  const session = await fetchAppSession({ accessToken: initialAccessToken });
 
   return (
     <ApiAuthProvider

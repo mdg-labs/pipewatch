@@ -65,7 +65,7 @@ describe("createApiClient", () => {
         new Response(null, {
           status: 204,
           headers: {
-            "set-cookie": `pw_access=${freshToken}; HttpOnly; Path=/; SameSite=Strict`,
+            "set-cookie": `pw_access=${freshToken}; HttpOnly; Path=/; SameSite=Lax`,
           },
         }),
       )

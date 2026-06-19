@@ -19,6 +19,12 @@ import { resolveAuthSession } from "../../services/auth/oauth.js";
 import type { Db } from "@pipewatch/db";
 import type { WorkspaceRole } from "@pipewatch/types";
 
+/** SameSite for short-lived access JWT cookie — Lax allows post-OAuth redirect to app host. */
+export const ACCESS_COOKIE_SAME_SITE = "Lax" as const;
+
+/** SameSite for long-lived refresh token cookie (PRD §20). */
+export const REFRESH_COOKIE_SAME_SITE = "Strict" as const;
+
 export function resolveSecureCookies(env: ParsedApiEnv): boolean {
   return env.NODE_ENV !== "development";
 }
@@ -41,7 +47,7 @@ export function setAccessTokenCookie(
   setCookie(c, ACCESS_COOKIE_NAME, accessToken, {
     httpOnly: true,
     secure,
-    sameSite: "Strict",
+    sameSite: ACCESS_COOKIE_SAME_SITE,
     path: "/",
     maxAge: ACCESS_TOKEN_TTL_SECONDS,
     ...(domain ? { domain } : {}),
@@ -57,7 +63,7 @@ export function setRefreshTokenCookie(
   setCookie(c, REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
     secure: options.secure,
-    sameSite: "Strict",
+    sameSite: REFRESH_COOKIE_SAME_SITE,
     path: options.path,
     maxAge: options.maxAgeSeconds,
     ...(domain ? { domain } : {}),
@@ -68,7 +74,7 @@ export function clearAuthCookies(c: Context, secure: boolean, domain?: string): 
   setCookie(c, REFRESH_COOKIE_NAME, "", {
     httpOnly: true,
     secure,
-    sameSite: "Strict",
+    sameSite: REFRESH_COOKIE_SAME_SITE,
     path: "/",
     maxAge: 0,
     ...(domain ? { domain } : {}),
@@ -77,7 +83,7 @@ export function clearAuthCookies(c: Context, secure: boolean, domain?: string): 
   setCookie(c, ACCESS_COOKIE_NAME, "", {
     httpOnly: true,
     secure,
-    sameSite: "Strict",
+    sameSite: ACCESS_COOKIE_SAME_SITE,
     path: "/",
     maxAge: 0,
     ...(domain ? { domain } : {}),

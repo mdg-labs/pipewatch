@@ -245,6 +245,8 @@ describe("github oauth integration", () => {
     expect(refreshCookie).toContain("pw_refresh=");
     expect(refreshCookie).toContain("HttpOnly");
     expect(refreshCookie).toContain("SameSite=Strict");
+    expect(refreshCookie).toContain("pw_access=");
+    expect(refreshCookie).toContain("SameSite=Lax");
 
     const [userCount] = await database.select({ value: count() }).from(users);
     expect(userCount?.value).toBe(1);
@@ -472,6 +474,8 @@ describe("github oauth integration", () => {
     const setCookie = callback.headers.get("set-cookie");
     expect(setCookie).toContain("Domain=pipewatch.app");
     expect(setCookie).toContain("pw_refresh=");
+    expect(setCookie).toContain("SameSite=Strict");
     expect(setCookie).toContain("pw_access=");
+    expect(setCookie).toContain("SameSite=Lax");
   });
 });

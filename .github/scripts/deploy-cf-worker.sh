@@ -38,6 +38,10 @@ export CLOUDFLARE_ACCOUNT_ID="${CF_ACCOUNT_ID}"
 case "$APP" in
   web)
     FILTER="@pipewatch/web"
+    if [[ -z "${NEXT_PUBLIC_API_URL:-}" ]]; then
+      echo "deploy-cf-worker: NEXT_PUBLIC_API_URL must be set for web deploy" >&2
+      exit 1
+    fi
     ;;
   marketing)
     FILTER="@pipewatch/marketing"
@@ -48,29 +52,45 @@ case "$APP" in
     ;;
 esac
 
+WEB_BUILD_ENV=(
+  NODE_ENV=production
+  NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-}"
+  PIPEWATCH_EDITION="${PIPEWATCH_EDITION:-cloud}"
+  SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN:-}"
+  SENTRY_ORG="${SENTRY_ORG:-}"
+  SENTRY_PROJECT="${SENTRY_PROJECT:-}"
+  SENTRY_RELEASE="${SENTRY_RELEASE:-}"
+  SENTRY_ENVIRONMENT="${SENTRY_ENVIRONMENT:-}"
+)
+
+MARKETING_BUILD_ENV=(
+  NODE_ENV=production
+  PIPEWATCH_EDITION="${PIPEWATCH_EDITION:-cloud}"
+  SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN:-}"
+  SENTRY_ORG="${SENTRY_ORG:-}"
+  SENTRY_PROJECT="${SENTRY_PROJECT:-}"
+  SENTRY_RELEASE="${SENTRY_RELEASE:-}"
+  SENTRY_ENVIRONMENT="${SENTRY_ENVIRONMENT:-}"
+)
+
+if [[ "$APP" == "web" ]]; then
+  BUILD_ENV=("${WEB_BUILD_ENV[@]}")
+else
+  BUILD_ENV=("${MARKETING_BUILD_ENV[@]}")
+fi
+
 CUSTOM_DOMAIN="$("$SCRIPT_DIR/cf-worker-domain.sh" "$DEPLOY_ENVIRONMENT" "$APP")"
 APP_DIR="${ROOT}/apps/${APP}"
 
 pnpm install --frozen-lockfile
 
 echo "deploy-cf-worker: building ${FILTER} workspace dependencies"
-NODE_ENV=production \
-  SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN:-}" \
-  SENTRY_ORG="${SENTRY_ORG:-}" \
-  SENTRY_PROJECT="${SENTRY_PROJECT:-}" \
-  SENTRY_RELEASE="${SENTRY_RELEASE:-}" \
-  SENTRY_ENVIRONMENT="${SENTRY_ENVIRONMENT:-}" \
-  pnpm exec turbo run build --filter="${FILTER}^..."
+"${BUILD_ENV[@]}" pnpm exec turbo run build --filter="${FILTER}^..."
 
 echo "deploy-cf-worker: OpenNext build for ${FILTER}"
 (
   cd "$APP_DIR"
-  NODE_ENV=production \
-    SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN:-}" \
-    SENTRY_ORG="${SENTRY_ORG:-}" \
-    SENTRY_PROJECT="${SENTRY_PROJECT:-}" \
-    SENTRY_RELEASE="${SENTRY_RELEASE:-}" \
-    SENTRY_ENVIRONMENT="${SENTRY_ENVIRONMENT:-}" \
+  "${BUILD_ENV[@]}" \
     SKIP_WRANGLER_CONFIG_CHECK=yes \
     pnpm exec opennextjs-cloudflare build
 )
