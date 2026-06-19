@@ -21,6 +21,16 @@ export type GithubStorageKey = keyof typeof GITHUB_STORAGE_TO_RUNTIME;
 export type GithubRuntimeKey =
   (typeof GITHUB_STORAGE_TO_RUNTIME)[GithubStorageKey];
 
+/** Phase / GHA Sentry DSN storage key per hosted service (sync boundary only). */
+export const SENTRY_STORAGE_BY_SERVICE = {
+  api: { storageKey: "SENTRY_DSN_API", runtimeKey: "SENTRY_DSN" },
+  worker: { storageKey: "SENTRY_DSN_WORKER", runtimeKey: "SENTRY_DSN" },
+  web: { storageKey: "SENTRY_DSN_WEB", runtimeKey: "SENTRY_DSN" },
+} as const satisfies Record<
+  "api" | "worker" | "web",
+  { storageKey: string; runtimeKey: string }
+>;
+
 export type SyncService = "api" | "worker" | "web" | "marketing";
 export type SyncDeployTarget = "fly" | "wrangler";
 
@@ -92,7 +102,7 @@ export const SYNC_SECRETS_MANIFEST: readonly ServiceSyncManifest[] = [
       gha("DATABASE_URL", { required: true }),
       derived("REDIS_URL", true),
       gha("ENCRYPTION_KEY", { required: true }),
-      gha("SENTRY_DSN"),
+      gha("SENTRY_DSN", { ghaStorageKey: "SENTRY_DSN_API" }),
       gha("JWT_SECRET", { required: true }),
       gha("JWT_REFRESH_SECRET", { required: true }),
       github("GH_APP_ID", { required: true }),
@@ -128,7 +138,7 @@ export const SYNC_SECRETS_MANIFEST: readonly ServiceSyncManifest[] = [
       gha("DATABASE_URL", { required: true }),
       derived("REDIS_URL", true),
       gha("ENCRYPTION_KEY", { required: true }),
-      gha("SENTRY_DSN"),
+      gha("SENTRY_DSN", { ghaStorageKey: "SENTRY_DSN_WORKER" }),
       github("GH_APP_ID", { required: true }),
       github("GH_APP_PRIVATE_KEY", { required: true }),
       gha("PIPEWATCH_MODE"),
@@ -142,7 +152,7 @@ export const SYNC_SECRETS_MANIFEST: readonly ServiceSyncManifest[] = [
       gha("NODE_ENV"),
       gha("PIPEWATCH_EDITION"),
       gha("NEXT_PUBLIC_API_URL", { required: true }),
-      gha("SENTRY_DSN"),
+      gha("SENTRY_DSN", { ghaStorageKey: "SENTRY_DSN_WEB" }),
     ],
   },
   {
@@ -153,7 +163,6 @@ export const SYNC_SECRETS_MANIFEST: readonly ServiceSyncManifest[] = [
       gha("PIPEWATCH_EDITION"),
       gha("LAUNCH_MODE"),
       gha("NEXT_PUBLIC_APP_URL"),
-      gha("SENTRY_DSN"),
       gha("UMAMI_SCRIPT_URL", { required: true, cloudOnly: true }),
       gha("UMAMI_WEBSITE_ID", { required: true, cloudOnly: true }),
     ],

@@ -566,7 +566,7 @@ Full Sentry integration from day one across all services.
 | Release tracking | CI/CD | Tag releases in Sentry on deploy |
 | Alerts | Sentry | Error spike, new issue, regression alerts |
 
-Sentry DSN and org/project config managed via Phase. Source map upload token stored as CI secret synced via Phase → GitHub Actions.
+Sentry DSN and org/project config managed via Phase — one DSN per Sentry project (`SENTRY_DSN_API`, `SENTRY_DSN_WORKER`, `SENTRY_DSN_WEB` in Phase/GHA; runtime `SENTRY_DSN` on each Fly/Wrangler target). Source map upload token stored as CI secret synced via Phase → GitHub Actions.
 
 All services register `beforeSend: scrubSentryEvent` from `@pipewatch/utils` to redact `Authorization`, `Cookie`, and known secret patterns before events leave the process. Platform access logs are separate — see `docs/internal/access-log-redaction.md` for Fly/Cloudflare operator guidance on redacting SSE `token=` query params.
 
@@ -1584,6 +1584,11 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `GH_CLIENT_ID` | `GITHUB_CLIENT_ID` |
 | `GH_CLIENT_SECRET` | `GITHUB_CLIENT_SECRET` |
 | `GH_APP_SLUG` | `GITHUB_APP_SLUG` |
+| `SENTRY_DSN_API` | `SENTRY_DSN` (api Fly app) |
+| `SENTRY_DSN_WORKER` | `SENTRY_DSN` (worker Fly app) |
+| `SENTRY_DSN_WEB` | `SENTRY_DSN` (web Cloudflare Worker) |
+
+**Operator migration (Sentry DSN):** Retire the legacy single `SENTRY_DSN` key from Phase Staging/Production. Create one Sentry project per hosted service (api, worker, web), copy each project's DSN into `SENTRY_DSN_API`, `SENTRY_DSN_WORKER`, and `SENTRY_DSN_WEB` respectively, then remove `SENTRY_DSN` from Phase and GitHub Actions environments. CE Docker Compose and local dev use the per-service storage keys in `.env`; Compose maps each to runtime `SENTRY_DSN` per container. Marketing is not synced to Sentry in hosted deploys (no `SENTRY_DSN_*` key).
 
 **GitHub Actions environment column** — which environment holds each value after Phase sync:
 
@@ -1614,7 +1619,9 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `STRIPE_WEBHOOK_SECRET` | staging, production | api | For Stripe webhook signature validation |
 | `STRIPE_PRICE_PRO` | staging, production | api | Stripe Price ID for Pro plan |
 | `STRIPE_PRICE_BUSINESS` | staging, production | api | Stripe Price ID for Business plan |
-| `SENTRY_DSN` | staging, production | api, worker, web, marketing | Per-service DSN from Sentry |
+| `SENTRY_DSN_API` | staging, production | api | Sentry project DSN — runtime: `SENTRY_DSN` on api Fly app |
+| `SENTRY_DSN_WORKER` | staging, production | worker | Sentry project DSN — runtime: `SENTRY_DSN` on worker Fly app |
+| `SENTRY_DSN_WEB` | staging, production | web | Sentry project DSN — runtime: `SENTRY_DSN` on web Cloudflare Worker |
 | `SENTRY_AUTH_TOKEN` | ci | CI builds | Source map upload |
 | `SENTRY_ORG` | ci | CI builds | Sentry org slug |
 | `SENTRY_PROJECT` | ci (secret) | CI builds | Sentry project slug |

@@ -1,6 +1,32 @@
 #!/usr/bin/env bash
-# Maps Phase/GHA storage keys (GH_*) to Fly/runtime keys (GITHUB_*).
+# Maps Phase/GHA storage keys to Fly/runtime keys before deploy sync.
 # Sourced by sync-secrets.sh before flyctl secrets set (PRD §10, §23, Decision #33).
+
+map_sentry_storage_to_runtime() {
+  local service="$1"
+
+  case "$service" in
+    api)
+      if [[ -n "${SENTRY_DSN_API-}" ]]; then
+        export SENTRY_DSN="${SENTRY_DSN_API}"
+      fi
+      ;;
+    worker)
+      if [[ -n "${SENTRY_DSN_WORKER-}" ]]; then
+        export SENTRY_DSN="${SENTRY_DSN_WORKER}"
+      fi
+      ;;
+    web)
+      if [[ -n "${SENTRY_DSN_WEB-}" ]]; then
+        export SENTRY_DSN="${SENTRY_DSN_WEB}"
+      fi
+      ;;
+    *)
+      echo "map_sentry_storage_to_runtime: unknown service: ${service}" >&2
+      return 1
+      ;;
+  esac
+}
 
 map_github_storage_to_runtime() {
   local storage runtime pair

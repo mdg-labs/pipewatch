@@ -273,7 +273,6 @@ MARKETING_WRANGLER_KEYS=(
   PIPEWATCH_EDITION
   LAUNCH_MODE
   NEXT_PUBLIC_APP_URL
-  SENTRY_DSN
   UMAMI_SCRIPT_URL
   UMAMI_WEBSITE_ID
 )
@@ -286,14 +285,17 @@ run_service_preflight web
 run_service_preflight marketing
 
 if service_selected api; then
+  map_sentry_storage_to_runtime api
   sync_fly_secrets "$API_APP" "${API_FLY_KEYS[@]}"
 fi
 
 if service_selected worker; then
+  map_sentry_storage_to_runtime worker
   sync_fly_secrets "$WORKER_APP" "${WORKER_FLY_KEYS[@]}"
 fi
 
 if service_selected web; then
+  map_sentry_storage_to_runtime web
   for key in "${WEB_WRANGLER_KEYS[@]}"; do
     sync_wrangler_secret "$WEB_WORKER" "$key"
   done

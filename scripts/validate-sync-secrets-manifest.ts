@@ -17,6 +17,7 @@ import {
 } from "../packages/config/strict-env-fields.ts";
 import {
   GITHUB_STORAGE_TO_RUNTIME,
+  SENTRY_STORAGE_BY_SERVICE,
   SYNC_SECRETS_MANIFEST,
   SYNC_WORKFLOW_SECRETS,
   requiredGhaStorageKeys,
@@ -78,7 +79,25 @@ export function parseSyncSecretsShellArrayKeys(
   return keys;
 }
 
-/** Parse `storage:runtime` pairs from github-secret-map.sh. */
+/** Parse `service)` branches from map_sentry_storage_to_runtime in github-secret-map.sh. */
+export function parseSentryStorageMapServices(content: string): Map<string, string> {
+  const pairs = new Map<string, string>();
+  const fnMatch = content.match(
+    /map_sentry_storage_to_runtime\(\)\s*\{([\s\S]*?)\n\}/,
+  );
+  if (!fnMatch) {
+    return pairs;
+  }
+
+  for (const match of fnMatch[1]!.matchAll(
+    /^\s*(api|worker|web)\)\s*[\s\S]*?SENTRY_DSN="?\$\{([^}]+)\}/gm,
+  )) {
+    pairs.set(match[1]!, match[2]!);
+  }
+  return pairs;
+}
+
+/** Parse `service)` branches from github-secret-map.sh. */
 export function parseGithubSecretMapPairs(content: string): Map<string, string> {
   const pairs = new Map<string, string>();
   const pattern = /^\s*([A-Z0-9_]+):([A-Z0-9_]+)\s*,?\s*$/gm;
@@ -291,6 +310,33 @@ export function validateSyncSecretsManifest(options: {
       issues.push({
         code: "github-map-extra",
         message: `github-secret-map.sh has unexpected pair ${storageKey}:${runtimeKey}`,
+      });
+    }
+  }
+
+  const sentryPairs = parseSentryStorageMapServices(options.githubMapContent);
+  for (const [service, mapping] of Object.entries(SENTRY_STORAGE_BY_SERVICE)) {
+    const expectedStorage = mapping.storageKey;
+    const actualStorage = sentryPairs.get(service);
+    if (actualStorage !== expectedStorage) {
+      issues.push({
+        code: "sentry-map-drift",
+        message: `github-secret-map.sh must map ${service} SENTRY_DSN from ${expectedStorage}`,
+      });
+    }
+    if (
+      !new RegExp(
+        `map_sentry_storage_to_runtime ${service}[\\s\\n]*sync_(fly_secrets|wrangler)`,
+        "m",
+      ).test(options.shellContent) &&
+      !new RegExp(
+        `map_sentry_storage_to_runtime ${service}[\\s\\S]*?for key in "\\$\\{WEB_WRANGLER_KEYS`,
+        "m",
+      ).test(options.shellContent)
+    ) {
+      issues.push({
+        code: "shell-missing-sentry-map",
+        message: `sync-secrets.sh must call map_sentry_storage_to_runtime ${service} before syncing ${service}`,
       });
     }
   }
