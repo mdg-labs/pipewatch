@@ -1,6 +1,6 @@
 name: Deploy
 
-# Parameterized deploy pipeline — provision → sync → migrate → Sentry → parallel deploys → smoke.
+# Parameterized deploy pipeline — provision → sync → (migrate ∥ Sentry) → parallel deploys → smoke.
 # Called from staging.yml (after CI) and release.yml (production, after check-not-deployed).
 # workflow_call only — no direct triggers (PRD §22).
 
@@ -82,7 +82,7 @@ jobs:
     if: inputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: migrate
+    needs: [sync-secrets]
     outputs:
       release: ${{ steps.release.outputs.release }}
     steps:
@@ -102,7 +102,7 @@ jobs:
     if: inputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: derive-sentry-release
+    needs: [migrate, derive-sentry-release]
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -142,7 +142,7 @@ jobs:
     if: inputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: derive-sentry-release
+    needs: [migrate, derive-sentry-release]
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -182,7 +182,7 @@ jobs:
     if: inputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: derive-sentry-release
+    needs: [migrate, derive-sentry-release]
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -220,7 +220,7 @@ jobs:
     if: inputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: derive-sentry-release
+    needs: [migrate, derive-sentry-release]
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
