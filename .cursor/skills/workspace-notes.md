@@ -1,5 +1,22 @@
 # PipeWatch workspace notes
 
+## 2026-06-19 — #175 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `5aba72b`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #175 Onboarding GitHub App install URL ignores GH_APP_SLUG | Done | `e86c09c` |
+
+**Notes:**
+- API `GET /api/v1/public/app-config` returns `github_app_slug` from runtime `GITHUB_APP_SLUG`
+- Web SSR `fetchAppConfig()` on onboarding, workspaces/new, integrations settings — no `NEXT_PUBLIC_GITHUB_APP_SLUG` (CE generic image preserved)
+- Hardcoded `pipewatch` default removed; disabled CTA + inline error when slug missing
+- No DB migrations
+- `staging` 1 commit ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy; retest onboarding step 2 install URL on staging-cloud (`pipewatch-staging` slug)
+
 ## 2026-06-19 — #174 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `53e779f`
