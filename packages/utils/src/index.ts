@@ -1,4 +1,9 @@
 export { decrypt, encrypt, sha256, timingSafeCompare } from "./crypto/index.js";
+export {
+  SENTRY_REDACTED,
+  scrubSentryEvent,
+  type ScrubbableSentryEvent,
+} from "./sentry/scrub-sentry-event.js";
 export { formatDuration } from "./format-duration.js";
 export {
   mapRestWorkflowJob,

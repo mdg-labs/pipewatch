@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { scrubSentryEvent } from "@pipewatch/utils";
 
 /** Initialize Sentry when `SENTRY_DSN` is set — no-op otherwise. */
 export function initSentry(): void {
@@ -15,5 +16,6 @@ export function initSentry(): void {
     dsn,
     ...(release ? { release } : {}),
     ...(environment ? { environment } : {}),
+    beforeSend: scrubSentryEvent,
   });
 }

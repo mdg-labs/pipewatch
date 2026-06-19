@@ -568,6 +568,8 @@ Full Sentry integration from day one across all services.
 
 Sentry DSN and org/project config managed via Phase. Source map upload token stored as CI secret synced via Phase → GitHub Actions.
 
+All services register `beforeSend: scrubSentryEvent` from `@pipewatch/utils` to redact `Authorization`, `Cookie`, and known secret patterns before events leave the process. Platform access logs are separate — see `docs/internal/access-log-redaction.md` for Fly/Cloudflare operator guidance on redacting SSE `token=` query params.
+
 ---
 
 ## 10. Secrets Management — Phase
