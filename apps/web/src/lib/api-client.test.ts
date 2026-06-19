@@ -163,4 +163,45 @@ describe("createApiClient", () => {
     const [url] = fetchImpl.mock.calls[0] as [string];
     expect(url).toBe(`${API_URL}/api/v1/workspaces/ws_abc/integrations`);
   });
+
+  it("post with body and access token sends Authorization and Content-Type", async () => {
+    const token = makeJwt({ sub: "user_1", exp: Math.floor(Date.now() / 1000) + 3600 });
+    setAccessToken(token);
+
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "ws_1" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const client = createApiClient({ apiUrl: API_URL, fetchImpl });
+    await client.post("/workspaces", { name: "My Workspace" });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toBeInstanceOf(Headers);
+    expect((init.headers as Headers).get("Authorization")).toBe(`Bearer ${token}`);
+    expect((init.headers as Headers).get("Content-Type")).toBe("application/json");
+    expect(init.body).toBe(JSON.stringify({ name: "My Workspace" }));
+  });
+
+  it("patch with body and no token still sends Content-Type application/json", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ name: "Updated" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const client = createApiClient({ apiUrl: API_URL, fetchImpl });
+    await client.patch("/workspaces/ws_1", { name: "Updated" });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [, init] = fetchImpl.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toBeInstanceOf(Headers);
+    expect((init.headers as Headers).get("Authorization")).toBeNull();
+    expect((init.headers as Headers).get("Content-Type")).toBe("application/json");
+    expect(init.body).toBe(JSON.stringify({ name: "Updated" }));
+  });
 });

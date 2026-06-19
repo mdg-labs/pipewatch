@@ -152,7 +152,8 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
     init?: ApiRequestInit,
     hasRetried = false,
   ): Promise<T> {
-    const headers = new Headers(init?.headers);
+    const requestInit = buildRequestInit(init);
+    const headers = new Headers(requestInit.headers);
     const token = getAccessToken();
 
     if (token) {
@@ -160,7 +161,7 @@ export function createApiClient(config: ApiClientConfig): ApiClient {
     }
 
     const response = await fetchFn(buildApiUrl(config.apiUrl, path), {
-      ...buildRequestInit(init),
+      ...requestInit,
       headers,
       credentials: "include",
     });
