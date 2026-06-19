@@ -339,6 +339,59 @@ describe("GitHub webhook receiver integration", () => {
     );
   });
 
+  it("enqueues the same delivery ID only once", async () => {
+    const context = await seedRepository(database);
+    const fixture = loadFixture<Record<string, unknown>>("workflow-run-completed.json");
+    const body = buildWebhookPayload(fixture, context);
+    const signature = signGitHubWebhookPayload(body, webhookSecret);
+    const deliveryId = `delivery-${randomBytes(16).toString("hex")}`;
+
+    const app = createTestApp(database, redisUrl);
+    const queue = getQueue(QUEUE_NAMES.WEBHOOK_EVENTS, redisUrl);
+
+    const headers = {
+      "Content-Type": "application/json",
+      "X-GitHub-Event": "workflow_run",
+      "X-Hub-Signature-256": signature,
+      "X-GitHub-Delivery": deliveryId,
+    };
+
+    try {
+      const response1 = await app.request("http://localhost/webhooks/github", {
+        method: "POST",
+        headers,
+        body,
+      });
+      expect(response1.status).toBe(200);
+
+      const response2 = await app.request("http://localhost/webhooks/github", {
+        method: "POST",
+        headers,
+        body,
+      });
+      expect(response2.status).toBe(200);
+
+      const job = await queue.getJob(deliveryId);
+      expect(job).toBeTruthy();
+      expect(job?.data).toEqual(
+        expect.objectContaining({
+          workspaceId: context.workspaceId,
+          repoId: context.repoId,
+          deliveryId,
+        }),
+      );
+
+      const state = await job!.getState();
+      expect(["waiting", "prioritized", "active", "delayed"]).toContain(state);
+
+      const jobs = await queue.getJobs(["waiting", "prioritized", "active", "delayed"]);
+      const matchingJobs = jobs.filter((entry) => entry.id === deliveryId);
+      expect(matchingJobs).toHaveLength(1);
+    } finally {
+      await queue.obliterate({ force: true });
+    }
+  });
+
   it("accepts a valid signature for workflow_job and returns 200 without enqueue when repo is disabled", async () => {
     const context = await seedRepository(database);
     await database

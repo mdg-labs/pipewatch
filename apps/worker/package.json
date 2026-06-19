@@ -35,6 +35,14 @@
     "./services/polling/lifecycle.js": {
       "types": "./dist/services/polling/lifecycle.d.ts",
       "default": "./dist/services/polling/lifecycle.js"
+    },
+    "./webhook-delivery-idempotency": {
+      "types": "./dist/lib/webhook-delivery-idempotency.d.ts",
+      "default": "./dist/lib/webhook-delivery-idempotency.js"
+    },
+    "./webhook-delivery-idempotency.js": {
+      "types": "./dist/lib/webhook-delivery-idempotency.d.ts",
+      "default": "./dist/lib/webhook-delivery-idempotency.js"
     }
   },
   "scripts": {

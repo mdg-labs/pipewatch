@@ -4,6 +4,7 @@ import type { ApiEnv as ParsedApiEnv } from "@pipewatch/config/env";
 import { parseApiEnv } from "@pipewatch/config/env";
 import { getDb, type Db } from "@pipewatch/db";
 import { integrations, repositories } from "@pipewatch/db/schema";
+import { claimWebhookDeliveryForEnqueue } from "@pipewatch/worker/webhook-delivery-idempotency";
 import {
   defaultJobOptionsFor,
   getQueue,
@@ -121,8 +122,19 @@ function resolveEnqueueWebhookEvent(
 
   return async (jobName, payload) => {
     const redisUrl = requireRedisUrl(env);
+
+    if (payload.deliveryId) {
+      const shouldEnqueue = await claimWebhookDeliveryForEnqueue(payload.deliveryId, redisUrl);
+      if (!shouldEnqueue) {
+        return;
+      }
+    }
+
     const queue = getQueue(QUEUE_NAMES.WEBHOOK_EVENTS, redisUrl);
-    await queue.add(jobName, payload, defaultJobOptionsFor(QUEUE_NAMES.WEBHOOK_EVENTS));
+    await queue.add(jobName, payload, {
+      ...defaultJobOptionsFor(QUEUE_NAMES.WEBHOOK_EVENTS),
+      ...(payload.deliveryId ? { jobId: payload.deliveryId } : {}),
+    });
   };
 }
 
