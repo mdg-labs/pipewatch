@@ -265,6 +265,23 @@ describe("Input", () => {
       inputWrapClassName({ error: "Invalid", mono: true, size: "lg" }),
     ).toBe("pw-input-wrap pw-input-error pw-input-mono pw-input-lg");
   });
+
+  it("renders prefixed slug field markup", () => {
+    const html = renderToStaticMarkup(
+      <Input
+        label="URL slug"
+        value="acme"
+        mono
+        readOnly
+        prefix={<span>/workspaces/</span>}
+      />,
+    );
+
+    expect(html).toContain('class="pw-input-box pw-input-has-prefix"');
+    expect(html).toContain('class="pw-input-prefix"');
+    expect(html).toContain("/workspaces/");
+    expect(html).toContain('value="acme"');
+  });
 });
 
 describe("Card", () => {

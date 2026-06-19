@@ -85,27 +85,89 @@
 
 .pw-input-prefix,
 .pw-input-suffix {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
   color: var(--text-tertiary);
   pointer-events: none;
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
-.pw-input-prefix {
-  left: var(--space-3);
+.pw-input-has-prefix,
+.pw-input-has-suffix {
+  display: flex;
+  align-items: center;
+  height: 34px;
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-sizing: border-box;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
 }
 
-.pw-input-suffix {
-  right: var(--space-3);
+.pw-input-has-prefix .pw-input-prefix {
+  padding-left: var(--space-3);
+}
+
+.pw-input-has-suffix .pw-input-suffix {
+  padding-right: var(--space-3);
+}
+
+.pw-input-has-prefix .pw-input-field,
+.pw-input-has-suffix .pw-input-field {
+  flex: 1;
+  min-width: 0;
+  width: auto;
+  height: 100%;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .pw-input-has-prefix .pw-input-field {
-  padding-left: var(--space-8);
+  padding-left: var(--space-1);
 }
 
 .pw-input-has-suffix .pw-input-field {
-  padding-right: var(--space-8);
+  padding-right: var(--space-1);
+}
+
+.pw-input-has-prefix:hover,
+.pw-input-has-suffix:hover {
+  border-color: var(--border-strong);
+}
+
+.pw-input-has-prefix:focus-within,
+.pw-input-has-suffix:focus-within {
+  border-color: var(--interactive-accent);
+  box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--border-accent);
+}
+
+.pw-input-error .pw-input-has-prefix,
+.pw-input-error .pw-input-has-suffix {
+  border-color: var(--status-failure);
+}
+
+.pw-input-error .pw-input-has-prefix:focus-within,
+.pw-input-error .pw-input-has-suffix:focus-within {
+  box-shadow: 0 0 0 2px var(--bg-base), 0 0 0 4px var(--status-failure-subtle);
+}
+
+.pw-input-mono .pw-input-prefix,
+.pw-input-mono .pw-input-suffix {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: -0.02em;
+}
+
+.pw-input-lg .pw-input-has-prefix,
+.pw-input-lg .pw-input-has-suffix {
+  height: 40px;
+}
+
+.pw-input-lg .pw-input-has-prefix .pw-input-field,
+.pw-input-lg .pw-input-has-suffix .pw-input-field {
+  font-size: var(--text-md);
 }
