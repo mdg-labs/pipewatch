@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const packages = ["@pipewatch/api", "@pipewatch/worker"];
+const defaultPackages = ["@pipewatch/api", "@pipewatch/worker"];
+const requested = process.argv.slice(2).filter(Boolean);
+const packages = requested.length > 0 ? requested : defaultPackages;
 
 for (const pkg of packages) {
   const result = spawnSync("pnpm", ["--filter", pkg, "test:integration"], {

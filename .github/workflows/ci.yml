@@ -1,6 +1,6 @@
 name: CI
 
-# Reusable CI gate — lint, typecheck, unit, build, integration, audit.
+# Reusable CI gate — lint, typecheck, unit, build, integration, audit (parallel jobs).
 # Called by pr.yml, staging.yml, and main.yml; never triggered directly (PRD §22).
 
 on:
@@ -10,8 +10,40 @@ permissions:
   contents: read
 
 jobs:
-  ci:
-    name: CI · Checks
+  lint:
+    name: CI · Lint
+    runs-on: ubuntu-latest
+    environment: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Lint
+        run: pnpm lint
+
+  typecheck:
+    name: CI · Typecheck
+    runs-on: ubuntu-latest
+    environment: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+  unit:
+    name: CI · Unit tests
     runs-on: ubuntu-latest
     environment: ci
     env:
@@ -26,13 +58,6 @@ jobs:
         uses: ./.github/actions/setup
         with:
           skip-checkout: "true"
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        id: typecheck
-        run: pnpm typecheck
 
       - name: Check ReportPortal configuration
         run: |
@@ -74,22 +99,66 @@ jobs:
           RP_LAUNCH_UUID: ${{ steps.rp-unit-start.outputs.launch_id }}
         run: bash scripts/reportportal-ci-summary.sh record-env unit
 
+      - name: Upload ReportPortal launch state
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: reportportal-ci-launches
+          path: reportportal-launches.jsonl
+          if-no-files-found: ignore
+
+  build:
+    name: CI · Build
+    needs: typecheck
+    if: needs.typecheck.result == 'success'
+    runs-on: ubuntu-latest
+    environment: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
       - name: Build
-        if: always() && steps.typecheck.outcome == 'success'
         env:
           NODE_ENV: production
         run: pnpm build
 
       - name: Validate sync-secrets manifest
-        if: always() && steps.typecheck.outcome == 'success'
         run: node --experimental-strip-types scripts/validate-sync-secrets-manifest.ts
 
       - name: Validate workflow secrets policy
-        if: always() && steps.typecheck.outcome == 'success'
         run: node --experimental-strip-types scripts/validate-workflow-secrets-policy.ts
 
+  integration:
+    name: CI · Integration · ${{ matrix.package }}
+    needs: typecheck
+    if: needs.typecheck.result == 'success'
+    runs-on: ubuntu-latest
+    environment: ci
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - "@pipewatch/api"
+          - "@pipewatch/worker"
+    env:
+      REPORTPORTAL_URL: ${{ secrets.REPORTPORTAL_URL }}
+      REPORTPORTAL_API_KEY: ${{ secrets.REPORTPORTAL_API_KEY }}
+      REPORTPORTAL_PROJECT: ${{ secrets.REPORTPORTAL_PROJECT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
       - name: Start ReportPortal integration launch
-        if: always() && steps.typecheck.outcome == 'success'
         id: rp-integration-start
         run: |
           uuid=$(node --experimental-strip-types scripts/reportportal-ci-launch.ts start integration || true)
@@ -99,9 +168,8 @@ jobs:
           fi
 
       - name: Integration tests
-        if: always() && steps.typecheck.outcome == 'success'
         id: integration-tests
-        run: bash .github/scripts/run-integration-ci.sh
+        run: node scripts/test-integration.mjs "${{ matrix.package }}"
 
       - name: Finish ReportPortal integration launch
         if: always() && steps.rp-integration-start.outputs.launch_id != ''
@@ -116,11 +184,7 @@ jobs:
         if: always() && steps.rp-integration-start.outputs.launch_id != ''
         env:
           RP_LAUNCH_UUID: ${{ steps.rp-integration-start.outputs.launch_id }}
-        run: bash scripts/reportportal-ci-summary.sh record-env integration
-
-      - name: Dependency audit
-        if: always() && steps.typecheck.outcome == 'success'
-        run: pnpm audit --audit-level=high
+        run: bash scripts/reportportal-ci-summary.sh record-env "integration · ${{ matrix.package }}"
 
       - name: Upload ReportPortal launch state
         if: always()
@@ -130,13 +194,27 @@ jobs:
           path: reportportal-launches.jsonl
           if-no-files-found: ignore
 
-      - name: ReportPortal summary pointer
-        if: always()
-        run: echo 'ReportPortal launch links are in the **CI · ReportPortal summary** job below.' >> "$GITHUB_STEP_SUMMARY"
+  audit:
+    name: CI · Audit
+    needs: typecheck
+    if: needs.typecheck.result == 'success'
+    runs-on: ubuntu-latest
+    environment: ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Dependency audit
+        run: pnpm audit --audit-level=high
 
   reportportal-summary:
     name: CI · ReportPortal summary
-    needs: ci
+    needs: [lint, typecheck, unit, build, integration, audit]
     if: always()
     runs-on: ubuntu-latest
     environment: ci
@@ -155,6 +233,7 @@ jobs:
         continue-on-error: true
         with:
           name: reportportal-ci-launches
+          merge-multiple: true
 
       - name: ReportPortal job summary
         if: always()
@@ -166,3 +245,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_PR_NUMBER: ${{ github.event.pull_request.number }}
         run: bash scripts/reportportal-ci-summary.sh update-pr-comment ci
+
+      - name: ReportPortal summary pointer
+        if: always()
+        run: echo 'ReportPortal launch links are in this job summary.' >> "$GITHUB_STEP_SUMMARY"
