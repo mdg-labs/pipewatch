@@ -244,8 +244,24 @@ describe("auth refresh integration", () => {
     });
 
     expect(replay.status).toBe(401);
-    const replayBody = (await replay.json()) as { error: { code: string } };
+    const replayBody = (await replay.json()) as { error: { code: string; message: string } };
     expect(replayBody.error.code).toBe("UNAUTHORIZED");
+    expect(replayBody.error.message).toBe("Invalid or expired refresh token");
+
+    const rowsAfterReplay = await database
+      .select()
+      .from(refreshTokens)
+      .where(eq(refreshTokens.userId, seed.userId));
+    expect(rowsAfterReplay.length).toBeGreaterThanOrEqual(2);
+    for (const row of rowsAfterReplay) {
+      expect(row.revokedAt).toBeTruthy();
+    }
+
+    const rotatedReplay = await app.request("http://localhost:3001/auth/refresh", {
+      method: "POST",
+      headers: { Cookie: refreshCookieHeader(newRefreshToken) },
+    });
+    expect(rotatedReplay.status).toBe(401);
   });
 
   it("revokes the current refresh token on logout", async () => {

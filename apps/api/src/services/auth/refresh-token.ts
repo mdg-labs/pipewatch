@@ -53,27 +53,45 @@ export async function storeRefreshToken(
   });
 }
 
-/** Look up a non-revoked, unexpired refresh token row by plaintext value. */
-export async function findActiveRefreshToken(
+const INVALID_REFRESH_TOKEN_MESSAGE = "Invalid or expired refresh token";
+
+/** Look up a refresh token row by plaintext value, regardless of revocation. */
+export async function findRefreshTokenByHash(
   database: Db,
   plainToken: string,
 ): Promise<RefreshTokenRow | null> {
   const [row] = await database
     .select()
     .from(refreshTokens)
-    .where(
-      and(
-        eq(refreshTokens.tokenHash, hashRefreshToken(plainToken)),
-        isNull(refreshTokens.revokedAt),
-      ),
-    )
+    .where(eq(refreshTokens.tokenHash, hashRefreshToken(plainToken)))
     .limit(1);
 
-  if (!row || row.expiresAt.getTime() <= Date.now()) {
+  return row ?? null;
+}
+
+/** Look up a non-revoked, unexpired refresh token row by plaintext value. */
+export async function findActiveRefreshToken(
+  database: Db,
+  plainToken: string,
+): Promise<RefreshTokenRow | null> {
+  const row = await findRefreshTokenByHash(database, plainToken);
+
+  if (!row || row.revokedAt || row.expiresAt.getTime() <= Date.now()) {
     return null;
   }
 
   return row;
+}
+
+/**
+ * Revoke every active refresh token for the user when a revoked token is reused.
+ * Signals possible account takeover (PRD §7.1, security audit §39).
+ */
+async function handleRevokedRefreshTokenReuse(
+  database: Db,
+  userId: string,
+): Promise<void> {
+  await revokeAllUserRefreshTokens(database, userId);
 }
 
 /** Require a valid refresh token cookie value or throw 401. */
@@ -86,11 +104,16 @@ export async function requireActiveRefreshToken(
   }
 
   const row = await findActiveRefreshToken(database, plainToken);
-  if (!row) {
-    throw new AuthError("Invalid or expired refresh token", 401);
+  if (row) {
+    return row;
   }
 
-  return row;
+  const existing = await findRefreshTokenByHash(database, plainToken);
+  if (existing?.revokedAt) {
+    await handleRevokedRefreshTokenReuse(database, existing.userId);
+  }
+
+  throw new AuthError(INVALID_REFRESH_TOKEN_MESSAGE, 401);
 }
 
 /** Revoke a refresh token row by primary key. */
