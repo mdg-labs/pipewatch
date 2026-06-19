@@ -265,6 +265,72 @@ describe("github oauth integration", () => {
     expect(tokenRows[0]?.tokenHash).not.toContain("pw_refresh");
   });
 
+  it("grants CE bootstrap to only one user under concurrent first-login", async () => {
+    await database.execute(
+      sql`TRUNCATE refresh_tokens, workspace_members, workspaces, users CASCADE`,
+    );
+
+    const profileA: GitHubUserProfile = {
+      githubId: 900_001n,
+      githubLogin: "racer-a",
+      email: "racer-a@example.com",
+      name: "Racer A",
+      avatarUrl: null,
+    };
+    const profileB: GitHubUserProfile = {
+      githubId: 900_002n,
+      githubLogin: "racer-b",
+      email: "racer-b@example.com",
+      name: "Racer B",
+      avatarUrl: null,
+    };
+
+    const appA = createTestApp(database, "ce", {
+      oauthClient: createMockOAuthClient(profileA),
+    });
+    const appB = createTestApp(database, "ce", {
+      oauthClient: createMockOAuthClient(profileB),
+    });
+
+    const flowA = await startOAuthFlow(appA);
+    const flowB = await startOAuthFlow(appB);
+
+    const [callbackA, callbackB] = await Promise.all([
+      appA.request(
+        `http://localhost:3001/auth/github/callback?code=race-a&state=${flowA.state}`,
+        { headers: { Cookie: flowA.cookieHeader } },
+      ),
+      appB.request(
+        `http://localhost:3001/auth/github/callback?code=race-b&state=${flowB.state}`,
+        { headers: { Cookie: flowB.cookieHeader } },
+      ),
+    ]);
+
+    expect(callbackA.status).toBe(302);
+    expect(callbackB.status).toBe(302);
+
+    const locations = [
+      callbackA.headers.get("location"),
+      callbackB.headers.get("location"),
+    ];
+    const bootstrapRedirects = locations.filter(
+      (location) => location === "http://localhost:3000/onboarding?step=2",
+    );
+    expect(bootstrapRedirects).toHaveLength(1);
+
+    const [userCount] = await database.select({ value: count() }).from(users);
+    expect(userCount?.value).toBe(2);
+
+    const [workspaceCount] = await database.select({ value: count() }).from(workspaces);
+    expect(workspaceCount?.value).toBe(1);
+
+    const owners = await database
+      .select()
+      .from(workspaceMembers)
+      .where(eq(workspaceMembers.role, "owner"));
+    expect(owners).toHaveLength(1);
+  });
+
   it("sends welcome email on first OAuth login for a new user", async () => {
     const sendEmailFn = vi.fn().mockResolvedValue({ sent: true });
     const newUserProfile: GitHubUserProfile = {

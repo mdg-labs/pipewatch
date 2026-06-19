@@ -20,9 +20,7 @@ import {
 import {
   OAUTH_STATE_COOKIE_NAME,
   OAuthError,
-  bootstrapCeWorkspace,
   buildGitHubAuthorizeUrl,
-  countUsers,
   createGitHubOAuthClient,
   createOAuthState,
   listUserWorkspaces,
@@ -212,8 +210,7 @@ export function registerGitHubAuthRoutes(
         get: (name) => c.req.header(name),
       });
       const profile = await oauthClient.exchangeCode(code, redirectUri);
-      const wasFirstUser = (await countUsers(db)) === 0;
-      const upserted = await upsertGitHubUser(db, profile, wasFirstUser);
+      const upserted = await upsertGitHubUser(db, profile);
 
       if (upserted.isNew && upserted.user.email) {
         const welcome = renderWelcomeEmail({
@@ -227,10 +224,7 @@ export function registerGitHubAuthRoutes(
         }).catch(() => undefined);
       }
 
-      let bootstrapWorkspace = null;
-      if (upserted.wasFirstUser && upserted.isNew) {
-        bootstrapWorkspace = await bootstrapCeWorkspace(db, upserted.user.id);
-      }
+      const bootstrapWorkspace = upserted.bootstrapWorkspace;
 
       const memberships = await listUserWorkspaces(db, upserted.user.id);
       const session = await resolveAuthSession(db, upserted.user.id, bootstrapWorkspace);

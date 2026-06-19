@@ -9,7 +9,7 @@ import {
   workspaces,
 } from "@pipewatch/db/schema";
 import type { GitHubUserProfile, OAuthStatePayload } from "@pipewatch/types";
-import { count, desc, eq } from "drizzle-orm";
+import { count, desc, eq, sql } from "drizzle-orm";
 
 export const OAUTH_STATE_COOKIE_NAME = "pw_oauth_state";
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
@@ -24,7 +24,10 @@ export type UpsertUserResult = {
   user: typeof users.$inferSelect;
   isNew: boolean;
   wasFirstUser: boolean;
+  bootstrapWorkspace: WorkspaceRow | null;
 };
+
+const CE_BOOTSTRAP_ADVISORY_LOCK_KEY = "pipewatch_ce_bootstrap";
 
 export type AuthSessionContext = {
   user: typeof users.$inferSelect;
@@ -195,54 +198,80 @@ export async function countUsers(database: Db): Promise<number> {
   return result?.value ?? 0;
 }
 
-/** Upsert a GitHub user by `github_id` (PRD §20). */
+/**
+ * Upsert a GitHub user by `github_id` (PRD §20).
+ * CE first-user bootstrap runs in the same transaction under an advisory lock so only
+ * one concurrent OAuth callback can receive the admin workspace grant.
+ */
 export async function upsertGitHubUser(
   database: Db,
   profile: GitHubUserProfile,
-  wasFirstUser: boolean,
 ): Promise<UpsertUserResult> {
-  const existing = await database
-    .select()
-    .from(users)
-    .where(eq(users.githubId, profile.githubId))
-    .limit(1);
+  return database.transaction(async (tx) => {
+    if (flags.BOOTSTRAP_ENABLED) {
+      await tx.execute(
+        sql`SELECT pg_advisory_xact_lock(hashtext(${CE_BOOTSTRAP_ADVISORY_LOCK_KEY}))`,
+      );
+    }
 
-  if (existing[0]) {
-    const [updated] = await database
-      .update(users)
-      .set({
+    const existing = await tx
+      .select()
+      .from(users)
+      .where(eq(users.githubId, profile.githubId))
+      .limit(1);
+
+    if (existing[0]) {
+      const [updated] = await tx
+        .update(users)
+        .set({
+          githubLogin: profile.githubLogin,
+          email: profile.email,
+          name: profile.name,
+          avatarUrl: profile.avatarUrl,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, existing[0].id))
+        .returning();
+
+      if (!updated) {
+        throw new Error("Failed to update GitHub user");
+      }
+
+      return {
+        user: updated,
+        isNew: false,
+        wasFirstUser: false,
+        bootstrapWorkspace: null,
+      };
+    }
+
+    let wasFirstUser = false;
+    if (flags.BOOTSTRAP_ENABLED) {
+      const [userCount] = await tx.select({ value: count() }).from(users);
+      wasFirstUser = (userCount?.value ?? 0) === 0;
+    }
+
+    const [created] = await tx
+      .insert(users)
+      .values({
+        githubId: profile.githubId,
         githubLogin: profile.githubLogin,
         email: profile.email,
         name: profile.name,
         avatarUrl: profile.avatarUrl,
-        updatedAt: new Date(),
       })
-      .where(eq(users.id, existing[0].id))
       .returning();
 
-    if (!updated) {
-      throw new Error("Failed to update GitHub user");
+    if (!created) {
+      throw new Error("Failed to create GitHub user");
     }
 
-    return { user: updated, isNew: false, wasFirstUser };
-  }
+    const bootstrapWorkspace = wasFirstUser
+      ? await bootstrapCeWorkspace(tx, created.id)
+      : null;
 
-  const [created] = await database
-    .insert(users)
-    .values({
-      githubId: profile.githubId,
-      githubLogin: profile.githubLogin,
-      email: profile.email,
-      name: profile.name,
-      avatarUrl: profile.avatarUrl,
-    })
-    .returning();
-
-  if (!created) {
-    throw new Error("Failed to create GitHub user");
-  }
-
-  return { user: created, isNew: true, wasFirstUser };
+    return { user: created, isNew: true, wasFirstUser, bootstrapWorkspace };
+  });
 }
 
 /** CE bootstrap — default workspace for the first user (PRD §26, pages B0). */
