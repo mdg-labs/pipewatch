@@ -158,6 +158,9 @@ jobs:
         with:
           skip-checkout: "true"
 
+      - name: Build integration dependencies
+        run: pnpm exec turbo run build --filter='${{ matrix.package }}^...'
+
       - name: Start ReportPortal integration launch
         id: rp-integration-start
         run: |
