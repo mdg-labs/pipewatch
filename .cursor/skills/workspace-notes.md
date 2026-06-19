@@ -1,5 +1,61 @@
 # PipeWatch workspace notes
 
+## 2026-06-19 — #182 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `1145ff5`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #182 Onboarding GitHub install callback rejects PKCS#1 App key (regression) | Done | `836cd87` |
+
+**Notes:**
+- Regression from #181 — GitHub downloads PKCS#1 RSA PEM; `importPKCS8` threw TypeError → opaque 500 on install callback
+- Fix: `crypto.createPrivateKey()` in API `app-auth.ts` + worker `backfill.ts`; `INVALID_GITHUB_APP_PRIVATE_KEY` mapping; PKCS#1 unit test; runbook note
+- No DB migrations
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy; retest onboarding step 2→3 on staging-cloud with existing PKCS#1 key in Phase (no conversion needed)
+
+## 2026-06-19 — P176 epic #176 orchestrator run (complete)
+
+**Lane:** P batch 1 (#177+#178) + S serial (#180, #179) · **GitHub sync:** ON · **Base:** `729a019`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #177 Cache Turborepo via GHA | Done | `0774b81` |
+| #178 CE Docker GHCR registry cache | Done | `108e89d` |
+| #180 Parallelize deploy migrate + sentry | Done | `efcd99a` |
+| #179 Parallelize CI gate + integration matrix | Done | `1145ff5` |
+| #176 epic parent | Done | closes via #179 `fixes #176` |
+
+**Notes:**
+- Batch 1 Lane P: Turbo `.turbo` cache in setup action + `turbo.json` build env vars; CE images use per-service GHCR `:buildcache` tags
+- #180: `migrate` and `derive-sentry-release` parallel after `sync-secrets`
+- #179: `ci.yml` split into lint/typecheck/unit/build/audit + integration matrix (api/worker); ReportPortal summary merges artifacts
+- No DB migrations
+- Manual validation: push staging twice to confirm Turbo + Docker cache hits in GHA logs; compare CI wall-clock
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to exercise new CI/deploy parallelism on GHA; compare before/after wall-clock
+
+## 2026-06-19 — #181 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `827ebbd`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #181 Onboarding GitHub install callback returns 500 | Done | `729a019` |
+
+**Notes:**
+- Maps `GitHubAppAuthError` + Redis/BullMQ enqueue failures to structured 401/404/502/503 (not opaque INTERNAL_ERROR)
+- `logUnhandledRequestError` with `requestId` + secret redaction on stderr for Fly log correlation
+- Integration tests: GitHub 401/404 lookup/token exchange + enqueue failure paths (9/9 pass)
+- Operator follow-up: verify staging `GH_APP_ID` + `GH_APP_PRIVATE_KEY` match `pipewatch-staging` app; optional `SENTRY_DSN` on Phase Staging
+- No DB migrations
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy; retest onboarding step 2→3 install callback on staging-cloud
+
 ## 2026-06-19 — #175 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Base:** `5aba72b`
