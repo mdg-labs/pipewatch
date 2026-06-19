@@ -13,7 +13,7 @@ import type {
 } from "@pipewatch/types";
 import { API_KEY_PREFIX } from "@pipewatch/types";
 import type { WorkspacePlan } from "@pipewatch/types";
-import { sha256 } from "@pipewatch/utils";
+import { sha256, timingSafeCompare } from "@pipewatch/utils";
 
 export type ApiKeyLookupRow = {
   id: string;
@@ -34,6 +34,14 @@ export class ApiKeyError extends Error {
 }
 
 const KEY_PREFIX_LENGTH = 8;
+
+/** Fixed digest used on lookup miss so miss timing matches a hash compare. */
+const DUMMY_API_KEY_HASH = sha256("__pipewatch_api_key_timing_normalization__");
+
+/** Constant-time compare of two API key SHA-256 hex digests. */
+export function compareApiKeyDigests(providedHash: string, storedHash: string): boolean {
+  return timingSafeCompare(providedHash, storedHash);
+}
 
 function toIso(value: Date | null): string | null {
   return value ? value.toISOString() : null;
@@ -102,25 +110,37 @@ export async function lookupApiKey(
   rawKey: string,
 ): Promise<ApiKeyLookupRow | null> {
   const keyHash = sha256(rawKey);
+  const keyPrefix = rawKey.slice(0, KEY_PREFIX_LENGTH);
   const now = new Date();
 
-  const [row] = await database
+  const rows = await database
     .select({
       id: apiKeys.id,
       workspaceId: apiKeys.workspaceId,
       createdBy: apiKeys.createdBy,
+      keyHash: apiKeys.keyHash,
     })
     .from(apiKeys)
     .where(
       and(
-        eq(apiKeys.keyHash, keyHash),
+        eq(apiKeys.keyPrefix, keyPrefix),
         isNull(apiKeys.revokedAt),
         or(isNull(apiKeys.expiresAt), gt(apiKeys.expiresAt, now)),
       ),
-    )
-    .limit(1);
+    );
 
-  return row ?? null;
+  for (const row of rows) {
+    if (compareApiKeyDigests(keyHash, row.keyHash)) {
+      return {
+        id: row.id,
+        workspaceId: row.workspaceId,
+        createdBy: row.createdBy,
+      };
+    }
+  }
+
+  compareApiKeyDigests(keyHash, DUMMY_API_KEY_HASH);
+  return null;
 }
 
 /** Update `last_used_at` after a successful API key authentication. */
