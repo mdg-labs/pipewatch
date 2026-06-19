@@ -76,6 +76,32 @@ function statusToCode(status: number): string {
   }
 }
 
+const LOG_REDACT_PATTERNS: RegExp[] = [
+  /Bearer\s+\S+/gi,
+  /ghs_[a-zA-Z0-9]+/g,
+  /pw_[a-zA-Z0-9]+/g,
+  /postgres(?:ql)?:\/\/[^\s"'<>]+/gi,
+];
+
+function redactLogMessage(message: string): string {
+  let redacted = message;
+  for (const pattern of LOG_REDACT_PATTERNS) {
+    redacted = redacted.replace(pattern, "[Redacted]");
+  }
+  return redacted;
+}
+
+/** Log unhandled request errors to stdout — name/message only, secrets redacted. */
+export function logUnhandledRequestError(requestId: string, error: unknown): void {
+  const name = error instanceof Error ? error.name : "UnknownError";
+  const rawMessage = error instanceof Error ? error.message : String(error);
+  const message = redactLogMessage(rawMessage);
+
+  process.stderr.write(
+    `${JSON.stringify({ level: "error", requestId, error: { name, message } })}\n`,
+  );
+}
+
 /** Standard `{ error: { code, message } }` envelope for all API errors. */
 export const errorHandler: ErrorHandler = (err, c) => {
   if (err instanceof HTTPException) {

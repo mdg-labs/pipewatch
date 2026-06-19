@@ -2,7 +2,6 @@ import { createRoute, z } from "@hono/zod-openapi";
 import type { OpenAPIHono } from "@hono/zod-openapi";
 import type { Context } from "hono";
 import { getCookie } from "hono/cookie";
-import { HTTPException } from "hono/http-exception";
 
 import type { ApiEnv as ParsedApiEnv } from "@pipewatch/config/env";
 import { parseApiEnv } from "@pipewatch/config/env";
@@ -14,16 +13,19 @@ import {
   resolveJwtAuthIdentity,
   roleMeetsMinimum,
 } from "../../lib/workspace-context.js";
-import { ApiErrorEnvelopeSchema, apiError } from "../../middleware/error-handler.js";
+import {
+  ApiErrorEnvelopeSchema,
+  apiError,
+  logUnhandledRequestError,
+} from "../../middleware/error-handler.js";
 import { OpenApiTags } from "../../openapi-tags.js";
 import {
-  InstallCallbackError,
   processGitHubInstallCallback,
+  resolveInstallCallbackFailure,
   type EnqueueBackfillIntegration,
   type InstallCallbackDeps,
 } from "../../services/integrations/install-callback.js";
 import { createE2eGitHubFetch, isE2eMockEnabled } from "../../testing/e2e-mock.js";
-import { IntegrationError } from "../../services/integrations/integration.service.js";
 import type { ApiEnv } from "../../types.js";
 import { ACCESS_COOKIE_NAME, requireJwtSecret } from "../auth/shared.js";
 
@@ -87,6 +89,22 @@ const githubCallbackRoute = createRoute({
         },
       },
     },
+    502: {
+      description: "Upstream GitHub or queue error",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
+    503: {
+      description: "Service unavailable",
+      content: {
+        "application/json": {
+          schema: ApiErrorEnvelopeSchema,
+        },
+      },
+    },
   },
 });
 
@@ -132,21 +150,7 @@ function requireAppUrl(env: ParsedApiEnv): string {
   return appUrl;
 }
 
-function handleInstallCallbackError(error: unknown): never {
-  if (error instanceof InstallCallbackError) {
-    throw new HTTPException(error.status as 400 | 404 | 422 | 502, {
-      message: error.message,
-    });
-  }
-
-  if (error instanceof IntegrationError) {
-    throw new HTTPException(error.status as 409, {
-      message: error.message,
-    });
-  }
-
-  throw error;
-}
+type CallbackErrorStatus = 400 | 401 | 403 | 404 | 409 | 422 | 502 | 503;
 
 /** Register GitHub App install callback (pages B17, B2 step 2). */
 export function registerGitHubInstallCallbackRoute(
@@ -223,7 +227,16 @@ export function registerGitHubInstallCallbackRoute(
         callbackDeps,
       );
     } catch (error) {
-      handleInstallCallbackError(error);
+      const failure = resolveInstallCallbackFailure(error);
+      if (failure) {
+        return c.json(
+          apiError(failure.code, failure.message),
+          failure.status as CallbackErrorStatus,
+        );
+      }
+
+      logUnhandledRequestError(c.get("requestId") ?? "unknown", error);
+      throw error;
     }
 
     return c.redirect(onboardingStep3Url(requireAppUrl(resolved.env)), 302);

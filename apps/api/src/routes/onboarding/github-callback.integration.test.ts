@@ -17,6 +17,7 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { errorHandler } from "../../middleware/error-handler.js";
+import { requestIdMiddleware } from "../../middleware/request-id.js";
 import { uniqueGithubId } from "../../testing/unique-github-id.js";
 import { signAccessToken } from "../../services/auth/jwt.js";
 import { registerGitHubInstallCallbackRoute } from "./github-callback.js";
@@ -148,6 +149,58 @@ function createMockGitHubFetch(installationId: string) {
   }) as typeof fetch;
 }
 
+type MockGitHubFetchOptions = {
+  lookupStatus?: number;
+  tokenStatus?: number;
+};
+
+function createMockGitHubFetchWithErrors(
+  installationId: string,
+  options: MockGitHubFetchOptions,
+) {
+  return vi.fn(async (input: string | URL, init?: RequestInit) => {
+    const url = typeof input === "string" ? input : input.toString();
+    const method = init?.method ?? "GET";
+
+    if (
+      method === "GET" &&
+      url === `https://api.github.com/app/installations/${installationId}`
+    ) {
+      if (options.lookupStatus !== undefined && options.lookupStatus !== 200) {
+        return new Response("GitHub error", { status: options.lookupStatus });
+      }
+
+      return new Response(
+        JSON.stringify({
+          account: {
+            login: "mdg-labs",
+            type: "Organization",
+          },
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    if (
+      method === "POST" &&
+      url === `https://api.github.com/app/installations/${installationId}/access_tokens`
+    ) {
+      if (options.tokenStatus !== undefined && options.tokenStatus !== 201) {
+        return new Response("GitHub error", { status: options.tokenStatus });
+      }
+
+      const token = `ghs_${randomBytes(8).toString("hex")}`;
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+      return new Response(JSON.stringify({ token, expires_at: expiresAt }), {
+        status: 201,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response("not found", { status: 404 });
+  }) as typeof fetch;
+}
+
 function createTestApp(
   database: Db,
   options: {
@@ -156,6 +209,7 @@ function createTestApp(
   },
 ) {
   const app = new OpenAPIHono<ApiEnv>();
+  app.use("*", requestIdMiddleware);
   app.onError(errorHandler);
 
   const env = parseApiEnv(
@@ -428,5 +482,122 @@ describe("GitHub install callback integration", () => {
 
     expect(response.status).toBe(422);
     expect(enqueueBackfill).not.toHaveBeenCalled();
+  });
+
+  it("returns structured 404 when GitHub installation lookup fails", async () => {
+    const installationId = String(940000 + Math.floor(Math.random() * 100000));
+    const enqueueBackfill = vi.fn(async () => undefined);
+    const app = createTestApp(database, {
+      fetchImpl: createMockGitHubFetchWithErrors(installationId, { lookupStatus: 404 }),
+      enqueueBackfill,
+    });
+
+    const owner = await seedUser(database, "callback-404");
+    const workspace = await seedWorkspace(database, "callback-404");
+    await addMember(database, workspace.id, owner.id, "owner");
+
+    const response = await app.request(
+      `http://localhost/onboarding/github-callback?installation_id=${installationId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${await bearerToken(owner.id, workspace.id, "owner")}`,
+        },
+        redirect: "manual",
+      },
+    );
+
+    expect(response.status).toBe(404);
+    const body = (await response.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("GITHUB_INSTALLATION_NOT_FOUND");
+    expect(body.error.message).toBe("GitHub installation not found");
+    expect(enqueueBackfill).not.toHaveBeenCalled();
+  });
+
+  it("returns structured 401 when GitHub App credentials are rejected", async () => {
+    const installationId = String(950000 + Math.floor(Math.random() * 100000));
+    const enqueueBackfill = vi.fn(async () => undefined);
+    const app = createTestApp(database, {
+      fetchImpl: createMockGitHubFetchWithErrors(installationId, { lookupStatus: 401 }),
+      enqueueBackfill,
+    });
+
+    const owner = await seedUser(database, "callback-401-lookup");
+    const workspace = await seedWorkspace(database, "callback-401-lookup");
+    await addMember(database, workspace.id, owner.id, "owner");
+
+    const response = await app.request(
+      `http://localhost/onboarding/github-callback?installation_id=${installationId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${await bearerToken(owner.id, workspace.id, "owner")}`,
+        },
+        redirect: "manual",
+      },
+    );
+
+    expect(response.status).toBe(401);
+    const body = (await response.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("GITHUB_APP_UNAUTHORIZED");
+    expect(body.error.message).toContain("invalid or unauthorized");
+    expect(enqueueBackfill).not.toHaveBeenCalled();
+  });
+
+  it("returns structured 401 when GitHub token exchange fails", async () => {
+    const installationId = String(960000 + Math.floor(Math.random() * 100000));
+    const enqueueBackfill = vi.fn(async () => undefined);
+    const app = createTestApp(database, {
+      fetchImpl: createMockGitHubFetchWithErrors(installationId, { tokenStatus: 401 }),
+      enqueueBackfill,
+    });
+
+    const owner = await seedUser(database, "callback-401-token");
+    const workspace = await seedWorkspace(database, "callback-401-token");
+    await addMember(database, workspace.id, owner.id, "owner");
+
+    const response = await app.request(
+      `http://localhost/onboarding/github-callback?installation_id=${installationId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${await bearerToken(owner.id, workspace.id, "owner")}`,
+        },
+        redirect: "manual",
+      },
+    );
+
+    expect(response.status).toBe(401);
+    const body = (await response.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("GITHUB_APP_UNAUTHORIZED");
+    expect(enqueueBackfill).not.toHaveBeenCalled();
+  });
+
+  it("returns structured 502 when backfill enqueue fails", async () => {
+    const installationId = String(970000 + Math.floor(Math.random() * 100000));
+    const enqueueBackfill = vi.fn(async () => {
+      throw new Error("Redis connection failed");
+    });
+    const app = createTestApp(database, {
+      fetchImpl: createMockGitHubFetch(installationId),
+      enqueueBackfill,
+    });
+
+    const owner = await seedUser(database, "callback-enqueue");
+    const workspace = await seedWorkspace(database, "callback-enqueue");
+    await addMember(database, workspace.id, owner.id, "owner");
+
+    const response = await app.request(
+      `http://localhost/onboarding/github-callback?installation_id=${installationId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${await bearerToken(owner.id, workspace.id, "owner")}`,
+        },
+        redirect: "manual",
+      },
+    );
+
+    expect(response.status).toBe(502);
+    const body = (await response.json()) as { error: { code: string; message: string } };
+    expect(body.error.code).toBe("BACKFILL_ENQUEUE_FAILED");
+    expect(body.error.message).toContain("backfill");
+    expect(enqueueBackfill).toHaveBeenCalledOnce();
   });
 });

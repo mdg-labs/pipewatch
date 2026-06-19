@@ -161,9 +161,11 @@ async function parseInstallationTokenResponse(
 
 async function parseInstallationResponse(response: Response): Promise<GitHubInstallationResponse> {
   if (!response.ok) {
+    const status =
+      response.status === 404 ? 404 : response.status === 401 ? 401 : 502;
     throw new GitHubAppAuthError(
       `GitHub installation lookup failed (${String(response.status)})`,
-      response.status === 404 ? 404 : 502,
+      status,
       "GITHUB_INSTALLATION_LOOKUP_FAILED",
     );
   }

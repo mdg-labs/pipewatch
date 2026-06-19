@@ -90,16 +90,121 @@ function validateInstallationId(installationId: string): string {
   return trimmed;
 }
 
-function mapGitHubError(error: GitHubAppAuthError): never {
+export type InstallCallbackFailure = {
+  status: number;
+  code: string;
+  message: string;
+};
+
+export function mapGitHubErrorToResponse(error: GitHubAppAuthError): InstallCallbackFailure {
   if (error.code === "GITHUB_INSTALLATION_LOOKUP_FAILED" && error.status === 404) {
+    return {
+      message: "GitHub installation not found",
+      status: 404,
+      code: "GITHUB_INSTALLATION_NOT_FOUND",
+    };
+  }
+
+  if (error.status === 401) {
+    return {
+      message: "GitHub App credentials are invalid or unauthorized",
+      status: 401,
+      code: "GITHUB_APP_UNAUTHORIZED",
+    };
+  }
+
+  if (error.code === "GITHUB_APP_NOT_CONFIGURED" || error.code === "ENCRYPTION_KEY_MISSING") {
+    return {
+      message: error.message,
+      status: 503,
+      code: "SERVICE_UNAVAILABLE",
+    };
+  }
+
+  const status = error.status >= 500 ? 502 : error.status;
+
+  return {
+    message: error.message,
+    status,
+    code: error.code,
+  };
+}
+
+function mapGitHubError(error: GitHubAppAuthError): never {
+  const mapped = mapGitHubErrorToResponse(error);
+  throw new InstallCallbackError(mapped.message, mapped.status, mapped.code);
+}
+
+function mapEnqueueError(error: unknown): never {
+  if (error instanceof Error && error.message === "REDIS_URL is not configured") {
     throw new InstallCallbackError(
-      "GitHub installation not found",
-      404,
-      "GITHUB_INSTALLATION_NOT_FOUND",
+      "Backfill queue is unavailable",
+      503,
+      "SERVICE_UNAVAILABLE",
     );
   }
 
-  throw new InstallCallbackError(error.message, error.status, error.code);
+  const isConnectionFailure =
+    error instanceof Error &&
+    ("code" in error
+      ? error.code === "ECONNREFUSED" ||
+        error.code === "ENOTFOUND" ||
+        error.code === "ETIMEDOUT"
+      : false);
+
+  if (isConnectionFailure) {
+    throw new InstallCallbackError(
+      "Backfill queue is unavailable",
+      503,
+      "SERVICE_UNAVAILABLE",
+    );
+  }
+
+  throw new InstallCallbackError(
+    "Failed to enqueue integration backfill",
+    502,
+    "BACKFILL_ENQUEUE_FAILED",
+  );
+}
+
+export function resolveInstallCallbackFailure(error: unknown): InstallCallbackFailure | null {
+  if (error instanceof InstallCallbackError || error instanceof IntegrationError) {
+    return {
+      status: error.status,
+      code: error.code,
+      message: error.message,
+    };
+  }
+
+  if (error instanceof GitHubAppAuthError) {
+    return mapGitHubErrorToResponse(error);
+  }
+
+  return null;
+}
+
+async function enqueueIntegrationBackfill(
+  env: ApiEnv,
+  row: { id: string },
+  workspaceId: string,
+  deps: InstallCallbackDeps,
+): Promise<void> {
+  try {
+    const enqueue = deps.enqueueBackfill;
+    if (enqueue) {
+      await enqueue({ integrationId: row.id, workspaceId });
+      return;
+    }
+
+    if (env.REDIS_URL) {
+      await enqueueBackfillIntegration(env.REDIS_URL, {
+        integrationId: row.id,
+        workspaceId,
+      });
+    }
+  } catch (error) {
+    mapEnqueueError(error);
+  }
 }
 
 /**
@@ -114,7 +219,17 @@ export async function processGitHubInstallCallback(
 ): Promise<IntegrationSummary> {
   const installationId = validateInstallationId(rawInstallationId);
   const fetchImpl = deps.fetchImpl ?? fetch;
-  const config = gitHubAppConfigFromEnv(env);
+
+  let config;
+  try {
+    config = gitHubAppConfigFromEnv(env);
+  } catch (error) {
+    if (error instanceof GitHubAppAuthError) {
+      mapGitHubError(error);
+    }
+
+    throw error;
+  }
 
   let installation;
   let tokenExchange;
@@ -245,15 +360,7 @@ export async function processGitHubInstallCallback(
     }
   }
 
-  const enqueue = deps.enqueueBackfill;
-  if (enqueue) {
-    await enqueue({ integrationId: row.id, workspaceId });
-  } else if (env.REDIS_URL) {
-    await enqueueBackfillIntegration(env.REDIS_URL, {
-      integrationId: row.id,
-      workspaceId,
-    });
-  }
+  await enqueueIntegrationBackfill(env, row, workspaceId, deps);
 
   return toIntegrationSummary(row);
 }
