@@ -1,8 +1,11 @@
-const DEFAULT_GITHUB_APP_SLUG = "pipewatch";
-
 /** Public GitHub App install URL (PRD §13, pages B2). */
-export function buildGitHubAppInstallUrl(slug = DEFAULT_GITHUB_APP_SLUG): string {
-  return `https://github.com/apps/${slug}/installations/new`;
+export function buildGitHubAppInstallUrl(slug?: string | null): string | null {
+  const trimmed = slug?.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  return `https://github.com/apps/${trimmed}/installations/new`;
 }
 
 /** API callback after install or CE manual `installation_id` entry. */

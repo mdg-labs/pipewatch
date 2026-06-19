@@ -5,6 +5,8 @@ import { Suspense } from "react";
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
 import { ApiAuthProvider } from "@/hooks/use-api";
 import { ACCESS_COOKIE_NAME, hasAuthSession } from "@/lib/auth-cookies";
+import { publicApiUrl } from "@/lib/env";
+import { fetchAppConfig } from "@/lib/public-config";
 
 import "@/components/onboarding/onboarding.css";
 
@@ -17,11 +19,14 @@ export default async function OnboardingPage() {
   }
 
   const initialAccessToken = cookieStore.get(ACCESS_COOKIE_NAME)?.value ?? null;
+  const { githubAppSlug } = await fetchAppConfig({ apiUrl: publicApiUrl });
 
   return (
     <ApiAuthProvider initialAccessToken={initialAccessToken}>
       <Suspense fallback={null}>
-        <OnboardingWizard />
+        <OnboardingWizard
+          {...(githubAppSlug ? { githubAppSlug } : {})}
+        />
       </Suspense>
     </ApiAuthProvider>
   );

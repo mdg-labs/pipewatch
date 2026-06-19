@@ -1,5 +1,36 @@
 {
   "paths": {
+    "/api/v1/public/app-config": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Public app configuration",
+        "description": "Unauthenticated runtime configuration for the web app (GitHub App install URL slug). Sourced from API container env — not baked into the web build.",
+        "responses": {
+          "200": {
+            "description": "Public app configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AppConfigResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/bootstrap-status": {
       "get": {
         "tags": [
@@ -3958,6 +3989,20 @@
           "last_used_at",
           "revoked_at",
           "created_at"
+        ]
+      },
+      "AppConfigResponse": {
+        "type": "object",
+        "properties": {
+          "github_app_slug": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "example": "pipewatch"
+          }
+        },
+        "required": [
+          "github_app_slug"
         ]
       },
       "BillingCheckoutBody": {

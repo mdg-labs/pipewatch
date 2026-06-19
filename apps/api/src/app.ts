@@ -19,6 +19,7 @@ import { registerGitHubWebhookRoute } from "./routes/webhooks/github.js";
 import { registerHealthRoute } from "./routes/health.js";
 import { registerSseTokenRoute } from "./routes/sse-token.js";
 import { registerOpenApiRoutes } from "./routes/openapi.js";
+import { registerAppConfigRoute } from "./routes/public/app-config.js";
 import { registerBootstrapStatusRoute } from "./routes/public/bootstrap-status.js";
 import { registerUserMeRoutes } from "./routes/users/me.js";
 import { registerWorkspaceRoutes } from "./routes/workspaces/index.js";
@@ -45,6 +46,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
   registerHealthRoute(app);
   registerOpenApiRoutes(app);
   registerBootstrapStatusRoute(app);
+  registerAppConfigRoute(app);
   registerGitHubAuthRoutes(app);
   registerRefreshRoute(app);
   registerLogoutRoutes(app);

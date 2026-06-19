@@ -20,6 +20,7 @@ export type InstallGitHubStepProps = {
 /** Step 2 — GitHub App permissions explainer and install CTA. */
 export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepProps) {
   const installUrl = buildGitHubAppInstallUrl(githubAppSlug);
+  const installConfigured = installUrl !== null;
   const [manualId, setManualId] = useState("");
   const [submittingManual, setSubmittingManual] = useState(false);
 
@@ -117,11 +118,20 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
         </div>
 
         <div style={{ marginTop: "var(--space-5)" }}>
+          {installConfigured ? null : (
+            <p className="pw-onboarding-card-subtitle" role="alert">
+              GitHub App install is not configured yet. Set <code>GITHUB_APP_SLUG</code> on the
+              API server and refresh this page.
+            </p>
+          )}
           <Button
             className="pw-onboarding-install-btn"
             style={{ width: "100%" }}
+            disabled={!installConfigured}
             onClick={() => {
-              window.open(installUrl, "_blank", "noopener,noreferrer");
+              if (installUrl) {
+                window.open(installUrl, "_blank", "noopener,noreferrer");
+              }
             }}
           >
             <Github size={16} strokeWidth={2} aria-hidden />
@@ -167,8 +177,11 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
         <div className="pw-onboarding-card-footer-actions">
           <Button
             variant="secondary"
+            disabled={!installConfigured}
             onClick={() => {
-              window.open(installUrl, "_blank", "noopener,noreferrer");
+              if (installUrl) {
+                window.open(installUrl, "_blank", "noopener,noreferrer");
+              }
             }}
           >
             Open install page
