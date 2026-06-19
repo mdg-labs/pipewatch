@@ -2,7 +2,11 @@ import { OpenAPIHono } from "@hono/zod-openapi";
 
 import { registerCERoutes, registerCloudRoutes } from "./edition-features.js";
 import { createCorsMiddleware } from "./middleware/cors.js";
-import { apiError, errorHandler } from "./middleware/error-handler.js";
+import {
+  apiError,
+  errorHandler,
+  formatZodValidationMessage,
+} from "./middleware/error-handler.js";
 import { requestIdMiddleware } from "./middleware/request-id.js";
 import { sentryTraceMiddleware } from "./middleware/sentry.js";
 import { registerGitHubAuthRoutes } from "./routes/auth/github.js";
@@ -24,7 +28,9 @@ export function createApp(): OpenAPIHono<ApiEnv> {
   const app = new OpenAPIHono<ApiEnv>({
     defaultHook: (result, c) => {
       if (!result.success) {
-        return c.json(apiError("VALIDATION_ERROR", "Request validation failed"), 422);
+        const isProduction = process.env.NODE_ENV === "production";
+        const message = formatZodValidationMessage(result.error, isProduction);
+        return c.json(apiError("VALIDATION_ERROR", message), 422);
       }
     },
   });

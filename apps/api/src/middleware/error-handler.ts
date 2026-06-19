@@ -2,6 +2,12 @@ import { z } from "@hono/zod-openapi";
 import type { ErrorHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 
+type ValidationIssue = {
+  path: PropertyKey[];
+  message: string;
+  code: string;
+};
+
 export const ApiErrorEnvelopeSchema = z
   .object({
     error: z.object({
@@ -15,6 +21,38 @@ export type ApiErrorEnvelope = z.infer<typeof ApiErrorEnvelopeSchema>;
 
 export function apiError(code: string, message: string): ApiErrorEnvelope {
   return { error: { code, message } };
+}
+
+/** Map OpenAPI/Zod request validation failures to a safe API message. */
+export function formatZodValidationMessage(
+  error: { issues: ValidationIssue[] },
+  isProduction: boolean,
+): string {
+  const [first] = error.issues;
+  if (!first) {
+    return "Request validation failed";
+  }
+
+  if (!isProduction) {
+    const field = first.path.length > 0 ? `${first.path.join(".")}: ` : "";
+    return `${field}${first.message}`;
+  }
+
+  const field = first.path.length > 0 ? first.path.join(".") : "request";
+  if (first.code === "invalid_type" && first.path.length === 0) {
+    return "Request validation failed";
+  }
+
+  if (
+    first.code === "invalid_format" ||
+    first.code === "invalid_string" ||
+    first.code === "too_small" ||
+    first.code === "too_big"
+  ) {
+    return `Invalid ${field}`;
+  }
+
+  return "Request validation failed";
 }
 
 function statusToCode(status: number): string {

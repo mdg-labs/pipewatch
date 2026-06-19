@@ -4142,6 +4142,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64,
+            "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
             "example": "my-workspace"
           }
         },
@@ -5172,6 +5173,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64,
+            "pattern": "^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$",
             "example": "renamed-workspace"
           },
           "default_retention_days": {

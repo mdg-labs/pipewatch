@@ -10,13 +10,17 @@ import { users, workspaceMembers, workspaces } from "@pipewatch/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { errorHandler } from "../../middleware/error-handler.js";
+import { errorHandler, apiError, formatZodValidationMessage } from "../../middleware/error-handler.js";
 import { uniqueGithubId } from "../../testing/unique-github-id.js";
 import { signAccessToken } from "../../services/auth/jwt.js";
 import { slugifyWorkspaceName } from "../../services/workspaces/workspace.service.js";
 import { registerWorkspaceRoutes } from "./index.js";
 import type { ApiEnv } from "../../types.js";
 import type { Workspace, WorkspaceListItem } from "@pipewatch/types";
+
+type ApiErrorBody = {
+  error: { code: string; message: string };
+};
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -93,6 +97,30 @@ async function bearerToken(
 
 function createTestApp(database: Db) {
   const app = new OpenAPIHono<ApiEnv>();
+  app.onError(errorHandler);
+
+  const env = parseApiEnv(
+    {
+      ...baseEnv,
+      DATABASE_URL: process.env.DATABASE_URL,
+    },
+    "cloud",
+  );
+
+  registerWorkspaceRoutes(app, { env, db: database });
+
+  return app;
+}
+
+function createTestAppWithDefaultHook(database: Db) {
+  const app = new OpenAPIHono<ApiEnv>({
+    defaultHook: (result, c) => {
+      if (!result.success) {
+        const message = formatZodValidationMessage(result.error, false);
+        return c.json(apiError("VALIDATION_ERROR", message), 422);
+      }
+    },
+  });
   app.onError(errorHandler);
 
   const env = parseApiEnv(
@@ -208,6 +236,63 @@ describe("workspaces integration (cloud)", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ available: false, slug });
+  });
+
+  it("creates workspace with explicit MDG-Labs name and slug", async () => {
+    const app = createTestApp(database);
+    const user = await seedUser(database, "ws-mdg");
+
+    const response = await app.request("http://localhost/api/v1/workspaces", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await bearerToken(user.id)}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: "MDG-Labs", slug: "mdg-labs" }),
+    });
+
+    expect(response.status).toBe(201);
+    const body = await readJson<Workspace>(response);
+    expect(body.name).toBe("MDG-Labs");
+    expect(body.slug).toBe("mdg-labs");
+  });
+
+  it("creates MDG-Labs workspace with OpenAPI defaultHook", async () => {
+    const app = createTestAppWithDefaultHook(database);
+    const user = await seedUser(database, "ws-mdg-hook");
+    const suffix = randomBytes(4).toString("hex");
+    const slug = `mdg-labs-${suffix}`;
+
+    const response = await app.request("http://localhost/api/v1/workspaces", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await bearerToken(user.id)}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: "MDG-Labs", slug }),
+    });
+
+    expect(response.status).toBe(201);
+    const body = await readJson<Workspace>(response);
+    expect(body.slug).toBe(slug);
+  });
+
+  it("returns a descriptive validation error for malformed create body", async () => {
+    const app = createTestAppWithDefaultHook(database);
+    const user = await seedUser(database, "ws-invalid-body");
+
+    const response = await app.request("http://localhost/api/v1/workspaces", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${await bearerToken(user.id)}`,
+      },
+      body: JSON.stringify({ name: "MDG-Labs", slug: "mdg-labs" }),
+    });
+
+    expect(response.status).toBe(422);
+    const body = await readJson<ApiErrorBody>(response);
+    expect(body.error.code).toBe("VALIDATION_ERROR");
+    expect(body.error.message).toMatch(/name/i);
   });
 
   it("creates, lists, reads, updates, and deletes a workspace", async () => {
@@ -511,6 +596,12 @@ describe("workspaces integration (CE)", () => {
     });
 
     expect(secondResponse.status).toBe(403);
+    await expect(secondResponse.json()).resolves.toMatchObject({
+      error: {
+        code: "FORBIDDEN",
+        message: "Only one workspace is allowed in this edition",
+      },
+    });
 
     const deleteResponse = await app.request(
       `http://localhost/api/v1/workspaces/${workspace.id}`,

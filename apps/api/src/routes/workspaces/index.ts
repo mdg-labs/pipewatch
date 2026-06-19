@@ -21,6 +21,7 @@ import {
   getWorkspaceForMember,
   listWorkspacesForUser,
   updateWorkspaceSafe,
+  WORKSPACE_SLUG_PATTERN,
   WorkspaceError,
 } from "../../services/workspaces/workspace.service.js";
 import type { ListBackfillJobs } from "../../services/sync-status.js";
@@ -42,6 +43,14 @@ import { registerSyncStatusRoutes } from "./sync-status.js";
 
 const WorkspacePlanSchema = z.enum(["free", "pro", "business"]);
 
+const WorkspaceSlugFieldSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(1)
+  .max(64)
+  .regex(WORKSPACE_SLUG_PATTERN, "Invalid slug format");
+
 const WorkspaceSchema = z
   .object({
     id: z.string().uuid(),
@@ -60,20 +69,14 @@ const WorkspaceListItemSchema = WorkspaceSchema.extend({
 const CreateWorkspaceBodySchema = z
   .object({
     name: z.string().trim().min(1).max(256).openapi({ example: "My Workspace" }),
-    slug: z
-      .string()
-      .trim()
-      .min(1)
-      .max(64)
-      .optional()
-      .openapi({ example: "my-workspace" }),
+    slug: WorkspaceSlugFieldSchema.optional().openapi({ example: "my-workspace" }),
   })
   .openapi("CreateWorkspaceBody");
 
 const UpdateWorkspaceBodySchema = z
   .object({
     name: z.string().trim().min(1).max(256).optional().openapi({ example: "Renamed Workspace" }),
-    slug: z.string().trim().min(1).max(64).optional().openapi({ example: "renamed-workspace" }),
+    slug: WorkspaceSlugFieldSchema.optional().openapi({ example: "renamed-workspace" }),
     default_retention_days: z
       .number()
       .int()

@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button, Input, RadioGroup } from "@pipewatch/ui";
 
 import { useApi } from "@/hooks/use-api";
+import { ApiClientError } from "@/lib/api-client";
 import { slugifyWorkspaceName } from "@/lib/onboarding/slug";
 import { switchWorkspace } from "@/lib/switch-workspace";
 import { publicApiUrl } from "@/lib/env";
@@ -116,10 +117,17 @@ export function CreateWorkspaceStep({
       }
 
       onCreated(workspace);
-    } catch {
+    } catch (error) {
+      const apiMessage =
+        error instanceof ApiClientError ? error.message : null;
+      const apiCode = error instanceof ApiClientError ? error.code : null;
       toast({
-        title: "Could not create workspace",
-        description: "Check the name and slug, then try again.",
+        title:
+          apiCode === "FORBIDDEN"
+            ? "Cannot create workspace"
+            : "Could not create workspace",
+        description:
+          apiMessage ?? "Check the name and slug, then try again.",
         variant: "error",
       });
     } finally {

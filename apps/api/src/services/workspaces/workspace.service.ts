@@ -17,7 +17,8 @@ import {
   resolveWorkspaceRetentionForPatch,
 } from "../../middleware/plan-limits.js";
 
-const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
+/** Lowercase URL slug: letters, digits, hyphens; no leading/trailing hyphen. */
+export const WORKSPACE_SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 const SLUG_MAX_LENGTH = 64;
 
 export class WorkspaceError extends Error {
@@ -65,7 +66,11 @@ export function slugifyWorkspaceName(name: string): string {
 }
 
 export function validateSlugFormat(slug: string): boolean {
-  return slug.length > 0 && slug.length <= SLUG_MAX_LENGTH && SLUG_PATTERN.test(slug);
+  return (
+    slug.length > 0 &&
+    slug.length <= SLUG_MAX_LENGTH &&
+    WORKSPACE_SLUG_PATTERN.test(slug)
+  );
 }
 
 async function isSlugTaken(
