@@ -45,6 +45,12 @@ case "$APP" in
     ;;
   marketing)
     FILTER="@pipewatch/marketing"
+    if [[ "${PIPEWATCH_EDITION:-cloud}" == "cloud" ]]; then
+      if [[ -z "${UMAMI_SCRIPT_URL:-}" || -z "${UMAMI_WEBSITE_ID:-}" ]]; then
+        echo "deploy-cf-worker: UMAMI_SCRIPT_URL and UMAMI_WEBSITE_ID must be set for cloud marketing deploy" >&2
+        exit 1
+      fi
+    fi
     ;;
   *)
     echo "deploy-cf-worker: unsupported app: ${APP}" >&2
@@ -66,6 +72,10 @@ WEB_BUILD_ENV=(
 MARKETING_BUILD_ENV=(
   NODE_ENV=production
   PIPEWATCH_EDITION="${PIPEWATCH_EDITION:-cloud}"
+  LAUNCH_MODE="${LAUNCH_MODE:-waitlist}"
+  NEXT_PUBLIC_APP_URL="${NEXT_PUBLIC_APP_URL:-}"
+  UMAMI_SCRIPT_URL="${UMAMI_SCRIPT_URL:-}"
+  UMAMI_WEBSITE_ID="${UMAMI_WEBSITE_ID:-}"
   SENTRY_AUTH_TOKEN="${SENTRY_AUTH_TOKEN:-}"
   SENTRY_ORG="${SENTRY_ORG:-}"
   SENTRY_PROJECT="${SENTRY_PROJECT:-}"

@@ -244,6 +244,11 @@ jobs:
           CF_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           CF_WORKER_NAME: pipewatch-${{ inputs.environment == 'production' && 'prod' || 'staging' }}-marketing
+          PIPEWATCH_EDITION: ${{ secrets.PIPEWATCH_EDITION }}
+          LAUNCH_MODE: ${{ secrets.LAUNCH_MODE }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+          UMAMI_SCRIPT_URL: ${{ secrets.UMAMI_SCRIPT_URL }}
+          UMAMI_WEBSITE_ID: ${{ secrets.UMAMI_WEBSITE_ID }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: pipewatch-marketing
