@@ -17,7 +17,7 @@ import {
   updateUserProfile,
 } from "../../services/users/profile.js";
 import type { ApiEnv } from "../../types.js";
-import { clearAuthCookies, requireJwtSecret, resolveSecureCookies } from "../auth/shared.js";
+import { clearAuthCookies, requireJwtSecret, resolveAuthCookieDomain, resolveSecureCookies } from "../auth/shared.js";
 
 const UserProfileSchema = z
   .object({
@@ -247,10 +247,11 @@ export function registerUserMeRoutes(
     const resolved = resolveDeps();
     const userId = await requireJwtUserId(c, resolved);
     const secure = resolveSecureCookies(resolved.env);
+    const cookieDomain = resolveAuthCookieDomain(resolved.env);
 
     try {
       await deleteUserAccount(resolved.db, userId);
-      clearAuthCookies(c, secure);
+      clearAuthCookies(c, secure, cookieDomain);
       return c.body(null, 204);
     } catch (error) {
       handleProfileError(error);

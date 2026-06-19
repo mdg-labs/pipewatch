@@ -58,6 +58,10 @@ const apiEnvSchema = z.object({
   APP_URL: z.string().url().optional(),
   MARKETING_URL: z.string().url().optional(),
   PUBLIC_API_URL: z.string().url().optional(),
+  COOKIE_DOMAIN: z
+    .string()
+    .regex(/^[a-z0-9.-]+$/i, "must be a hostname (optional leading dot stripped at runtime)")
+    .optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().positive().optional(),
   SMTP_USER: z.string().optional(),
@@ -243,6 +247,7 @@ export function parseApiEnv(
       "APP_URL",
       "MARKETING_URL",
       "PUBLIC_API_URL",
+      "COOKIE_DOMAIN",
       "SMTP_HOST",
       "SMTP_PORT",
       "SMTP_USER",

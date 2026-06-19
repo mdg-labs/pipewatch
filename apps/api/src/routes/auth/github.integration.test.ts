@@ -371,4 +371,40 @@ describe("github oauth integration", () => {
     expect(body.error.code).toBe("UNAUTHORIZED");
     expect(body.error.message).toBe("Missing OAuth state cookie");
   });
+
+  it("sets shared cookie domain for cloud split-host OAuth", async () => {
+    const app = createTestApp(database, "cloud", {
+      envOverrides: {
+        NODE_ENV: "staging",
+        APP_URL: "https://staging-cloud.pipewatch.app",
+        PUBLIC_API_URL: "https://staging-api.pipewatch.app",
+        DATABASE_URL: process.env.DATABASE_URL ?? "",
+        REDIS_URL: "redis://localhost:6379",
+        ENCRYPTION_KEY: testSecret,
+        GITHUB_APP_ID: "123456",
+        GITHUB_APP_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nkey\n-----END PRIVATE KEY-----",
+        GITHUB_WEBHOOK_SECRET: "webhook-secret",
+        GITHUB_APP_SLUG: "pipewatch",
+        MARKETING_URL: "https://pipewatch.app",
+        POSTMARK_WEBHOOK_SECRET: "postmark-webhook-secret",
+        STRIPE_SECRET_KEY: "sk_test",
+        STRIPE_WEBHOOK_SECRET: "whsec_test",
+        STRIPE_PRICE_PRO: "price_pro",
+        STRIPE_PRICE_BUSINESS: "price_business",
+      },
+    });
+    const { state, cookieHeader } = await startOAuthFlow(app);
+
+    const callback = await app.request(
+      `http://localhost:3001/auth/github/callback?code=cloud-code&state=${state}`,
+      { headers: { Cookie: cookieHeader } },
+    );
+
+    expect(callback.status).toBe(302);
+
+    const setCookie = callback.headers.get("set-cookie");
+    expect(setCookie).toContain("Domain=pipewatch.app");
+    expect(setCookie).toContain("pw_refresh=");
+    expect(setCookie).toContain("pw_access=");
+  });
 });

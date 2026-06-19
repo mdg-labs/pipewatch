@@ -3,6 +3,7 @@ import { getCookie, setCookie } from "hono/cookie";
 
 import type { ApiEnv as ParsedApiEnv } from "@pipewatch/config/env";
 
+import { resolveAuthCookieDomain } from "../../lib/cookie-domain.js";
 import {
   ACCESS_TOKEN_TTL_SECONDS,
   signAccessToken,
@@ -35,6 +36,7 @@ export function setAccessTokenCookie(
   c: Context,
   accessToken: string,
   secure: boolean,
+  domain?: string,
 ): void {
   setCookie(c, ACCESS_COOKIE_NAME, accessToken, {
     httpOnly: true,
@@ -42,6 +44,7 @@ export function setAccessTokenCookie(
     sameSite: "Strict",
     path: "/",
     maxAge: ACCESS_TOKEN_TTL_SECONDS,
+    ...(domain ? { domain } : {}),
   });
 }
 
@@ -49,6 +52,7 @@ export function setRefreshTokenCookie(
   c: Context,
   refreshToken: string,
   options: RefreshCookieOptions,
+  domain?: string,
 ): void {
   setCookie(c, REFRESH_COOKIE_NAME, refreshToken, {
     httpOnly: true,
@@ -56,16 +60,18 @@ export function setRefreshTokenCookie(
     sameSite: "Strict",
     path: options.path,
     maxAge: options.maxAgeSeconds,
+    ...(domain ? { domain } : {}),
   });
 }
 
-export function clearAuthCookies(c: Context, secure: boolean): void {
+export function clearAuthCookies(c: Context, secure: boolean, domain?: string): void {
   setCookie(c, REFRESH_COOKIE_NAME, "", {
     httpOnly: true,
     secure,
     sameSite: "Strict",
     path: "/",
     maxAge: 0,
+    ...(domain ? { domain } : {}),
   });
 
   setCookie(c, ACCESS_COOKIE_NAME, "", {
@@ -74,6 +80,7 @@ export function clearAuthCookies(c: Context, secure: boolean): void {
     sameSite: "Strict",
     path: "/",
     maxAge: 0,
+    ...(domain ? { domain } : {}),
   });
 }
 
@@ -127,4 +134,4 @@ export async function issueAccessTokenForUser(
   );
 }
 
-export { buildAuthCookieOptions, getCookie, REFRESH_COOKIE_NAME, ACCESS_COOKIE_NAME };
+export { buildAuthCookieOptions, getCookie, REFRESH_COOKIE_NAME, ACCESS_COOKIE_NAME, resolveAuthCookieDomain };

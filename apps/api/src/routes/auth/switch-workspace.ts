@@ -22,6 +22,7 @@ import {
   ACCESS_COOKIE_NAME,
   issueAccessTokenForUser,
   requireJwtSecret,
+  resolveAuthCookieDomain,
   resolveSecureCookies,
   setAccessTokenCookie,
 } from "./shared.js";
@@ -153,7 +154,7 @@ export function registerSwitchWorkspaceRoute(
         { workspaceId: body.workspaceId, role },
       );
 
-      setAccessTokenCookie(c, accessToken, secure);
+      setAccessTokenCookie(c, accessToken, secure, resolveAuthCookieDomain(env));
 
       return c.body(null, 204);
     } catch (error) {

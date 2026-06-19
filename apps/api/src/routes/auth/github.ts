@@ -11,10 +11,7 @@ import { getDb, type Db } from "@pipewatch/db";
 import { buildOAuthCallbackUrl } from "../../lib/api-public-url.js";
 import { ApiErrorEnvelopeSchema } from "../../middleware/error-handler.js";
 import { OpenApiTags } from "../../openapi-tags.js";
-import { ACCESS_TOKEN_TTL_SECONDS, signAccessToken } from "../../services/auth/jwt.js";
 import {
-  ACCESS_COOKIE_NAME,
-  REFRESH_COOKIE_NAME,
   buildAuthCookieOptions,
   generateRefreshTokenValue,
   storeRefreshToken,
@@ -39,6 +36,12 @@ import { resolveOAuthClient } from "../../testing/e2e-mock.js";
 import { sendEmail } from "../../services/email/send-email.js";
 import { renderWelcomeEmail } from "../../services/email/templates/welcome.js";
 import type { ApiEnv } from "../../types.js";
+import {
+  resolveAuthCookieDomain,
+  setAccessTokenCookie,
+  setRefreshTokenCookie,
+} from "./shared.js";
+import { signAccessToken } from "../../services/auth/jwt.js";
 
 export type GitHubAuthDependencies = {
   env: ParsedApiEnv;
@@ -243,22 +246,10 @@ export function registerGitHubAuthRoutes(
       await storeRefreshToken(db, session.user.id, refreshToken);
 
       const refreshCookie = buildAuthCookieOptions(secure);
+      const cookieDomain = resolveAuthCookieDomain(env);
 
-      setCookie(c, REFRESH_COOKIE_NAME, refreshToken, {
-        httpOnly: true,
-        secure: refreshCookie.secure,
-        sameSite: "Strict",
-        path: refreshCookie.path,
-        maxAge: refreshCookie.maxAgeSeconds,
-      });
-
-      setCookie(c, ACCESS_COOKIE_NAME, accessToken, {
-        httpOnly: true,
-        secure,
-        sameSite: "Strict",
-        path: "/",
-        maxAge: ACCESS_TOKEN_TTL_SECONDS,
-      });
+      setRefreshTokenCookie(c, refreshToken, refreshCookie, cookieDomain);
+      setAccessTokenCookie(c, accessToken, secure, cookieDomain);
 
       clearOAuthStateCookie(c, secure);
 

@@ -17,7 +17,7 @@ import {
   revokeRefreshTokenById,
 } from "../../services/auth/refresh-token.js";
 import type { ApiEnv } from "../../types.js";
-import { clearAuthCookies, resolveSecureCookies } from "./shared.js";
+import { clearAuthCookies, resolveAuthCookieDomain, resolveSecureCookies } from "./shared.js";
 
 export type LogoutAuthDependencies = {
   env: ParsedApiEnv;
@@ -94,12 +94,13 @@ export function registerLogoutRoutes(
   app.openapi(logoutRoute, async (c) => {
     const { env, db } = resolveDeps();
     const secure = resolveSecureCookies(env);
+    const cookieDomain = resolveAuthCookieDomain(env);
 
     try {
       const refreshCookie = getCookie(c, REFRESH_COOKIE_NAME);
       const tokenRow = await requireActiveRefreshToken(db, refreshCookie);
       await revokeRefreshTokenById(db, tokenRow.id);
-      clearAuthCookies(c, secure);
+      clearAuthCookies(c, secure, cookieDomain);
 
       return c.body(null, 204);
     } catch (error) {
@@ -116,12 +117,13 @@ export function registerLogoutRoutes(
   app.openapi(logoutAllRoute, async (c) => {
     const { env, db } = resolveDeps();
     const secure = resolveSecureCookies(env);
+    const cookieDomain = resolveAuthCookieDomain(env);
 
     try {
       const refreshCookie = getCookie(c, REFRESH_COOKIE_NAME);
       const tokenRow = await requireActiveRefreshToken(db, refreshCookie);
       await revokeAllUserRefreshTokens(db, tokenRow.userId);
-      clearAuthCookies(c, secure);
+      clearAuthCookies(c, secure, cookieDomain);
 
       return c.body(null, 204);
     } catch (error) {

@@ -21,6 +21,7 @@ import {
   ACCESS_COOKIE_NAME,
   issueAccessTokenForUser,
   requireJwtSecret,
+  resolveAuthCookieDomain,
   resolveSecureCookies,
   setAccessTokenCookie,
   setRefreshTokenCookie,
@@ -108,8 +109,9 @@ export function registerRefreshRoute(
       );
 
       const refreshCookieOptions = buildAuthCookieOptions(secure);
-      setRefreshTokenCookie(c, newRefreshToken, refreshCookieOptions);
-      setAccessTokenCookie(c, accessToken, secure);
+      const cookieDomain = resolveAuthCookieDomain(env);
+      setRefreshTokenCookie(c, newRefreshToken, refreshCookieOptions, cookieDomain);
+      setAccessTokenCookie(c, accessToken, secure, cookieDomain);
 
       return c.body(null, 204);
     } catch (error) {
