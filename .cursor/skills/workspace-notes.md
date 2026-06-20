@@ -1,5 +1,85 @@
 # PipeWatch workspace notes
 
+## 2026-06-20 — P197 epic #197 orchestrator run (complete)
+
+**Lane:** S serial (resume mid-epic) · **GitHub sync:** ON · **Base:** resume at #203 In Review
+
+| Issue | Status | Commit |
+|---|---|---|
+| #203 Dashboard/repository/run views i18n | Done | `11618d5`, `5d51c54` (pre-run) |
+| #202 Auth/onboarding/invite i18n | Done | `6afe06c` |
+| #204 Insights i18n | Done | `208a7b3` |
+| #205 Workspace settings B8–B11 i18n | Done | `4fdbb0d` |
+| #206 Billing/account/repo settings i18n | Done | `055e853` (cherry-pick from orphan `d5a3c8c`) |
+| #207 i18n docs + cursor rule | Done | `bea4248` (cherry-pick from orphan `2b410e1`) |
+| #197 epic parent | Done | closes via #207 `fixes #197` |
+
+**Notes:**
+- Resumed epic with #198–#201 already Done from prior session
+- #202–#206 serialized (shared `en.json` hot file)
+- **Commit-linkage fix:** #206/#207 execution landed on detached HEAD at `4fdbb0d` — orchestrator cherry-picked onto `staging` as `055e853` + `bea4248`
+- New `.cursor/rules/16-i18n.mdc`; PRD §17 i18n section; `pnpm i18n:validate` + `pnpm i18n:check:hardcoded` CI gate from #199
+- No DB migrations
+- `staging` 11 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy; smoke-test B0–B13 on staging-cloud with catalog strings; adding `de` locale is now catalog-only
+
+## 2026-06-20 — #195 #196 orchestrator run (complete)
+
+**Lane:** P batch 1 (#195+#196 parallel) · **GitHub sync:** ON · **Base:** `47eeb8e`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #195 Workspace settings GET 404 (trailing slash) | Done | `d3e57d4` |
+| #196 OAuth does not import user email from GitHub | Done | `4fa09d8` |
+
+**Notes:**
+- #195: `normalizeApiPath("")` returned `/` → scoped client hit `/workspaces/{id}/`; early return `""` fixes B8 general settings load
+- #196: fallback to `GET /user/emails` when `/user.email` null or noreply; primary+verified selection; existing users repaired on re-login
+- No DB migrations
+- `staging` 2 commits ahead of run base (7 total unpushed since `f161d6a`)
+
+**Next suggested:** push `staging` to deploy; retest B8 workspace settings + re-OAuth sign-in to populate email
+
+## 2026-06-20 — #191 #192 #193 #194 orchestrator run (complete)
+
+**Lane:** P batch 1 (#191+#192) → S serial (#193 → #194) · **GitHub sync:** ON · **Base:** `f161d6a`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #192 Webhooks: exempt signed deliveries from rate limiting | Done | `ef1ed7f`, `b40f707` (HMAC-order fix after verify FAIL) |
+| #191 Runs: reconcile jobs when workflow run completes | Done | `e9fc369` |
+| #193 Runs: scale job graph layout to viewport width | Done | `3b4d19f` |
+| #194 Runs: align job graph presentation with GitHub Actions | Done | `47eeb8e` |
+
+**Notes:**
+- #192 verifier FAIL (3c security): exemption keyed on header presence before HMAC — fixed in follow-up `b40f707` (verify first, skip rate limit only on success)
+- #191: `reconcileJobsOnRunCompleted` fetches GitHub jobs API on `workflow_run` completed; per-job REST timestamps; idempotent `job:updated` SSE
+- #193+#194 serialized (shared `JobGraph.tsx`); #194 builds on ResizeObserver/scaling from #193
+- No DB migrations
+- `staging` 5 commits ahead of run base (not pushed)
+
+**Next suggested:** push `staging` to deploy; retest staging webhook burst + run detail job graph on narrow viewport
+
+## 2026-06-20 — #188 #189 #190 orchestrator run (complete)
+
+**Lane:** S #189 → Lane P #190+#188 (parallel) → merge · **GitHub sync:** ON · **Base:** `df3e104`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #189 Dashboard workspace routes flicker (unstable API client ref) | Done | `6e32334` |
+| #190 Client edition flags stuck on CE on hosted Cloud | Done | `08d8625` |
+| #188 Onboarding deselect all on step 3 repo picker | Done | `f161d6a` |
+
+**Notes:**
+- #189 High priority regression — memoized `api.workspace()` in `useApi()`; view deps switched to `workspaceId`
+- #190 — `env: { PIPEWATCH_EDITION }` in web + marketing `next.config.ts` for client/edge bundle inlining
+- #188 — `handleDeselectAll` mirrors Select all filter scope; unit test added
+- No DB migrations
+- `staging` 3 commits ahead of run base (not pushed)
+
+**Next suggested:** push `staging` to deploy; verify staging-cloud dashboard no flicker, Cloud badge/switcher, onboarding deselect-all
+
 ## 2026-06-19 — P183 epic #183 orchestrator run (complete)
 
 **Lane:** S serial (#184 → #185) · **GitHub sync:** ON · **Base:** `3247149`
