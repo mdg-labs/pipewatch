@@ -23,11 +23,26 @@ export type JobGraphProps = {
   onJobSelect: (jobId: string) => void;
 };
 
+function toPercent(value: number, total: number): string {
+  if (total <= 0) {
+    return "0%";
+  }
+
+  return `${(value / total) * 100}%`;
+}
+
+function scrollToJobPanel(jobId: string): void {
+  const panel = document.getElementById(`job-panel-${jobId}`);
+  panel?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
 function JobGraphNode({
   job,
   layout,
   nodeWidth,
   nodeHeight,
+  canvasWidth,
+  canvasHeight,
   selected,
   onSelect,
 }: {
@@ -35,6 +50,8 @@ function JobGraphNode({
   layout: DagNodeLayout;
   nodeWidth: number;
   nodeHeight: number;
+  canvasWidth: number;
+  canvasHeight: number;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -60,12 +77,15 @@ function JobGraphNode({
         selected && "pw-job-graph-node-selected",
       )}
       style={{
-        left: layout.x,
-        top: layout.y,
-        width: nodeWidth,
-        height: nodeHeight,
+        left: toPercent(layout.x, canvasWidth),
+        top: toPercent(layout.y, canvasHeight),
+        width: toPercent(nodeWidth, canvasWidth),
+        height: toPercent(nodeHeight, canvasHeight),
       }}
-      onClick={onSelect}
+      onClick={() => {
+        onSelect();
+        scrollToJobPanel(job.id);
+      }}
       aria-pressed={selected}
       aria-label={`${job.name} job`}
     >
@@ -122,12 +142,12 @@ export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
       <div ref={wrapRef} className="pw-job-graph-canvas-wrap">
         <div
           className="pw-job-graph-canvas"
-          style={{ width: layout.width, height: layout.height }}
+          style={{ height: layout.height }}
         >
           <svg
             className="pw-job-graph-edges"
-            width={layout.width}
-            height={layout.height}
+            viewBox={`0 0 ${layout.width} ${layout.height}`}
+            preserveAspectRatio="none"
             aria-hidden
           >
             {layout.edges.map((edge) => {
@@ -143,6 +163,7 @@ export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
                     dashed && "pw-job-graph-edge-skipped",
                   )}
                   fill="none"
+                  vectorEffect="non-scaling-stroke"
                   markerEnd={dashed ? "url(#pw-dag-arrow-skipped)" : "url(#pw-dag-arrow)"}
                 />
               );
@@ -184,6 +205,8 @@ export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
                 layout={node}
                 nodeWidth={layout.nodeWidth}
                 nodeHeight={layout.nodeHeight}
+                canvasWidth={layout.width}
+                canvasHeight={layout.height}
                 selected={selectedJobId === job.id}
                 onSelect={() => onJobSelect(job.id)}
               />

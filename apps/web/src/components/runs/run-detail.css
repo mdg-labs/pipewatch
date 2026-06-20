@@ -200,16 +200,22 @@
   padding: 24px;
   width: 100%;
   box-sizing: border-box;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .pw-job-graph-canvas {
   position: relative;
+  width: 100%;
+  min-width: min(100%, 240px);
   margin: 0 auto;
 }
 
 .pw-job-graph-edges {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
@@ -242,10 +248,20 @@
   background: var(--status-success-subtle);
   text-align: left;
   cursor: pointer;
+  box-sizing: border-box;
 }
 
 .pw-job-graph-node:hover {
   border-color: var(--border-strong);
+}
+
+.pw-job-graph-node:focus {
+  outline: none;
+}
+
+.pw-job-graph-node:focus-visible {
+  outline: 2px solid var(--pw-amber-500);
+  outline-offset: 2px;
 }
 
 .pw-job-graph-node-failed {
@@ -254,15 +270,28 @@
   box-shadow: var(--glow-failure);
 }
 
+.pw-job-graph-node-failed .pw-job-graph-node-name {
+  font-weight: 600;
+}
+
+.pw-job-graph-node-failed .pw-job-graph-node-duration {
+  color: var(--status-failure);
+}
+
 .pw-job-graph-node-skipped {
   border-color: oklch(60% 0.09 298 / 0.22);
   background: var(--status-skipped-subtle);
-  opacity: 0.72;
+  opacity: 0.62;
 }
 
 .pw-job-graph-node-selected {
+  border-color: var(--pw-amber-500);
+  box-shadow: 0 0 0 2px oklch(70% 0.195 55 / 0.35);
+}
+
+.pw-job-graph-node-selected:focus-visible {
   outline: 2px solid var(--pw-amber-500);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .pw-job-graph-node-header {
