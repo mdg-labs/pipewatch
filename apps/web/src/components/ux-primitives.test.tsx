@@ -1,11 +1,23 @@
+import { NextIntlClientProvider } from "next-intl";
+import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
 import { EmptyState, Skeleton, Toast } from "@pipewatch/ui";
 
+import en from "@/i18n/locales/en.json";
+
 import { CardSkeleton } from "./CardSkeleton";
 import { ErrorRetry } from "./ErrorRetry";
 import { TableSkeleton } from "./TableSkeleton";
+
+function renderWithIntl(node: ReactNode): string {
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale="en" messages={en}>
+      {node}
+    </NextIntlClientProvider>,
+  );
+}
 
 describe("Skeleton", () => {
   it("renders a loading placeholder", () => {
@@ -69,7 +81,7 @@ describe("CardSkeleton", () => {
 
 describe("ErrorRetry", () => {
   it("renders message and retry action", () => {
-    const html = renderToStaticMarkup(
+    const html = renderWithIntl(
       <ErrorRetry
         message="We could not load workflow runs."
         onRetry={() => undefined}

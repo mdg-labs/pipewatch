@@ -1,0 +1,13 @@
+{
+  "app": {
+    "metadata": {
+      "title": "PipeWatch"
+    }
+  },
+  "common": {
+    "error": {
+      "title": "Something went wrong",
+      "retry": "Retry"
+    }
+  }
+}

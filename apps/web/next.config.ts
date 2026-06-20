@@ -2,7 +2,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { withSentryConfig } from "@sentry/nextjs";
+import createNextIntlPlugin from "next-intl/plugin";
 import type { NextConfig } from "next";
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -21,7 +24,7 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
+export default withSentryConfig(withNextIntl(nextConfig), {
   ...(sentryOrg ? { org: sentryOrg } : {}),
   project: sentryProject,
   ...(sentryAuthToken ? { authToken: sentryAuthToken } : {}),
