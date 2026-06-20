@@ -1,5 +1,31 @@
 # PipeWatch workspace notes
 
+## 2026-06-20 — P208 epic #208 orchestrator run (complete)
+
+**Lane:** S serial · **GitHub sync:** ON · **Base:** `12435ba`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #209 db-admin schema package | Done | `0caad14`, `913922d` |
+| #210 shared GitHub App JWT helper | Done | `5b1c43e` |
+| #211 admin Hono API scaffold + Fly | Done | `595fc78` |
+| #212 platform auth bootstrap + invites | Done | `2dfbf42` |
+| #213 webhook delivery poll job | Done | `4d775d2` |
+| #214 retention cleanup + Sentry alerts | Done | `f88b0b5` |
+| #215 workspace/installation overview API | Done | `3792ef2` |
+| #216 webhook health API + redelivery | Done | `e4f9698` |
+| #217 React delivery visualization UI | Done | `cb339cd` |
+| #218 admin deploy pipeline + secrets | Done | `9499619` |
+| #208 epic parent | Done | closes via #218 `fixes #208` |
+
+**Notes:**
+- New packages: `@pipewatch/db-admin`, `@pipewatch/github-app-auth`, `apps/admin` (Hono API + Vite SPA + BullMQ jobs)
+- Admin Cloud-only (`PIPEWATCH_EDITION=cloud`); excluded from CE image matrix
+- Operator follow-up: Phase keys (`ADMIN_SESSION_SECRET`, `ADMIN_URL`, `ADMIN_BOOTSTRAP_*`, `SENTRY_DSN_ADMIN`); CF Access on admin subdomain; provision `pipewatch-staging-admin` on Fly
+- `staging` 13 commits ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy admin to Fly; operator Phase sync + CF Access; smoke admin portal on staging
+
 ## 2026-06-20 — P197 epic #197 orchestrator run (complete)
 
 **Lane:** S serial (resume mid-epic) · **GitHub sync:** ON · **Base:** resume at #203 In Review

@@ -4,9 +4,10 @@
     "rootDir": "schema",
     "outDir": "dist/schema",
     "noEmit": false,
-    "composite": false,
+    "composite": true,
     "declaration": true,
     "declarationMap": true
   },
-  "include": ["schema/**/*.ts"]
+  "include": ["schema/**/*.ts"],
+  "references": [{ "path": "../config" }]
 }

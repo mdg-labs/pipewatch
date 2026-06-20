@@ -8,5 +8,6 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "exclude": ["**/*.test.ts", "vitest.config.ts"]
+  "exclude": ["**/*.test.ts", "vitest.config.ts"],
+  "references": [{ "path": "../config" }]
 }

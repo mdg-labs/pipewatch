@@ -14,9 +14,9 @@
     }
   },
   "scripts": {
-    "build": "tsc -p tsconfig.schema.json",
+    "build": "tsc --build",
     "lint": "eslint .",
-    "typecheck": "tsc -p tsconfig.schema.json",
+    "typecheck": "tsc --build",
     "test:unit": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
