@@ -105,6 +105,59 @@ export function verifyOAuthState(
   return payload;
 }
 
+const GITHUB_NOREPLY_EMAIL_SUFFIX = "@users.noreply.github.com";
+
+type GitHubEmailEntry = {
+  email: string;
+  primary: boolean;
+  verified: boolean;
+};
+
+function isGitHubNoreplyEmail(email: string): boolean {
+  return email.endsWith(GITHUB_NOREPLY_EMAIL_SUFFIX);
+}
+
+/** Pick primary verified inbox email; skip GitHub noreply addresses. */
+export function selectPrimaryVerifiedGitHubEmail(
+  entries: GitHubEmailEntry[],
+): string | null {
+  const match = entries.find(
+    (entry) =>
+      entry.primary && entry.verified && !isGitHubNoreplyEmail(entry.email),
+  );
+  return match?.email ?? null;
+}
+
+async function fetchGitHubUserEmails(
+  accessToken: string,
+  fetchImpl: typeof fetch,
+): Promise<GitHubEmailEntry[]> {
+  const response = await fetchImpl("https://api.github.com/user/emails", {
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${accessToken}`,
+      "User-Agent": "pipewatch-api",
+    },
+  });
+
+  if (!response.ok) {
+    throw new OAuthError("GitHub user emails lookup failed", 502);
+  }
+
+  return (await response.json()) as GitHubEmailEntry[];
+}
+
+function resolveGitHubProfileEmail(
+  publicEmail: string | null,
+  emailEntries: GitHubEmailEntry[],
+): string | null {
+  if (publicEmail && !isGitHubNoreplyEmail(publicEmail)) {
+    return publicEmail;
+  }
+
+  return selectPrimaryVerifiedGitHubEmail(emailEntries);
+}
+
 /** Build the GitHub authorize URL for browser OAuth. */
 export function buildGitHubAuthorizeUrl(
   clientId: string,
@@ -181,10 +234,19 @@ export function createGitHubOAuthClient(config: {
         avatar_url: string | null;
       };
 
+      let email = userBody.email;
+      if (!email || isGitHubNoreplyEmail(email)) {
+        const emailEntries = await fetchGitHubUserEmails(
+          tokenBody.access_token,
+          fetchImpl,
+        );
+        email = resolveGitHubProfileEmail(userBody.email, emailEntries);
+      }
+
       return {
         githubId: BigInt(userBody.id),
         githubLogin: userBody.login,
-        email: userBody.email,
+        email,
         name: userBody.name,
         avatarUrl: userBody.avatar_url,
       };

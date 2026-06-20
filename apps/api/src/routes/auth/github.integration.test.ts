@@ -19,7 +19,10 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { errorHandler } from "../../middleware/error-handler.js";
 import { sendEmail } from "../../services/email/send-email.js";
 import { registerGitHubAuthRoutes } from "./github.js";
-import type { GitHubOAuthClient } from "../../services/auth/oauth.js";
+import {
+  createGitHubOAuthClient,
+  type GitHubOAuthClient,
+} from "../../services/auth/oauth.js";
 import type { ApiEnv } from "../../types.js";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -46,6 +49,56 @@ const mockProfile: GitHubUserProfile = {
   name: "The Octocat",
   avatarUrl: "https://example.com/avatar.png",
 };
+
+function createMockGitHubOAuthFetch(input: {
+  githubId: number;
+  login: string;
+  publicEmail: string | null;
+  emails: Array<{ email: string; primary: boolean; verified: boolean }>;
+  name?: string | null;
+  avatarUrl?: string | null;
+}): typeof fetch {
+  return vi.fn(async (url: string | URL | Request) => {
+    const target = typeof url === "string" ? url : url.toString();
+
+    if (target === "https://github.com/login/oauth/access_token") {
+      return new Response(JSON.stringify({ access_token: "oauth-test-token" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (target === "https://api.github.com/user") {
+      return new Response(
+        JSON.stringify({
+          id: input.githubId,
+          login: input.login,
+          email: input.publicEmail,
+          name: input.name ?? "Test User",
+          avatar_url: input.avatarUrl ?? "https://example.com/avatar.png",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    }
+
+    if (target === "https://api.github.com/user/emails") {
+      return new Response(JSON.stringify(input.emails), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    throw new Error(`Unexpected fetch URL: ${target}`);
+  }) as typeof fetch;
+}
+
+function createGitHubOAuthClientFromFetch(fetchImpl: typeof fetch): GitHubOAuthClient {
+  return createGitHubOAuthClient({
+    clientId: baseEnv.GITHUB_CLIENT_ID!,
+    clientSecret: baseEnv.GITHUB_CLIENT_SECRET!,
+    fetchImpl,
+  });
+}
 
 function createMockOAuthClient(
   profile: GitHubUserProfile = mockProfile,
@@ -439,6 +492,101 @@ describe("github oauth integration", () => {
     const body = (await callback.json()) as { error: { code: string; message: string } };
     expect(body.error.code).toBe("UNAUTHORIZED");
     expect(body.error.message).toBe("Missing OAuth state cookie");
+  });
+
+  it("imports verified primary email from /user/emails when /user.email is null", async () => {
+    const githubId = 888_888;
+    const fetchImpl = createMockGitHubOAuthFetch({
+      githubId,
+      login: "private-email-user",
+      publicEmail: null,
+      emails: [
+        {
+          email: "253028270+private-email-user@users.noreply.github.com",
+          primary: false,
+          verified: true,
+        },
+        {
+          email: "private-email-user@example.com",
+          primary: true,
+          verified: true,
+        },
+      ],
+    });
+    const app = createTestApp(database, "ce", {
+      oauthClient: createGitHubOAuthClientFromFetch(fetchImpl),
+    });
+    const { state, cookieHeader } = await startOAuthFlow(app);
+
+    const callback = await app.request(
+      `http://localhost:3001/auth/github/callback?code=private-email-code&state=${state}`,
+      {
+        headers: { Cookie: cookieHeader },
+      },
+    );
+
+    expect(callback.status).toBe(302);
+
+    const [user] = await database
+      .select()
+      .from(users)
+      .where(eq(users.githubId, BigInt(githubId)));
+    expect(user?.email).toBe("private-email-user@example.com");
+    expect(fetchImpl).toHaveBeenCalledWith(
+      "https://api.github.com/user/emails",
+      expect.objectContaining({
+        headers: expect.objectContaining({
+          Authorization: "Bearer oauth-test-token",
+        }),
+      }),
+    );
+  });
+
+  it("updates email for existing users on next OAuth login", async () => {
+    const githubId = 888_889;
+    const [existing] = await database
+      .insert(users)
+      .values({
+        githubId: BigInt(githubId),
+        githubLogin: "returning-private-email",
+        email: null,
+        name: "Returning User",
+        avatarUrl: "https://example.com/old-avatar.png",
+      })
+      .returning();
+    expect(existing?.email).toBeNull();
+
+    const fetchImpl = createMockGitHubOAuthFetch({
+      githubId,
+      login: "returning-private-email",
+      publicEmail: null,
+      emails: [
+        {
+          email: "returning-private-email@example.com",
+          primary: true,
+          verified: true,
+        },
+      ],
+    });
+    const app = createTestApp(database, "ce", {
+      oauthClient: createGitHubOAuthClientFromFetch(fetchImpl),
+    });
+    const { state, cookieHeader } = await startOAuthFlow(app);
+
+    const callback = await app.request(
+      `http://localhost:3001/auth/github/callback?code=repair-email-code&state=${state}`,
+      {
+        headers: { Cookie: cookieHeader },
+      },
+    );
+
+    expect(callback.status).toBe(302);
+
+    const [updated] = await database
+      .select()
+      .from(users)
+      .where(eq(users.githubId, BigInt(githubId)));
+    expect(updated?.email).toBe("returning-private-email@example.com");
   });
 
   it("sets shared cookie domain for cloud split-host OAuth", async () => {
