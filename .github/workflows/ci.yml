@@ -84,6 +84,15 @@ jobs:
         id: unit-tests
         run: pnpm test:unit
 
+      - name: i18n script unit tests
+        run: pnpm test:scripts
+
+      - name: i18n catalog validation
+        run: pnpm i18n:validate
+
+      - name: Hard-coded UI strings
+        run: pnpm i18n:check:hardcoded
+
       - name: Finish ReportPortal unit launch
         if: always() && steps.rp-unit-start.outputs.launch_id != ''
         env:

@@ -17,6 +17,9 @@
     "ci:preflight": "bash scripts/ci-preflight.sh",
     "ci:gate": "bash scripts/ci-gate.sh",
     "ci:verify-scoped": "bash scripts/ci-verify-scoped.sh",
+    "i18n:validate": "node --experimental-strip-types scripts/i18n-validate.ts",
+    "i18n:check:hardcoded": "node --experimental-strip-types scripts/i18n-check-hardcoded.ts",
+    "test:scripts": "bash -c 'cd packages/config && pnpm exec vitest run --config ../../scripts/vitest.config.ts'",
     "db:generate": "turbo db:generate --filter=@pipewatch/db",
     "db:migrate": "turbo db:migrate --filter=@pipewatch/db"
   },
