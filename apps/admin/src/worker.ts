@@ -3,13 +3,16 @@ import type { AdminEnv } from "@pipewatch/config/env";
 import type { Db } from "@pipewatch/db";
 import { Worker, type Processor } from "bullmq";
 
+import { runRetentionCleanupJob } from "./jobs/retention-cleanup.js";
 import { runWebhookPollJob } from "./jobs/webhook-poll.js";
 import { createRedisConnection } from "./queues/connection.js";
 import {
   ADMIN_QUEUE_NAMES,
   resolveAdminBackoffDelay,
 } from "./queues/index.js";
+import { RETENTION_CLEANUP_JOB_NAME } from "./queues/maintenance.js";
 import { WEBHOOK_POLL_JOB_NAME } from "./queues/webhook-poll.js";
+import { evaluateWebhookHealthAlerts } from "./services/alerts/webhook-health.js";
 
 export type AdminWorkerDeps = {
   env: AdminEnv;
@@ -19,7 +22,7 @@ export type AdminWorkerDeps = {
 };
 
 export type AdminWorkerRuntime = {
-  worker: Worker;
+  workers: Worker[];
   close: () => Promise<void>;
 };
 
@@ -31,6 +34,13 @@ function createWebhookPollProcessor(deps: AdminWorkerDeps): Processor {
       ...(deps.fetchImpl !== undefined ? { fetchImpl: deps.fetchImpl } : {}),
     };
     await runWebhookPollJob(pollDeps);
+    await evaluateWebhookHealthAlerts({ env: deps.env, db: deps.db });
+  };
+}
+
+function createRetentionCleanupProcessor(deps: AdminWorkerDeps): Processor {
+  return async () => {
+    await runRetentionCleanupJob({ db: deps.db });
   };
 }
 
@@ -60,12 +70,13 @@ function attachJobFailureHandler(worker: Worker): void {
   });
 }
 
-/** Bootstrap BullMQ worker for admin webhook polling. */
-export function startAdminWorkers(deps: AdminWorkerDeps): AdminWorkerRuntime {
-  const connection = createRedisConnection(deps.redisUrl);
-  const processor = createWebhookPollProcessor(deps);
-
-  const worker = new Worker(ADMIN_QUEUE_NAMES.WEBHOOK_POLL, processor, {
+function createWorker(
+  queueName: string,
+  processor: Processor,
+  redisUrl: string,
+): Worker {
+  const connection = createRedisConnection(redisUrl);
+  const worker = new Worker(queueName, processor, {
     connection,
     settings: {
       backoffStrategy: (attemptsMade) => resolveAdminBackoffDelay(attemptsMade),
@@ -73,13 +84,30 @@ export function startAdminWorkers(deps: AdminWorkerDeps): AdminWorkerRuntime {
   });
 
   attachJobFailureHandler(worker);
+  return worker;
+}
+
+/** Bootstrap BullMQ workers for admin webhook polling and maintenance. */
+export function startAdminWorkers(deps: AdminWorkerDeps): AdminWorkerRuntime {
+  const webhookPollWorker = createWorker(
+    ADMIN_QUEUE_NAMES.WEBHOOK_POLL,
+    createWebhookPollProcessor(deps),
+    deps.redisUrl,
+  );
+  const maintenanceWorker = createWorker(
+    ADMIN_QUEUE_NAMES.MAINTENANCE,
+    createRetentionCleanupProcessor(deps),
+    deps.redisUrl,
+  );
+
+  const workers = [webhookPollWorker, maintenanceWorker];
 
   return {
-    worker,
+    workers,
     close: async () => {
-      await worker.close();
+      await Promise.all(workers.map((worker) => worker.close()));
     },
   };
 }
 
-export { WEBHOOK_POLL_JOB_NAME };
+export { RETENTION_CLEANUP_JOB_NAME, WEBHOOK_POLL_JOB_NAME };

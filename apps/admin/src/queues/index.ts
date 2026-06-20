@@ -4,6 +4,7 @@ import { createRedisConnection } from "./connection.js";
 
 export const ADMIN_QUEUE_NAMES = {
   WEBHOOK_POLL: "admin-webhook-poll",
+  MAINTENANCE: "admin-maintenance",
 } as const;
 
 export type AdminQueueName =

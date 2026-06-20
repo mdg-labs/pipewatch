@@ -6,6 +6,7 @@ import { parseAdminEnv } from "@pipewatch/config/env";
 import { closeDb, createDb } from "@pipewatch/db";
 
 import { createApp } from "./app.js";
+import { registerRetentionCleanupSchedule } from "./queues/maintenance.js";
 import { registerWebhookPollSchedule } from "./queues/webhook-poll.js";
 import { resolveRedisUrl } from "./queues/connection.js";
 import { bootstrapAdminUser } from "./services/auth/bootstrap.js";
@@ -35,7 +36,8 @@ const port = env.PORT;
 const redisUrl = resolveRedisUrl(env.REDIS_URL);
 const workerRuntime = startAdminWorkers({ env, db, redisUrl });
 await registerWebhookPollSchedule(redisUrl, env.ADMIN_POLL_INTERVAL_CRON);
-await workerRuntime.worker.waitUntilReady();
+await registerRetentionCleanupSchedule(redisUrl);
+await Promise.all(workerRuntime.workers.map((worker) => worker.waitUntilReady()));
 
 const shutdown = async () => {
   await workerRuntime.close();
