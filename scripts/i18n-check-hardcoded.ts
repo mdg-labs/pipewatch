@@ -37,10 +37,6 @@ export const I18N_HARDCODED_UI_ALLOWLISTED_FILES = [
  * App shell + shared primitives migrated in #201.
  */
 export const I18N_HARDCODED_WEB_ALLOWLISTED_FILES = [
-  "apps/web/src/components/account/AccountSettings.tsx",
-  "apps/web/src/components/billing/BillingPlanCard.tsx",
-  "apps/web/src/components/billing/UsageMeter.tsx",
-  "apps/web/src/components/repos/RepoSettingsForm.tsx",
   "apps/web/src/contexts/live-stream-override-context.tsx",
 ] as const;
 

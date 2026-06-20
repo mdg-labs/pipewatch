@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import {
   UsageMeter as UiUsageMeter,
   type UsageMeterProps as UiUsageMeterProps,
@@ -24,16 +26,20 @@ export function RetentionUsageRow({
   maxRetentionDays,
   planLabel,
 }: RetentionUsageRowProps) {
+  const t = useTranslations("billing.usage");
+
   return (
     <UiUsageMeter
-      label="Run history retention"
+      label={t("retentionLabel")}
       used={retentionDays}
       limit={null}
       suffix={
         <>
-          <span className="pw-usage-meter-value">{retentionDays} days</span>
+          <span className="pw-usage-meter-value">
+            {t("retentionDays", { days: retentionDays })}
+          </span>
           <span style={{ fontSize: 11, color: "var(--text-tertiary)" }}>
-            ({planLabel} plan maximum: {maxRetentionDays} days)
+            {t("retentionPlanMax", { planLabel, maxDays: maxRetentionDays })}
           </span>
         </>
       }

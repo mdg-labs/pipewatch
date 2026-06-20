@@ -31,6 +31,7 @@ import {
   repoSettingsHasChanges,
   repositoryToFormValues,
   retentionRangeHint,
+  type RepoSettingsLabels,
   type RepoSettingsFormValues,
   type SyncMode,
 } from "@/lib/repo-settings";
@@ -48,7 +49,16 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
   const { workspace, workspaceSlug } = useApi();
   const { canMutate } = useWorkspaceRole();
   const { toast } = useToast();
+  const t = useTranslations("repos.settings");
   const tUi = useTranslations("ui");
+
+  const repoSettingsLabels = useMemo<RepoSettingsLabels>(
+    () => ({
+      planDefault: (days) => t("retention.planDefault", { days }),
+      rangeHint: (minDays, maxDays) => t("retention.rangeHint", { minDays, maxDays }),
+    }),
+    [t],
+  );
 
   const [repository, setRepository] = useState<RepositorySummary | null>(null);
   const [workspaceData, setWorkspaceData] = useState<Workspace | null>(null);
@@ -128,7 +138,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
 
   const canSave = canMutate && hasChanges && formValid && !saving;
 
-  const retentionHint = retentionRangeHint(plan, applyRetentionCeiling);
+  const retentionHint = retentionRangeHint(plan, applyRetentionCeiling, repoSettingsLabels);
   const confirmRepoName = repository ? parseRepoFullName(repository.full_name).name : "";
 
   const handleSave = useCallback(async () => {
@@ -167,15 +177,15 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
       setRepository(updated);
       setValues(repositoryToFormValues(updated, defaultRetentionDays));
       toast({
-        title: "Repository settings saved",
+        title: t("toast.savedTitle"),
         variant: "success",
       });
     } catch {
       setRepository(previousRepository);
       setValues(repositoryToFormValues(previousRepository, defaultRetentionDays));
       toast({
-        title: "Could not save settings",
-        description: "Check your inputs and try again.",
+        title: t("toast.saveErrorTitle"),
+        description: t("toast.saveErrorDescription"),
         variant: "error",
       });
     } finally {
@@ -188,6 +198,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
     plan,
     repoId,
     repository,
+    t,
     toast,
     values,
     workspace,
@@ -209,19 +220,19 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
       });
       setRepository(updated);
       toast({
-        title: nextEnabled ? "Repository enabled" : "Repository disabled",
+        title: nextEnabled ? t("toast.enabledTitle") : t("toast.disabledTitle"),
         variant: "success",
       });
     } catch {
       setRepository(previousRepository);
       toast({
-        title: nextEnabled ? "Could not enable repository" : "Could not disable repository",
+        title: nextEnabled ? t("toast.enableErrorTitle") : t("toast.disableErrorTitle"),
         variant: "error",
       });
     } finally {
       setTogglingEnabled(false);
     }
-  }, [canMutate, repoId, repository, toast, togglingEnabled, workspace]);
+  }, [canMutate, repoId, repository, t, toast, togglingEnabled, workspace]);
 
   const handleDelete = useCallback(async () => {
     if (!workspace || !repository || !canMutate) {
@@ -232,21 +243,21 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
     try {
       await workspace.delete(`/repositories/${repoId}`);
       toast({
-        title: "Repository data deleted",
+        title: t("toast.deletedTitle"),
         variant: "success",
       });
       setDeleteOpen(false);
       router.replace(workspaceSlug ? `/workspaces/${workspaceSlug}` : "/");
     } catch {
       toast({
-        title: "Could not delete repository data",
-        description: "Try again in a moment.",
+        title: t("toast.deleteErrorTitle"),
+        description: t("toast.deleteErrorDescription"),
         variant: "error",
       });
     } finally {
       setDeleting(false);
     }
-  }, [canMutate, repoId, repository, router, toast, workspace, workspaceSlug]);
+  }, [canMutate, repoId, repository, router, t, toast, workspace, workspaceSlug]);
 
   if (loading) {
     return <CardSkeleton count={3} />;
@@ -255,7 +266,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
   if (loadError || !repository || !values) {
     return (
       <ErrorRetry
-        message="We could not load repository settings. Check your connection and try again."
+        message={t("loadError")}
         onRetry={() => {
           void loadSettings();
         }}
@@ -266,18 +277,18 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
   return (
     <div className="pw-repo-settings">
       <header className="pw-repo-settings-header">
-        <h1>Repository settings</h1>
+        <h1>{t("title")}</h1>
         <div className="pw-repo-settings-repo-row" style={{ marginTop: 12 }}>
           <span className="pw-repo-settings-repo-name">{repository.full_name}</span>
           {!repository.enabled ? (
-            <span className="pw-repo-settings-disabled-badge">Disabled</span>
+            <span className="pw-repo-settings-disabled-badge">{t("disabledBadge")}</span>
           ) : null}
           <a
             href={githubRepoUrl(repository.full_name)}
             target="_blank"
             rel="noopener noreferrer"
             className="pw-repo-settings-github-link"
-            aria-label={`Open ${repository.full_name} on GitHub`}
+            aria-label={t("openOnGithubAriaLabel", { fullName: repository.full_name })}
           >
             <Github size={16} aria-hidden />
           </a>
@@ -285,7 +296,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
         {workspaceSlug ? (
           <p style={{ marginTop: 12 }}>
             <Link href={`/workspaces/${workspaceSlug}/repos/${repoId}`}>
-              Back to repository
+              {t("backToRepo")}
             </Link>
           </p>
         ) : null}
@@ -293,7 +304,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
 
       <section className="pw-repo-settings-section" aria-labelledby="pw-repo-sync-title">
         <h2 id="pw-repo-sync-title" className="pw-repo-settings-section-title">
-          Sync mode
+          {t("syncMode.title")}
         </h2>
         <RadioGroup
           name="repo-sync-mode"
@@ -312,20 +323,20 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
           options={[
             {
               value: "webhook",
-              label: "Webhook",
-              hint: "GitHub sends events in real time. Requires a public endpoint.",
+              label: t("syncMode.webhookLabel"),
+              hint: t("syncMode.webhookHint"),
             },
             {
               value: "polling",
-              label: "Polling",
-              hint: "PipeWatch polls GitHub periodically. No public endpoint required.",
+              label: t("syncMode.pollingLabel"),
+              hint: t("syncMode.pollingHint"),
             },
           ]}
         />
         {values.syncMode === "polling" ? (
           <div className="pw-repo-settings-polling-row">
             <label htmlFor="pw-repo-polling-interval" className="pw-repo-settings-polling-label">
-              Poll interval
+              {t("syncMode.pollIntervalLabel")}
             </label>
             <Input
               id="pw-repo-polling-interval"
@@ -342,7 +353,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
               style={{ width: 80 }}
             />
             <span className="pw-repo-settings-polling-hint">
-              seconds (minimum 30)
+              {t("syncMode.pollIntervalHint")}
             </span>
           </div>
         ) : null}
@@ -350,10 +361,10 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
 
       <section className="pw-repo-settings-section" aria-labelledby="pw-repo-retention-title">
         <h2 id="pw-repo-retention-title" className="pw-repo-settings-section-title">
-          Data retention
+          {t("retention.title")}
         </h2>
         <Switch
-          label={planDefaultRetentionLabel(defaultRetentionDays)}
+          label={planDefaultRetentionLabel(defaultRetentionDays, repoSettingsLabels)}
           checked={values.usePlanDefault}
           onChange={(checked) => {
             setValues((current) =>
@@ -365,7 +376,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
         {!values.usePlanDefault ? (
           <div className="pw-repo-settings-retention-row">
             <Input
-              label="Keep runs for"
+              label={t("retention.keepRunsFor")}
               type="number"
               min={applyRetentionCeiling ? 30 : 1}
               value={values.customRetentionDays}
@@ -376,7 +387,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
               }}
               disabled={!canMutate}
               mono
-              suffix={<span>days</span>}
+              suffix={<span>{t("retention.daysSuffix")}</span>}
             />
             {retentionHint ? (
               <p className="pw-repo-settings-retention-hint">{retentionHint}</p>
@@ -386,30 +397,34 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
         <div className="pw-repo-settings-effective">
           <Clock3 size={13} aria-hidden />
           <span>
-            Runs older than{" "}
-            <strong>{String(getEffectiveRetentionDays(
-              values.usePlanDefault ? null : effectiveRetentionDays,
-              defaultRetentionDays,
-            ))}{" "}
-            days</strong>{" "}
-            are automatically deleted
+            {t("retention.effectivePrefix")}{" "}
+            <strong>
+              {String(getEffectiveRetentionDays(
+                values.usePlanDefault ? null : effectiveRetentionDays,
+                defaultRetentionDays,
+              ))}{" "}
+              {t("retention.daysSuffix")}
+            </strong>{" "}
+            {t("retention.effectiveSuffix")}
           </span>
         </div>
       </section>
 
       <div className="pw-repo-settings-actions">
         <Button disabled={!canSave} loading={saving} onClick={() => void handleSave()}>
-          {saving ? "Saving…" : "Save settings"}
+          {saving ? t("saveSaving") : t("saveSettings")}
         </Button>
       </div>
 
       <DangerZone id="pw-repo-danger-zone" title={tUi("dangerZone.title")}>
         <DangerZoneItem
-          title={repository.enabled ? "Disable this repository" : "Enable this repository"}
+          title={
+            repository.enabled ? t("danger.disableTitle") : t("danger.enableTitle")
+          }
           description={
             repository.enabled
-              ? "Stops syncing. Existing run data is preserved."
-              : "Resume syncing runs from GitHub for this repository."
+              ? t("danger.disableDescription")
+              : t("danger.enableDescription")
           }
           action={
             <Button
@@ -419,13 +434,13 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
               loading={togglingEnabled}
               onClick={() => void handleToggleEnabled()}
             >
-              {repository.enabled ? "Disable" : "Enable"}
+              {repository.enabled ? t("danger.disable") : t("danger.enable")}
             </Button>
           }
         />
         <DangerZoneItem
-          title="Delete repository data"
-          description="Permanently deletes all run history for this repository. This cannot be undone."
+          title={t("danger.deleteTitle")}
+          description={t("danger.deleteDescription")}
           action={
             <Button
               variant="danger"
@@ -435,7 +450,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
                 setDeleteOpen(true);
               }}
             >
-              Delete all data
+              {t("danger.deleteButton")}
             </Button>
           }
         />
@@ -449,9 +464,9 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
         onConfirm={() => {
           void handleDelete();
         }}
-        title={`Delete all data for ${confirmRepoName}?`}
-        description={`This will permanently delete all runs, jobs, and steps for ${repository.full_name}. This cannot be undone.`}
-        confirmLabel="Delete all data"
+        title={t("danger.deleteConfirmTitle", { repoName: confirmRepoName })}
+        description={t("danger.deleteConfirmDescription", { fullName: repository.full_name })}
+        confirmLabel={t("danger.deleteConfirmLabel")}
         cancelLabel={tUi("typedConfirm.cancel")}
         expectedPhrase={confirmRepoName}
         closeAriaLabel={tUi("dialog.closeAriaLabel")}

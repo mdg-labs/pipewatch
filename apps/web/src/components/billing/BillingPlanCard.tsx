@@ -2,8 +2,15 @@
 
 import { getPlanLimits } from "@pipewatch/config/plan-limits";
 import type { WorkspacePlan } from "@pipewatch/types";
+import { useTranslations } from "next-intl";
 
 import { Badge, Button, Card } from "@pipewatch/ui";
+
+import {
+  PLAN_ORDER,
+  PLAN_PRICES,
+} from "@/i18n/billing-formatters";
+import { useBillingFormatters } from "@/i18n/use-billing-formatters";
 
 export type BillingPlanCardProps = {
   plan: WorkspacePlan;
@@ -13,40 +20,6 @@ export type BillingPlanCardProps = {
   onCancel: () => void;
   portalLoading?: boolean;
 };
-
-const PLAN_LABELS: Record<WorkspacePlan, string> = {
-  free: "Free",
-  pro: "Pro",
-  business: "Business",
-};
-
-const PLAN_PRICES: Record<WorkspacePlan, number> = {
-  free: 0,
-  pro: 19,
-  business: 49,
-};
-
-const PLAN_ORDER: Record<WorkspacePlan, number> = {
-  free: 0,
-  pro: 1,
-  business: 2,
-};
-
-function formatBillingDate(iso: string | null): string | null {
-  if (!iso) {
-    return null;
-  }
-
-  return new Intl.DateTimeFormat(undefined, { dateStyle: "long" }).format(new Date(iso));
-}
-
-function formatSubscriptionStatus(status: string | null): string {
-  if (!status) {
-    return "Free";
-  }
-
-  return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-}
 
 function isActiveSubscription(status: string | null): boolean {
   return status === "active" || status === "trialing";
@@ -61,12 +34,20 @@ export function BillingPlanCard({
   onCancel,
   portalLoading = false,
 }: BillingPlanCardProps) {
+  const t = useTranslations("billing.planCard");
+  const {
+    formatBillingDate,
+    formatPlanPrice,
+    formatSubscriptionStatus,
+    planLabel,
+  } = useBillingFormatters();
+
   const price = PLAN_PRICES[plan];
   const billingDate = formatBillingDate(nextBillingDate);
   const paidPlan = plan !== "free";
 
   return (
-    <Card title="Current plan">
+    <Card title={t("title")}>
       <div
         style={{
           display: "flex",
@@ -87,10 +68,10 @@ export function BillingPlanCard({
             }}
           >
             <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.02em" }}>
-              {PLAN_LABELS[plan]}
+              {planLabel(plan)}
             </span>
             <Badge variant="accent" pill>
-              Current plan
+              {t("currentBadge")}
             </Badge>
             {subscriptionStatus ? (
               <span
@@ -128,23 +109,22 @@ export function BillingPlanCard({
               fontFeatureSettings: "'tnum'",
             }}
           >
-            ${price}{" "}
+            {formatPlanPrice(price)}{" "}
             <span style={{ fontSize: 12, fontWeight: 400, color: "var(--text-secondary)" }}>
-              / month
+              {t("perMonth")}
             </span>
           </div>
 
           {billingDate ? (
             <p style={{ margin: "4px 0 0", fontSize: 12, color: "var(--text-tertiary)" }}>
-              Next billing date:{" "}
-              <span style={{ color: "var(--text-secondary)" }}>{billingDate}</span>
+              {t("nextBillingDate", { date: billingDate })}
             </p>
           ) : null}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <Button variant="secondary" size="sm" onClick={onChangePlan}>
-            Change plan
+            {t("changePlan")}
           </Button>
           {paidPlan ? (
             <Button
@@ -154,7 +134,7 @@ export function BillingPlanCard({
               onClick={onCancel}
               style={{ color: "var(--text-tertiary)" }}
             >
-              Cancel subscription
+              {t("cancelSubscription")}
             </Button>
           ) : null}
         </div>
@@ -169,24 +149,20 @@ export type BillingPlanOptionsProps = {
   loadingPlan: WorkspacePlan | null;
 };
 
-function formatPlanLimit(value: number | null, singular: string): string {
-  if (value === null) {
-    return `Unlimited ${singular}`;
-  }
-
-  return `${String(value)} ${singular}`;
-}
-
-function formatRetentionLimit(days: number): string {
-  return `${String(days)} day retention`;
-}
-
 /** Plan comparison cards with upgrade/downgrade CTAs (B12). */
 export function BillingPlanOptions({
   currentPlan,
   onSelectPlan,
   loadingPlan,
 }: BillingPlanOptionsProps) {
+  const t = useTranslations("billing.planOptions");
+  const tCard = useTranslations("billing.planCard");
+  const {
+    formatPlanLimit,
+    formatPlanPrice,
+    formatRetentionLimit,
+    planLabel,
+  } = useBillingFormatters();
   const plans: WorkspacePlan[] = ["free", "pro", "business"];
 
   return (
@@ -199,7 +175,7 @@ export function BillingPlanOptions({
           color: "var(--text-secondary)",
         }}
       >
-        Plan comparison
+        {t("comparisonTitle")}
       </p>
       <div
         style={{
@@ -217,11 +193,11 @@ export function BillingPlanOptions({
           const isDowngrade = planRank < currentRank;
           const price = PLAN_PRICES[plan];
 
-          let actionLabel = "Current plan";
+          let actionLabel = t("currentPlan");
           if (isUpgrade) {
-            actionLabel = "Upgrade";
+            actionLabel = t("upgrade");
           } else if (isDowngrade) {
-            actionLabel = "Downgrade";
+            actionLabel = t("downgrade");
           }
 
           return (
@@ -246,10 +222,10 @@ export function BillingPlanOptions({
                   marginBottom: 3,
                 }}
               >
-                <span style={{ fontSize: 14, fontWeight: 600 }}>{PLAN_LABELS[plan]}</span>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>{planLabel(plan)}</span>
                 {isCurrent ? (
                   <Badge variant="accent" pill>
-                    Current
+                    {t("currentBadge")}
                   </Badge>
                 ) : null}
               </div>
@@ -265,9 +241,9 @@ export function BillingPlanOptions({
                   color: isCurrent ? "var(--text-accent)" : "var(--text-primary)",
                 }}
               >
-                ${price}{" "}
+                {formatPlanPrice(price)}{" "}
                 <span style={{ fontSize: 11, fontWeight: 400, color: "var(--text-tertiary)" }}>
-                  /mo
+                  {tCard("perMonthShort")}
                 </span>
               </div>
 

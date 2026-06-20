@@ -360,6 +360,59 @@
       "runsInProgress": "{count, plural, one {# run in progress} other {# runs in progress}}",
       "elapsed": "{elapsed} elapsed",
       "view": "View →"
+    },
+    "settings": {
+      "title": "Repository settings",
+      "loadError": "We could not load repository settings. Check your connection and try again.",
+      "disabledBadge": "Disabled",
+      "openOnGithubAriaLabel": "Open {fullName} on GitHub",
+      "backToRepo": "Back to repository",
+      "syncMode": {
+        "title": "Sync mode",
+        "webhookLabel": "Webhook",
+        "webhookHint": "GitHub sends events in real time. Requires a public endpoint.",
+        "pollingLabel": "Polling",
+        "pollingHint": "PipeWatch polls GitHub periodically. No public endpoint required.",
+        "pollIntervalLabel": "Poll interval",
+        "pollIntervalHint": "seconds (minimum 30)"
+      },
+      "retention": {
+        "title": "Data retention",
+        "planDefault": "Use plan default ({days} days)",
+        "rangeHint": "Minimum {minDays} days · Maximum {maxDays} days on your plan",
+        "keepRunsFor": "Keep runs for",
+        "daysSuffix": "days",
+        "effectivePrefix": "Runs older than",
+        "effectiveSuffix": "are automatically deleted"
+      },
+      "saveSaving": "Saving…",
+      "saveSettings": "Save settings",
+      "danger": {
+        "disableTitle": "Disable this repository",
+        "disableDescription": "Stops syncing. Existing run data is preserved.",
+        "enableTitle": "Enable this repository",
+        "enableDescription": "Resume syncing runs from GitHub for this repository.",
+        "disable": "Disable",
+        "enable": "Enable",
+        "deleteTitle": "Delete repository data",
+        "deleteDescription": "Permanently deletes all run history for this repository. This cannot be undone.",
+        "deleteButton": "Delete all data",
+        "deleteConfirmTitle": "Delete all data for {repoName}?",
+        "deleteConfirmDescription": "This will permanently delete all runs, jobs, and steps for {fullName}. This cannot be undone.",
+        "deleteConfirmLabel": "Delete all data"
+      },
+      "toast": {
+        "savedTitle": "Repository settings saved",
+        "saveErrorTitle": "Could not save settings",
+        "saveErrorDescription": "Check your inputs and try again.",
+        "enabledTitle": "Repository enabled",
+        "disabledTitle": "Repository disabled",
+        "enableErrorTitle": "Could not enable repository",
+        "disableErrorTitle": "Could not disable repository",
+        "deletedTitle": "Repository data deleted",
+        "deleteErrorTitle": "Could not delete repository data",
+        "deleteErrorDescription": "Try again in a moment."
+      }
     }
   },
   "runs": {
@@ -722,6 +775,152 @@
         "keyCopiedTitle": "API key copied",
         "keyCopyErrorTitle": "Could not copy key"
       }
+    }
+  },
+  "billing": {
+    "title": "Billing",
+    "subtitle": "Plan, usage, and invoice management.",
+    "loadError": "We could not load billing details. Check your connection and try again.",
+    "free": "Free",
+    "planLabels": {
+      "free": "Free",
+      "pro": "Pro",
+      "business": "Business"
+    },
+    "status": {
+      "active": "Active",
+      "trialing": "Trialing",
+      "past_due": "Past due",
+      "canceled": "Canceled",
+      "cancelled": "Cancelled",
+      "incomplete": "Incomplete",
+      "incomplete_expired": "Incomplete expired",
+      "unpaid": "Unpaid",
+      "paused": "Paused"
+    },
+    "invoiceStatus": {
+      "paid": "Paid",
+      "open": "Open",
+      "draft": "Draft",
+      "uncollectible": "Uncollectible",
+      "void": "Void"
+    },
+    "limits": {
+      "unlimited": {
+        "repositories": "Unlimited repositories",
+        "members": "Unlimited members"
+      },
+      "count": {
+        "repositories": "{count} repositories",
+        "members": "{count} members"
+      },
+      "retention": "{days} day retention"
+    },
+    "planCard": {
+      "title": "Current plan",
+      "currentBadge": "Current plan",
+      "perMonth": "/ month",
+      "perMonthShort": "/mo",
+      "nextBillingDate": "Next billing date: {date}",
+      "changePlan": "Change plan",
+      "cancelSubscription": "Cancel subscription"
+    },
+    "planOptions": {
+      "comparisonTitle": "Plan comparison",
+      "currentBadge": "Current",
+      "currentPlan": "Current plan",
+      "upgrade": "Upgrade",
+      "downgrade": "Downgrade"
+    },
+    "usage": {
+      "title": "Usage this period",
+      "repositories": "Repositories",
+      "members": "Team members",
+      "retentionLabel": "Run history retention",
+      "retentionDays": "{days} days",
+      "retentionPlanMax": "({planLabel} plan maximum: {maxDays} days)",
+      "limitsReset": "Limits reset on your next billing date ({date})."
+    },
+    "invoices": {
+      "title": "Payment & invoices",
+      "paymentMethod": "Payment method",
+      "paymentMethodHint": "Managed securely through Stripe.",
+      "updatePaymentMethod": "Update payment method",
+      "emptyTitle": "No invoices yet",
+      "emptyDescription": "Invoices appear here after your first paid billing period.",
+      "columns": {
+        "period": "Period",
+        "amount": "Amount",
+        "status": "Status",
+        "invoice": "Invoice"
+      },
+      "viewInvoice": "View invoice",
+      "noLink": "—",
+      "viewAllInStripe": "View all invoices in Stripe"
+    },
+    "toast": {
+      "subscriptionUpdatedTitle": "Subscription updated",
+      "subscriptionUpdatedDescription": "Your plan changes may take a moment to appear.",
+      "checkoutCancelledTitle": "Checkout cancelled",
+      "checkoutCancelledDescription": "No changes were made to your subscription.",
+      "portalUnavailableTitle": "Billing portal unavailable",
+      "checkoutFailedTitle": "Checkout failed",
+      "genericErrorDescription": "Try again."
+    }
+  },
+  "account": {
+    "title": "Account",
+    "subtitle": "Personal settings across all workspaces.",
+    "loadError": "We could not load your account settings. Check your connection and try again.",
+    "profile": {
+      "title": "Profile",
+      "displayName": "Display name",
+      "email": "Email",
+      "emailHint": "Managed by GitHub",
+      "saveSaving": "Saving…",
+      "saveChanges": "Save changes"
+    },
+    "connected": {
+      "title": "Connected accounts",
+      "github": "GitHub",
+      "connectedBadge": "Connected"
+    },
+    "workspaces": {
+      "title": "Workspaces",
+      "activeBadge": "Active",
+      "switch": "Switch"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "cardTitle": "Active sessions",
+      "logoutEverywhere": "Log out everywhere",
+      "description": "Revoke all refresh tokens and sign out on every device. Your current session will end immediately."
+    },
+    "danger": {
+      "deleteTitle": "Delete account",
+      "deleteDescription": "Permanently delete your PipeWatch account and remove your access to all workspaces. This cannot be undone.",
+      "deleteButton": "Delete account",
+      "deleteConfirmTitle": "Delete account",
+      "deleteConfirmDescription": "This permanently deletes your account. You will lose access to all workspaces.",
+      "deleteConfirmLabel": "Delete account",
+      "confirmPhrase": "delete my account"
+    },
+    "toast": {
+      "profileUpdatedTitle": "Profile updated",
+      "profileUpdateErrorTitle": "Could not update profile",
+      "profileUpdateErrorDescription": "Check your connection and try again.",
+      "workspaceSwitchedTitle": "Workspace switched",
+      "workspaceSwitchErrorTitle": "Could not switch workspace",
+      "workspaceSwitchErrorDescription": "Try again or sign in again.",
+      "workspaceSwitchErrorRetry": "Try again in a moment.",
+      "signedOutEverywhereTitle": "Signed out everywhere",
+      "signOutEverywhereErrorTitle": "Could not sign out everywhere",
+      "signOutEverywhereErrorDescription": "Try again in a moment.",
+      "accountDeletedTitle": "Account deleted",
+      "deleteConflictTitle": "Cannot delete account",
+      "deleteConflictDescription": "You are the sole owner of a workspace that still has other members. Transfer ownership or remove members first.",
+      "deleteErrorTitle": "Could not delete account",
+      "deleteErrorDescription": "Try again in a moment."
     }
   }
 }

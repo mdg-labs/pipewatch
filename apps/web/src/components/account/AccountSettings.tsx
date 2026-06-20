@@ -28,26 +28,22 @@ import { useToast } from "@/providers/ToastProvider";
 
 import "./account-settings.css";
 
-const ROLE_LABELS: Record<WorkspaceRole, string> = {
-  owner: "Owner",
-  admin: "Admin",
-  member: "Member",
-};
-
 const ROLE_BADGE_VARIANT = {
   owner: "accent",
   admin: "default",
   member: "outline",
 } as const;
 
-const DELETE_CONFIRM_PHRASE = "delete my account";
-
 /** Account settings — profile, workspaces, sessions, delete (B13). */
 export function AccountSettings() {
   const router = useRouter();
   const { api, workspaceId, workspaces } = useApi();
   const { toast } = useToast();
+  const t = useTranslations("account");
+  const tRoles = useTranslations("invite.roles");
   const tUi = useTranslations("ui");
+
+  const deleteConfirmPhrase = t("danger.confirmPhrase");
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
@@ -58,6 +54,11 @@ export function AccountSettings() {
   const [loggingOutAll, setLoggingOutAll] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  const roleLabel = useCallback(
+    (role: WorkspaceRole) => tRoles(role),
+    [tRoles],
+  );
 
   const loadProfile = useCallback(async () => {
     setLoading(true);
@@ -101,20 +102,20 @@ export function AccountSettings() {
       setProfile(updated);
       setName(updated.name ?? "");
       toast({
-        title: "Profile updated",
+        title: t("toast.profileUpdatedTitle"),
         variant: "success",
       });
       router.refresh();
     } catch {
       toast({
-        title: "Could not update profile",
-        description: "Check your connection and try again.",
+        title: t("toast.profileUpdateErrorTitle"),
+        description: t("toast.profileUpdateErrorDescription"),
         variant: "error",
       });
     } finally {
       setSaving(false);
     }
-  }, [api, hasNameChange, name, profile, router, saving, toast]);
+  }, [api, hasNameChange, name, profile, router, saving, t, toast]);
 
   const handleSwitchWorkspace = useCallback(
     async (targetWorkspaceId: string, slug: string) => {
@@ -128,30 +129,30 @@ export function AccountSettings() {
 
         if (!result.ok) {
           toast({
-            title: "Could not switch workspace",
-            description: "Try again or sign in again.",
+            title: t("toast.workspaceSwitchErrorTitle"),
+            description: t("toast.workspaceSwitchErrorDescription"),
             variant: "error",
           });
           return;
         }
 
         toast({
-          title: "Workspace switched",
+          title: t("toast.workspaceSwitchedTitle"),
           variant: "success",
         });
         router.push(`/workspaces/${slug}`);
         router.refresh();
       } catch {
         toast({
-          title: "Could not switch workspace",
-          description: "Try again in a moment.",
+          title: t("toast.workspaceSwitchErrorTitle"),
+          description: t("toast.workspaceSwitchErrorRetry"),
           variant: "error",
         });
       } finally {
         setSwitchingId(null);
       }
     },
-    [router, switchingId, toast],
+    [router, switchingId, t, toast],
   );
 
   const handleLogoutAll = useCallback(async () => {
@@ -172,19 +173,19 @@ export function AccountSettings() {
 
       clearAccessToken();
       toast({
-        title: "Signed out everywhere",
+        title: t("toast.signedOutEverywhereTitle"),
         variant: "success",
       });
       window.location.assign("/sign-in");
     } catch {
       toast({
-        title: "Could not sign out everywhere",
-        description: "Try again in a moment.",
+        title: t("toast.signOutEverywhereErrorTitle"),
+        description: t("toast.signOutEverywhereErrorDescription"),
         variant: "error",
       });
       setLoggingOutAll(false);
     }
-  }, [loggingOutAll, toast]);
+  }, [loggingOutAll, t, toast]);
 
   const handleDeleteAccount = useCallback(async () => {
     if (!profile || deleting) {
@@ -196,7 +197,7 @@ export function AccountSettings() {
       await api.delete("/users/me");
       clearAccessToken();
       toast({
-        title: "Account deleted",
+        title: t("toast.accountDeletedTitle"),
         variant: "success",
       });
       setDeleteOpen(false);
@@ -204,23 +205,22 @@ export function AccountSettings() {
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 409) {
         toast({
-          title: "Cannot delete account",
-          description:
-            "You are the sole owner of a workspace that still has other members. Transfer ownership or remove members first.",
+          title: t("toast.deleteConflictTitle"),
+          description: t("toast.deleteConflictDescription"),
           variant: "error",
         });
         setDeleteOpen(false);
       } else {
         toast({
-          title: "Could not delete account",
-          description: "Try again in a moment.",
+          title: t("toast.deleteErrorTitle"),
+          description: t("toast.deleteErrorDescription"),
           variant: "error",
         });
       }
     } finally {
       setDeleting(false);
     }
-  }, [api, deleting, profile, toast]);
+  }, [api, deleting, profile, t, toast]);
 
   if (loading) {
     return <CardSkeleton count={3} />;
@@ -229,7 +229,7 @@ export function AccountSettings() {
   if (loadError || !profile) {
     return (
       <ErrorRetry
-        message="We could not load your account settings. Check your connection and try again."
+        message={t("loadError")}
         onRetry={() => {
           void loadProfile();
         }}
@@ -242,8 +242,8 @@ export function AccountSettings() {
   return (
     <div className="pw-account-settings">
       <header className="pw-account-settings-header">
-        <h1>Account</h1>
-        <p>Personal settings across all workspaces.</p>
+        <h1>{t("title")}</h1>
+        <p>{t("subtitle")}</p>
       </header>
 
       <section
@@ -251,7 +251,7 @@ export function AccountSettings() {
         aria-labelledby="pw-account-profile-title"
       >
         <h2 id="pw-account-profile-title" className="pw-account-settings-section-title">
-          Profile
+          {t("profile.title")}
         </h2>
 
         <div className="pw-account-profile-row">
@@ -263,7 +263,7 @@ export function AccountSettings() {
           />
           <div className="pw-account-profile-fields">
             <Input
-              label="Display name"
+              label={t("profile.displayName")}
               value={name}
               onChange={(event) => {
                 setName(event.target.value);
@@ -271,10 +271,10 @@ export function AccountSettings() {
               autoComplete="name"
             />
             <Input
-              label="Email"
+              label={t("profile.email")}
               value={profile.email ?? ""}
               disabled
-              hint="Managed by GitHub"
+              hint={t("profile.emailHint")}
             />
           </div>
         </div>
@@ -287,7 +287,7 @@ export function AccountSettings() {
               void handleSaveName();
             }}
           >
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("profile.saveSaving") : t("profile.saveChanges")}
           </Button>
         </div>
       </section>
@@ -297,7 +297,7 @@ export function AccountSettings() {
         aria-labelledby="pw-account-connected-title"
       >
         <h2 id="pw-account-connected-title" className="pw-account-settings-section-title">
-          Connected accounts
+          {t("connected.title")}
         </h2>
 
         <Card>
@@ -309,12 +309,12 @@ export function AccountSettings() {
                   aria-hidden
                   style={{ marginRight: 6, verticalAlign: "text-bottom" }}
                 />
-                GitHub
+                {t("connected.github")}
               </span>
               <span className="pw-account-connected-login">@{profile.github_login}</span>
             </div>
             <Badge variant="success" pill>
-              Connected
+              {t("connected.connectedBadge")}
             </Badge>
           </div>
         </Card>
@@ -325,7 +325,7 @@ export function AccountSettings() {
         aria-labelledby="pw-account-workspaces-title"
       >
         <h2 id="pw-account-workspaces-title" className="pw-account-settings-section-title">
-          Workspaces
+          {t("workspaces.title")}
         </h2>
 
         <Card>
@@ -341,11 +341,11 @@ export function AccountSettings() {
                 </div>
                 <div className="pw-account-workspace-actions">
                   <Badge variant={ROLE_BADGE_VARIANT[workspace.role]} pill>
-                    {ROLE_LABELS[workspace.role]}
+                    {roleLabel(workspace.role)}
                   </Badge>
                   {isActive ? (
                     <Badge variant="outline" pill>
-                      Active
+                      {t("workspaces.activeBadge")}
                     </Badge>
                   ) : (
                     <Button
@@ -357,7 +357,7 @@ export function AccountSettings() {
                         void handleSwitchWorkspace(workspace.id, workspace.slug);
                       }}
                     >
-                      Switch
+                      {t("workspaces.switch")}
                     </Button>
                   )}
                 </div>
@@ -372,11 +372,11 @@ export function AccountSettings() {
         aria-labelledby="pw-account-sessions-title"
       >
         <h2 id="pw-account-sessions-title" className="pw-account-settings-section-title">
-          Sessions
+          {t("sessions.title")}
         </h2>
 
         <Card
-          title="Active sessions"
+          title={t("sessions.cardTitle")}
           actions={
             <Button
               variant="secondary"
@@ -387,21 +387,18 @@ export function AccountSettings() {
                 void handleLogoutAll();
               }}
             >
-              Log out everywhere
+              {t("sessions.logoutEverywhere")}
             </Button>
           }
         >
-          <p className="pw-account-sessions-copy">
-            Revoke all refresh tokens and sign out on every device. Your current
-            session will end immediately.
-          </p>
+          <p className="pw-account-sessions-copy">{t("sessions.description")}</p>
         </Card>
       </section>
 
       <DangerZone id="pw-account-danger-zone" title={tUi("dangerZone.title")}>
         <DangerZoneItem
-          title="Delete account"
-          description="Permanently delete your PipeWatch account and remove your access to all workspaces. This cannot be undone."
+          title={t("danger.deleteTitle")}
+          description={t("danger.deleteDescription")}
           action={
             <Button
               variant="danger"
@@ -410,7 +407,7 @@ export function AccountSettings() {
                 setDeleteOpen(true);
               }}
             >
-              Delete account
+              {t("danger.deleteButton")}
             </Button>
           }
         />
@@ -424,16 +421,16 @@ export function AccountSettings() {
         onConfirm={() => {
           void handleDeleteAccount();
         }}
-        title="Delete account"
-        description="This permanently deletes your account. You will lose access to all workspaces."
-        confirmLabel="Delete account"
+        title={t("danger.deleteConfirmTitle")}
+        description={t("danger.deleteConfirmDescription")}
+        confirmLabel={t("danger.deleteConfirmLabel")}
         cancelLabel={tUi("typedConfirm.cancel")}
-        expectedPhrase={DELETE_CONFIRM_PHRASE}
+        expectedPhrase={deleteConfirmPhrase}
         closeAriaLabel={tUi("dialog.closeAriaLabel")}
         phraseLabel={
           <>
             {tUi("typedConfirm.phrasePrefix")}{" "}
-            <strong className="pw-typed-confirm-phrase">{DELETE_CONFIRM_PHRASE}</strong>{" "}
+            <strong className="pw-typed-confirm-phrase">{deleteConfirmPhrase}</strong>{" "}
             {tUi("typedConfirm.phraseSuffix")}
           </>
         }

@@ -94,20 +94,35 @@ export function getEffectiveRetentionDays(
   return retentionDays ?? defaultRetentionDays;
 }
 
+export type RepoSettingsLabels = {
+  planDefault: (days: number) => string;
+  rangeHint: (minDays: number, maxDays: number) => string;
+};
+
+export const EN_REPO_SETTINGS_LABELS: RepoSettingsLabels = {
+  planDefault: (days) => `Use plan default (${String(days)} days)`,
+  rangeHint: (minDays, maxDays) =>
+    `Minimum ${String(minDays)} days · Maximum ${String(maxDays)} days on your plan`,
+};
+
 export function retentionRangeHint(
   plan: WorkspacePlan,
   applyCeiling: boolean,
+  labels: RepoSettingsLabels = EN_REPO_SETTINGS_LABELS,
 ): string | null {
   if (!applyCeiling) {
     return null;
   }
 
   const { minRetentionDays, maxRetentionDays } = getPlanLimits(plan);
-  return `Minimum ${String(minRetentionDays)} days · Maximum ${String(maxRetentionDays)} days on your plan`;
+  return labels.rangeHint(minRetentionDays, maxRetentionDays);
 }
 
-export function planDefaultRetentionLabel(defaultRetentionDays: number): string {
-  return `Use plan default (${String(defaultRetentionDays)} days)`;
+export function planDefaultRetentionLabel(
+  defaultRetentionDays: number,
+  labels: RepoSettingsLabels = EN_REPO_SETTINGS_LABELS,
+): string {
+  return labels.planDefault(defaultRetentionDays);
 }
 
 function resolvePollingIntervalForPatch(

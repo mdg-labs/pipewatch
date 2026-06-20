@@ -3,6 +3,7 @@
 import { getPlanLimits } from "@pipewatch/config/plan-limits";
 import type { WorkspacePlan } from "@pipewatch/types";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -26,6 +27,8 @@ import { RetentionUsageRow, UsageMeter } from "@/components/billing/UsageMeter";
 import { CardSkeleton } from "@/components/CardSkeleton";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { useApi } from "@/hooks/use-api";
+import { PLAN_ORDER } from "@/i18n/billing-formatters";
+import { useBillingFormatters } from "@/i18n/use-billing-formatters";
 import { ApiClientError } from "@/lib/api-client";
 import { useToast } from "@/providers/ToastProvider";
 
@@ -56,32 +59,6 @@ type WorkspaceBillingSummary = {
   invoices: BillingInvoice[];
 };
 
-const PLAN_LABELS: Record<WorkspacePlan, string> = {
-  free: "Free",
-  pro: "Pro",
-  business: "Business",
-};
-
-const PLAN_ORDER: Record<WorkspacePlan, number> = {
-  free: 0,
-  pro: 1,
-  business: 2,
-};
-
-function formatInvoicePeriod(iso: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    month: "long",
-    year: "numeric",
-  }).format(new Date(iso));
-}
-
-function formatCurrency(amountCents: number, currency: string): string {
-  return new Intl.NumberFormat(undefined, {
-    style: "currency",
-    currency: currency.toUpperCase(),
-  }).format(amountCents / 100);
-}
-
 function invoiceStatusVariant(
   status: string,
 ): "success" | "default" | "failure" | "outline" {
@@ -100,16 +77,20 @@ function invoiceStatusVariant(
   return "default";
 }
 
-function formatInvoiceStatus(status: string): string {
-  return status.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
 /** Workspace billing settings — plan, usage, checkout, portal, invoices (B12). */
 export default function WorkspaceBillingSettingsPage() {
-  const { workspace, workspaceId } = useApi();
+  const { workspace } = useApi();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const planOptionsRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations("billing");
+  const {
+    formatBillingDate,
+    formatCurrency,
+    formatInvoicePeriod,
+    formatInvoiceStatus,
+    planLabel,
+  } = useBillingFormatters();
 
   const [summary, setSummary] = useState<WorkspaceBillingSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -134,7 +115,7 @@ export default function WorkspaceBillingSettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspace]);
 
   useEffect(() => {
     void loadBilling();
@@ -145,18 +126,18 @@ export default function WorkspaceBillingSettingsPage() {
 
     if (checkout === "success") {
       toast({
-        title: "Subscription updated",
-        description: "Your plan changes may take a moment to appear.",
+        title: t("toast.subscriptionUpdatedTitle"),
+        description: t("toast.subscriptionUpdatedDescription"),
         variant: "success",
       });
     } else if (checkout === "cancelled") {
       toast({
-        title: "Checkout cancelled",
-        description: "No changes were made to your subscription.",
+        title: t("toast.checkoutCancelledTitle"),
+        description: t("toast.checkoutCancelledDescription"),
         variant: "default",
       });
     }
-  }, [searchParams, toast]);
+  }, [searchParams, t, toast]);
 
   const openPortal = useCallback(async () => {
     if (!workspace) {
@@ -172,12 +153,16 @@ export default function WorkspaceBillingSettingsPage() {
       const message =
         error instanceof ApiClientError
           ? error.message
-          : "Could not open the billing portal. Try again.";
-      toast({ title: "Billing portal unavailable", description: message, variant: "error" });
+          : t("toast.genericErrorDescription");
+      toast({
+        title: t("toast.portalUnavailableTitle"),
+        description: message,
+        variant: "error",
+      });
     } finally {
       setPortalLoading(false);
     }
-  }, [workspaceId, toast]);
+  }, [t, toast, workspace]);
 
   const startCheckout = useCallback(
     async (plan: WorkspacePlan) => {
@@ -194,13 +179,13 @@ export default function WorkspaceBillingSettingsPage() {
         const message =
           error instanceof ApiClientError
             ? error.message
-            : "Could not start checkout. Try again.";
-        toast({ title: "Checkout failed", description: message, variant: "error" });
+            : t("toast.genericErrorDescription");
+        toast({ title: t("toast.checkoutFailedTitle"), description: message, variant: "error" });
       } finally {
         setLoadingPlan(null);
       }
     },
-    [workspaceId, toast],
+    [t, toast, workspace],
   );
 
   const handleSelectPlan = useCallback(
@@ -234,10 +219,8 @@ export default function WorkspaceBillingSettingsPage() {
     return (
       <div style={{ maxWidth: 760 }}>
         <header style={{ marginBottom: 28 }}>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Billing</h1>
-          <p style={{ color: "var(--text-secondary)", marginTop: 8 }}>
-            Plan, usage, and invoice management.
-          </p>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{t("title")}</h1>
+          <p style={{ color: "var(--text-secondary)", marginTop: 8 }}>{t("subtitle")}</p>
         </header>
         <CardSkeleton count={3} />
       </div>
@@ -248,10 +231,10 @@ export default function WorkspaceBillingSettingsPage() {
     return (
       <div style={{ maxWidth: 760 }}>
         <header style={{ marginBottom: 28 }}>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Billing</h1>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{t("title")}</h1>
         </header>
         <ErrorRetry
-          message="We could not load billing details. Check your connection and try again."
+          message={t("loadError")}
           onRetry={() => {
             void loadBilling();
           }}
@@ -261,18 +244,14 @@ export default function WorkspaceBillingSettingsPage() {
   }
 
   const planLimits = getPlanLimits(summary.plan);
-  const billingDateLabel = summary.next_billing_date
-    ? new Intl.DateTimeFormat(undefined, { dateStyle: "long" }).format(
-        new Date(summary.next_billing_date),
-      )
-    : null;
+  const billingDateLabel = formatBillingDate(summary.next_billing_date);
 
   return (
     <div style={{ maxWidth: 760, display: "flex", flexDirection: "column", gap: 14 }}>
       <header>
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Billing</h1>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{t("title")}</h1>
         <p style={{ color: "var(--text-secondary)", marginTop: 8, marginBottom: 0 }}>
-          Plan, usage, and invoice management.
+          {t("subtitle")}
         </p>
       </header>
 
@@ -287,22 +266,22 @@ export default function WorkspaceBillingSettingsPage() {
         portalLoading={portalLoading}
       />
 
-      <Card title="Usage this period">
+      <Card title={t("usage.title")}>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <UsageMeter
-            label="Repositories"
+            label={t("usage.repositories")}
             used={summary.usage.repositories.used}
             limit={summary.usage.repositories.limit}
           />
           <UsageMeter
-            label="Team members"
+            label={t("usage.members")}
             used={summary.usage.members.used}
             limit={summary.usage.members.limit}
           />
           <RetentionUsageRow
             retentionDays={summary.usage.retention_days}
             maxRetentionDays={planLimits.maxRetentionDays}
-            planLabel={PLAN_LABELS[summary.plan]}
+            planLabel={planLabel(summary.plan)}
           />
         </div>
 
@@ -316,7 +295,7 @@ export default function WorkspaceBillingSettingsPage() {
               color: "var(--text-tertiary)",
             }}
           >
-            Limits reset on your next billing date ({billingDateLabel}).
+            {t("usage.limitsReset", { date: billingDateLabel })}
           </p>
         ) : null}
 
@@ -336,7 +315,7 @@ export default function WorkspaceBillingSettingsPage() {
         </div>
       </Card>
 
-      <Card title="Payment & invoices">
+      <Card title={t("invoices.title")}>
         <div
           style={{
             display: "flex",
@@ -352,9 +331,11 @@ export default function WorkspaceBillingSettingsPage() {
           }}
         >
           <div>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>Payment method</p>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 500 }}>
+              {t("invoices.paymentMethod")}
+            </p>
             <p style={{ margin: "4px 0 0", fontSize: 11, color: "var(--text-tertiary)" }}>
-              Managed securely through Stripe.
+              {t("invoices.paymentMethodHint")}
             </p>
           </div>
           <Button
@@ -365,23 +346,23 @@ export default function WorkspaceBillingSettingsPage() {
               void openPortal();
             }}
           >
-            Update payment method
+            {t("invoices.updatePaymentMethod")}
           </Button>
         </div>
 
         {summary.invoices.length === 0 ? (
           <EmptyState
-            title="No invoices yet"
-            description="Invoices appear here after your first paid billing period."
+            title={t("invoices.emptyTitle")}
+            description={t("invoices.emptyDescription")}
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Period</TableHead>
-                <TableHead align="right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead align="right">Invoice</TableHead>
+                <TableHead>{t("invoices.columns.period")}</TableHead>
+                <TableHead align="right">{t("invoices.columns.amount")}</TableHead>
+                <TableHead>{t("invoices.columns.status")}</TableHead>
+                <TableHead align="right">{t("invoices.columns.invoice")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -408,10 +389,12 @@ export default function WorkspaceBillingSettingsPage() {
                           textDecoration: "none",
                         }}
                       >
-                        View invoice
+                        {t("invoices.viewInvoice")}
                       </a>
                     ) : (
-                      <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>—</span>
+                      <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
+                        {t("invoices.noLink")}
+                      </span>
                     )}
                   </TableCell>
                 </TableRow>
@@ -430,7 +413,7 @@ export default function WorkspaceBillingSettingsPage() {
                 void openPortal();
               }}
             >
-              View all invoices in Stripe
+              {t("invoices.viewAllInStripe")}
             </Button>
           </div>
         ) : null}

@@ -6,6 +6,7 @@ import {
   buildRepositorySettingsPatch,
   clampRetentionDaysForPlan,
   DEFAULT_POLLING_INTERVAL_SECONDS,
+  EN_REPO_SETTINGS_LABELS,
   getEffectiveRetentionDays,
   getSyncMode,
   isRepoSettingsFormValid,
@@ -111,8 +112,10 @@ describe("repo-settings validation", () => {
 
   it("formats retention helper copy", () => {
     expect(getEffectiveRetentionDays(null, 30)).toBe(30);
-    expect(planDefaultRetentionLabel(30)).toBe("Use plan default (30 days)");
-    expect(retentionRangeHint("pro", true)).toContain("365");
-    expect(retentionRangeHint("pro", false)).toBeNull();
+    expect(planDefaultRetentionLabel(30, EN_REPO_SETTINGS_LABELS)).toBe(
+      "Use plan default (30 days)",
+    );
+    expect(retentionRangeHint("pro", true, EN_REPO_SETTINGS_LABELS)).toContain("365");
+    expect(retentionRangeHint("pro", false, EN_REPO_SETTINGS_LABELS)).toBeNull();
   });
 });
