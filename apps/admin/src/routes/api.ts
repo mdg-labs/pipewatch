@@ -7,6 +7,8 @@ import { registerAdminInviteRoutes } from "./admin/invites.js";
 import { registerAcceptInviteRoute } from "./auth/accept-invite.js";
 import { registerLoginRoute, registerLogoutRoute } from "./auth/login.js";
 import { registerIntegrationRoutes } from "./integrations.js";
+import { registerWebhookDeliveryRoutes } from "./webhook-deliveries.js";
+import { registerWebhookHealthRoutes } from "./webhook-health.js";
 import { registerWorkspaceRoutes } from "./workspaces.js";
 
 /** Register JSON API routes under `/api/*`. */
@@ -33,6 +35,8 @@ export function registerApiRoutes(app: Hono, deps: AdminAppDeps): void {
   registerAdminInviteRoutes(api);
   registerWorkspaceRoutes(api);
   registerIntegrationRoutes(api);
+  registerWebhookDeliveryRoutes(api);
+  registerWebhookHealthRoutes(api);
 
   api.get("/v1/status", (c) =>
     c.json(
