@@ -5,6 +5,7 @@ import { AlertTriangle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Button, Card, LogoWordmark, Skeleton, buttonClassName } from "@pipewatch/ui";
 
@@ -30,24 +31,18 @@ type InviteLoadState =
   | { status: "error"; kind: "expired" | "invalid" | "accepted"; message: string }
   | { status: "ready"; preview: InvitePreview };
 
-function formatRoleLabel(role: WorkspaceRole): string {
-  switch (role) {
-    case "owner":
-      return "Owner";
-    case "admin":
-      return "Admin";
-    case "member":
-      return "Member";
-  }
-}
+type InviteErrorKind = "expired" | "invalid" | "accepted";
 
-function mapPreviewError(error: unknown): InviteLoadState {
+function mapPreviewError(
+  error: unknown,
+  tError: (key: string) => string,
+): InviteLoadState {
   if (error instanceof InviteApiError) {
     if (error.status === 410) {
       return {
         status: "error",
         kind: "expired",
-        message: "This invite has expired. Ask a workspace admin to send a new invite.",
+        message: tError("expiredMessage"),
       };
     }
 
@@ -55,7 +50,7 @@ function mapPreviewError(error: unknown): InviteLoadState {
       return {
         status: "error",
         kind: "accepted",
-        message: "This invite has already been accepted.",
+        message: tError("acceptedMessage"),
       };
     }
 
@@ -63,7 +58,7 @@ function mapPreviewError(error: unknown): InviteLoadState {
       return {
         status: "error",
         kind: "invalid",
-        message: "This invite link is invalid or has been revoked.",
+        message: tError("invalidMessage"),
       };
     }
   }
@@ -71,13 +66,13 @@ function mapPreviewError(error: unknown): InviteLoadState {
   return {
     status: "error",
     kind: "invalid",
-    message: "This invite link is invalid or has been revoked.",
+    message: tError("invalidMessage"),
   };
 }
 
-function InviteAcceptSkeleton() {
+function InviteAcceptSkeleton({ ariaLabel }: { ariaLabel: string }) {
   return (
-    <div className="pw-invite-accept-skeleton" aria-busy="true" aria-label="Loading invite">
+    <div className="pw-invite-accept-skeleton" aria-busy="true" aria-label={ariaLabel}>
       <Skeleton variant="line" width="70%" height={20} />
       <Skeleton variant="line" width="100%" height={72} />
       <Skeleton variant="line" width="100%" height={44} />
@@ -88,9 +83,11 @@ function InviteAcceptSkeleton() {
 function InviteAcceptError({
   title,
   message,
+  signInLabel,
 }: {
   title: string;
   message: string;
+  signInLabel: string;
 }) {
   return (
     <div className="pw-invite-accept-error" role="alert">
@@ -112,7 +109,7 @@ function InviteAcceptError({
         className={buttonClassName({ variant: "secondary", size: "md" })}
         style={{ display: "inline-flex", justifyContent: "center", textDecoration: "none" }}
       >
-        Go to sign in
+        {signInLabel}
       </Link>
     </div>
   );
@@ -123,9 +120,42 @@ export function InviteAcceptCard({ token }: InviteAcceptCardProps) {
   const router = useRouter();
   const { api } = useApi();
   const { toast } = useToast();
+  const t = useTranslations("invite");
+  const tError = useTranslations("invite.error");
+  const tJoin = useTranslations("invite.join");
+  const tRoles = useTranslations("invite.roles");
+  const tToast = useTranslations("invite.toast");
   const [loadState, setLoadState] = useState<InviteLoadState>({ status: "loading" });
   const [accepting, setAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
+
+  const formatRoleLabel = useCallback(
+    (role: WorkspaceRole): string => {
+      switch (role) {
+        case "owner":
+          return tRoles("owner");
+        case "admin":
+          return tRoles("admin");
+        case "member":
+          return tRoles("member");
+      }
+    },
+    [tRoles],
+  );
+
+  const errorTitleForKind = useCallback(
+    (kind: InviteErrorKind): string => {
+      switch (kind) {
+        case "expired":
+          return tError("expiredTitle");
+        case "accepted":
+          return tError("acceptedTitle");
+        case "invalid":
+          return tError("invalidTitle");
+      }
+    },
+    [tError],
+  );
 
   const loadPreview = useCallback(async () => {
     setLoadState({ status: "loading" });
@@ -135,9 +165,9 @@ export function InviteAcceptCard({ token }: InviteAcceptCardProps) {
       const preview = await fetchInvitePreview(publicApiUrl, token);
       setLoadState({ status: "ready", preview });
     } catch (error) {
-      setLoadState(mapPreviewError(error));
+      setLoadState(mapPreviewError(error, tError));
     }
-  }, [token]);
+  }, [tError, token]);
 
   useEffect(() => {
     void loadPreview();
@@ -157,8 +187,8 @@ export function InviteAcceptCard({ token }: InviteAcceptCardProps) {
 
       if (!switched.ok) {
         toast({
-          title: "Joined workspace",
-          description: "Refresh or sign in again if the dashboard does not load.",
+          title: tToast("joinedTitle"),
+          description: tToast("joinedDescription"),
           variant: "info",
         });
       }
@@ -166,8 +196,11 @@ export function InviteAcceptCard({ token }: InviteAcceptCardProps) {
       const workspace = await api.get<Workspace>(`/workspaces/${result.workspace_id}`);
 
       toast({
-        title: "Welcome to the workspace",
-        description: `You joined ${result.workspace_name} as ${formatRoleLabel(result.role).toLowerCase()}.`,
+        title: tToast("welcomeTitle"),
+        description: tToast("welcomeDescription", {
+          workspaceName: result.workspace_name,
+          role: formatRoleLabel(result.role).toLowerCase(),
+        }),
         variant: "success",
       });
 
@@ -176,9 +209,7 @@ export function InviteAcceptCard({ token }: InviteAcceptCardProps) {
     } catch (error) {
       if (error instanceof InviteApiError) {
         if (error.status === 403) {
-          setAcceptError(
-            "This invite was sent to a different email address. Sign out and sign in with the invited email, then try again.",
-          );
+          setAcceptError(tJoin("wrongAccount"));
           return;
         }
 
@@ -186,7 +217,7 @@ export function InviteAcceptCard({ token }: InviteAcceptCardProps) {
           setLoadState({
             status: "error",
             kind: "expired",
-            message: "This invite has expired. Ask a workspace admin to send a new invite.",
+            message: tError("expiredMessage"),
           });
           return;
         }
@@ -195,7 +226,7 @@ export function InviteAcceptCard({ token }: InviteAcceptCardProps) {
           setLoadState({
             status: "error",
             kind: "accepted",
-            message: "This invite has already been accepted.",
+            message: tError("acceptedMessage"),
           });
           return;
         }
@@ -204,30 +235,35 @@ export function InviteAcceptCard({ token }: InviteAcceptCardProps) {
           setLoadState({
             status: "error",
             kind: "invalid",
-            message: "This invite link is invalid or has been revoked.",
+            message: tError("invalidMessage"),
           });
           return;
         }
       }
 
       toast({
-        title: "Could not accept invite",
-        description: "Try again in a moment.",
+        title: tToast("errorTitle"),
+        description: tToast("errorDescription"),
         variant: "error",
       });
     } finally {
       setAccepting(false);
     }
-  }, [accepting, api, loadState, router, toast, token]);
+  }, [
+    accepting,
+    api,
+    formatRoleLabel,
+    loadState,
+    router,
+    tError,
+    tJoin,
+    tToast,
+    toast,
+    token,
+  ]);
 
   const errorTitle =
-    loadState.status === "error"
-      ? loadState.kind === "expired"
-        ? "Invite expired"
-        : loadState.kind === "accepted"
-          ? "Invite already accepted"
-          : "Invalid invite"
-      : "";
+    loadState.status === "error" ? errorTitleForKind(loadState.kind) : "";
 
   return (
     <div className="pw-invite-accept-shell">
@@ -237,31 +273,33 @@ export function InviteAcceptCard({ token }: InviteAcceptCardProps) {
 
       <Card className="pw-invite-accept-card">
         {loadState.status === "loading" ? (
-          <InviteAcceptSkeleton />
+          <InviteAcceptSkeleton ariaLabel={t("loadingAriaLabel")} />
         ) : loadState.status === "error" ? (
-          <InviteAcceptError title={errorTitle} message={loadState.message} />
+          <InviteAcceptError
+            title={errorTitle}
+            message={loadState.message}
+            signInLabel={tError("goToSignIn")}
+          />
         ) : (
           <>
-            <h1 className="pw-invite-accept-heading">Join workspace</h1>
-            <p className="pw-invite-accept-subtext">
-              You&apos;ve been invited to collaborate on PipeWatch.
-            </p>
+            <h1 className="pw-invite-accept-heading">{tJoin("heading")}</h1>
+            <p className="pw-invite-accept-subtext">{tJoin("subtext")}</p>
 
             <div className="pw-invite-accept-details">
               <div className="pw-invite-accept-detail-row">
-                <span className="pw-invite-accept-detail-label">Workspace</span>
+                <span className="pw-invite-accept-detail-label">{tJoin("workspaceLabel")}</span>
                 <span className="pw-invite-accept-detail-value">
                   {loadState.preview.workspace_name}
                 </span>
               </div>
               <div className="pw-invite-accept-detail-row">
-                <span className="pw-invite-accept-detail-label">Role</span>
+                <span className="pw-invite-accept-detail-label">{tJoin("roleLabel")}</span>
                 <span className="pw-invite-accept-detail-value">
                   {formatRoleLabel(loadState.preview.role)}
                 </span>
               </div>
               <div className="pw-invite-accept-detail-row">
-                <span className="pw-invite-accept-detail-label">Invited as</span>
+                <span className="pw-invite-accept-detail-label">{tJoin("invitedAsLabel")}</span>
                 <span className="pw-invite-accept-detail-value">{loadState.preview.email}</span>
               </div>
             </div>
@@ -285,7 +323,7 @@ export function InviteAcceptCard({ token }: InviteAcceptCardProps) {
                 }}
                 disabled={accepting}
               >
-                {accepting ? "Joining…" : "Accept invite"}
+                {accepting ? tJoin("accepting") : tJoin("accept")}
               </Button>
             </div>
           </>

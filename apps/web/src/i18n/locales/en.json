@@ -115,6 +115,29 @@
       "ariaLabel": "Onboarding progress"
     }
   },
+  "auth": {
+    "common": {
+      "privacy": "Privacy",
+      "terms": "Terms"
+    },
+    "signIn": {
+      "heading": "Sign in to PipeWatch",
+      "subtext": "Your GitHub account is all you need.",
+      "continueWithGithub": "Continue with GitHub",
+      "dividerLabel": "first time?",
+      "footnote": "Don't have an account? Signing in creates one.",
+      "backToMarketing": "Back to pipewatch.app"
+    },
+    "bootstrap": {
+      "ceBadge": "Community Edition",
+      "freshInstall": "Fresh install detected — no users yet",
+      "heading": "Welcome to PipeWatch CE",
+      "subtext": "You're the first user. Sign in with GitHub to create your admin account. You'll have full owner access to this instance.",
+      "signInWithGithub": "Sign in with GitHub",
+      "infoText": "This screen disappears after your account is created. Additional users can be invited from <settings>Settings → Members</settings>.",
+      "helpLink": "Need help? Read the CE setup guide →"
+    }
+  },
   "onboarding": {
     "steps": {
       "workspace": {
@@ -133,6 +156,124 @@
         "label": "Step 4",
         "title": "Done"
       }
+    },
+    "wizard": {
+      "loadingProgress": "Loading your progress…",
+      "backToDashboard": "Back to Dashboard"
+    },
+    "common": {
+      "back": "Back",
+      "goToDashboard": "Go to Dashboard"
+    },
+    "createWorkspace": {
+      "title": "Create your workspace",
+      "subtitle": "A workspace groups the repositories you want to monitor together.",
+      "defaultName": "My Workspace",
+      "nameLabel": "Workspace name",
+      "namePlaceholder": "Acme Engineering",
+      "slugLabel": "URL slug",
+      "slugPrefix": "/workspaces/",
+      "slugChecking": "Checking availability…",
+      "slugAvailable": "{slug} is available",
+      "slugTaken": "This slug is already taken",
+      "slugInvalid": "Enter a valid slug (letters, numbers, hyphens)",
+      "planLabel": "Plan",
+      "planFree": "Free",
+      "planFreeHint": "Up to 10 repos, 30-day retention",
+      "planPro": "Pro",
+      "planProHint": "Upgrade after setup — 50 repos, longer retention",
+      "planBusiness": "Business",
+      "planBusinessHint": "Upgrade after setup — unlimited repos",
+      "planLimitHint": "Free includes up to {repoLimit} repos. Upgrade anytime in billing settings.",
+      "submitCreating": "Creating…",
+      "submitCreate": "Create workspace",
+      "toastCreatedTitle": "Workspace created",
+      "toastCreatedDescription": "Sign in again if GitHub setup fails.",
+      "toastForbiddenTitle": "Cannot create workspace",
+      "toastErrorTitle": "Could not create workspace",
+      "toastErrorDescription": "Check the name and slug, then try again."
+    },
+    "installGithub": {
+      "title": "Install the GitHub App",
+      "subtitle": "PipeWatch needs read access to your GitHub Actions data.",
+      "readAccessHeading": "Read access granted",
+      "actionsTitle": "Actions",
+      "actionsDescription": "Workflow runs, jobs, steps, and timing data",
+      "actionsEvents": "Events: workflow_run, workflow_job",
+      "metadataTitle": "Metadata",
+      "metadataDescription": "Repository names, visibility, and branch info",
+      "neverRequestedHeading": "Never requested",
+      "noWriteTitle": "No write access",
+      "noWriteDescription": "PipeWatch cannot trigger, cancel, or modify runs",
+      "noCodeTitle": "No access to your code",
+      "noCodeDescription": "File contents, commits, and pull requests are not readable",
+      "notConfigured": "GitHub App install is not configured yet. Set GITHUB_APP_SLUG on the API server and refresh this page.",
+      "installButton": "Install GitHub App →",
+      "manualLabel": "Already installed? Enter your installation ID manually.",
+      "installationIdAriaLabel": "GitHub installation ID",
+      "connect": "Connect",
+      "openInstallPage": "Open install page"
+    },
+    "selectRepos": {
+      "title": "Select repositories",
+      "subtitle": "Choose which repositories PipeWatch should track. You can change this later in settings.",
+      "searchPlaceholder": "Search repositories…",
+      "filterAriaLabel": "Filter repositories",
+      "repoCountBadge": "{selected} / {limit} repos",
+      "selectAll": "Select all",
+      "deselectAll": "Deselect all",
+      "planLimitHint": "You can track up to {repoLimit} repos on the Free plan.",
+      "loadError": "We could not load repositories from GitHub.",
+      "discovering": "Discovering repositories from your GitHub installation…",
+      "trackRepoAriaLabel": "Track {fullName}",
+      "privateBadge": "Private",
+      "syncProgress": "Syncing {count, plural, one {# repo} other {# repos}} — fetching run history…",
+      "submitStarting": "Starting…",
+      "submitStart": "Start syncing",
+      "toastErrorTitle": "Could not start syncing",
+      "toastErrorDescription": "Try again or continue to the dashboard."
+    },
+    "done": {
+      "title": "You're all set",
+      "subtitle": "{count, plural, one {# repository} other {# repositories}} connected. Backfill is running in the background.",
+      "tipLiveUpdates": "Live updates appear automatically on your dashboard.",
+      "tipPolling": "Set up polling mode per repo in repository settings.",
+      "tipInvite": "Invite teammates from workspace settings when you're ready."
+    }
+  },
+  "invite": {
+    "loadingAriaLabel": "Loading invite",
+    "error": {
+      "expiredTitle": "Invite expired",
+      "acceptedTitle": "Invite already accepted",
+      "invalidTitle": "Invalid invite",
+      "expiredMessage": "This invite has expired. Ask a workspace admin to send a new invite.",
+      "acceptedMessage": "This invite has already been accepted.",
+      "invalidMessage": "This invite link is invalid or has been revoked.",
+      "goToSignIn": "Go to sign in"
+    },
+    "join": {
+      "heading": "Join workspace",
+      "subtext": "You've been invited to collaborate on PipeWatch.",
+      "workspaceLabel": "Workspace",
+      "roleLabel": "Role",
+      "invitedAsLabel": "Invited as",
+      "accepting": "Joining…",
+      "accept": "Accept invite",
+      "wrongAccount": "This invite was sent to a different email address. Sign out and sign in with the invited email, then try again."
+    },
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "member": "Member"
+    },
+    "toast": {
+      "joinedTitle": "Joined workspace",
+      "joinedDescription": "Refresh or sign in again if the dashboard does not load.",
+      "welcomeTitle": "Welcome to the workspace",
+      "welcomeDescription": "You joined {workspaceName} as {role}.",
+      "errorTitle": "Could not accept invite",
+      "errorDescription": "Try again in a moment."
     }
   },
   "dashboard": {

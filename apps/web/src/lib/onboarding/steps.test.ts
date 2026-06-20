@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 
+import { ONBOARDING_WIZARD_STEP_IDS } from "@/i18n/onboarding-wizard-steps";
+
 import {
   minimumOnboardingStep,
   parseStepParam,
@@ -50,8 +52,10 @@ describe("onboarding steps", () => {
     ).toBe(3);
   });
 
-  it("maps numeric steps to wizard progress ids", () => {
-    expect(stepToProgressId(1)).toBe("workspace");
-    expect(stepToProgressId(4)).toBe("done");
+  it("maps numeric steps to wizard progress ids aligned with catalog keys", () => {
+    expect(stepToProgressId(1)).toBe(ONBOARDING_WIZARD_STEP_IDS[0]);
+    expect(stepToProgressId(2)).toBe(ONBOARDING_WIZARD_STEP_IDS[1]);
+    expect(stepToProgressId(3)).toBe(ONBOARDING_WIZARD_STEP_IDS[2]);
+    expect(stepToProgressId(4)).toBe(ONBOARDING_WIZARD_STEP_IDS[3]);
   });
 });

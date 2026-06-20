@@ -71,12 +71,14 @@ export function OnboardingWizard({
   basePath = "/onboarding",
   defaultWorkspaceName,
 }: OnboardingWizardProps) {
+  const tCreateWorkspace = useTranslations("onboarding.createWorkspace");
   const initialWorkspaceName =
-    defaultWorkspaceName ?? (flags.IS_CE ? "My Workspace" : "");
+    defaultWorkspaceName ?? (flags.IS_CE ? tCreateWorkspace("defaultName") : "");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { api, claims } = useApi();
   const tWizard = useTranslations("ui.wizard");
+  const tOnboarding = useTranslations("onboarding.wizard");
   const tSteps = useTranslations("onboarding.steps");
   const wizardSteps = buildOnboardingWizardSteps({
     workspace: { label: tSteps("workspace.label"), title: tSteps("workspace.title") },
@@ -193,7 +195,7 @@ export function OnboardingWizard({
     if (bootstrapping) {
       return (
         <div className="pw-onboarding-card-body">
-          <p className="pw-onboarding-card-subtitle">Loading your progress…</p>
+          <p className="pw-onboarding-card-subtitle">{tOnboarding("loadingProgress")}</p>
         </div>
       );
     }
@@ -244,6 +246,7 @@ export function OnboardingWizard({
     goToStep,
     handleReposComplete,
     handleWorkspaceCreated,
+    tOnboarding,
   ]);
 
   return (
@@ -252,7 +255,7 @@ export function OnboardingWizard({
         <LogoWordmark markSize={20} />
         {dashboardHref ? (
           <Link className="pw-onboarding-topbar-link" href={dashboardHref}>
-            Back to Dashboard
+            {tOnboarding("backToDashboard")}
             <ChevronRight size={12} strokeWidth={1.5} aria-hidden />
           </Link>
         ) : (

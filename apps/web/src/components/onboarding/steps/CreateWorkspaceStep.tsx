@@ -4,6 +4,7 @@ import { flags } from "@pipewatch/config/edition";
 import { getPlanLimits } from "@pipewatch/config/plan-limits";
 import type { SlugAvailability, Workspace, WorkspacePlan } from "@pipewatch/types";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Button, Input, RadioGroup } from "@pipewatch/ui";
 
@@ -21,32 +22,12 @@ export type CreateWorkspaceStepProps = {
 
 type SlugCheckState = "idle" | "checking" | "available" | "unavailable" | "invalid";
 
-const PLAN_OPTIONS: Array<{
-  value: WorkspacePlan;
-  label: string;
-  hint?: string;
-  disabled?: boolean;
-}> = [
-  { value: "free", label: "Free", hint: "Up to 10 repos, 30-day retention" },
-  {
-    value: "pro",
-    label: "Pro",
-    hint: "Upgrade after setup — 50 repos, longer retention",
-    disabled: true,
-  },
-  {
-    value: "business",
-    label: "Business",
-    hint: "Upgrade after setup — unlimited repos",
-    disabled: true,
-  },
-];
-
 /** Step 1 — workspace name, slug availability, optional cloud plan selector. */
 export function CreateWorkspaceStep({
   defaultName = "",
   onCreated,
 }: CreateWorkspaceStepProps) {
+  const t = useTranslations("onboarding.createWorkspace");
   const { api } = useApi();
   const { toast } = useToast();
   const [name, setName] = useState(defaultName);
@@ -55,6 +36,31 @@ export function CreateWorkspaceStep({
   const [plan, setPlan] = useState<WorkspacePlan>("free");
   const [slugState, setSlugState] = useState<SlugCheckState>("idle");
   const [submitting, setSubmitting] = useState(false);
+
+  const planOptions = useMemo(
+    () =>
+      [
+        { value: "free" as const, label: t("planFree"), hint: t("planFreeHint") },
+        {
+          value: "pro" as const,
+          label: t("planPro"),
+          hint: t("planProHint"),
+          disabled: true,
+        },
+        {
+          value: "business" as const,
+          label: t("planBusiness"),
+          hint: t("planBusinessHint"),
+          disabled: true,
+        },
+      ] satisfies Array<{
+        value: WorkspacePlan;
+        label: string;
+        hint?: string;
+        disabled?: boolean;
+      }>,
+    [t],
+  );
 
   useEffect(() => {
     if (!slugTouched) {
@@ -110,8 +116,8 @@ export function CreateWorkspaceStep({
       const switched = await switchWorkspace(publicApiUrl, workspace.id);
       if (!switched.ok) {
         toast({
-          title: "Workspace created",
-          description: "Sign in again if GitHub setup fails.",
+          title: t("toastCreatedTitle"),
+          description: t("toastCreatedDescription"),
           variant: "info",
         });
       }
@@ -124,41 +130,41 @@ export function CreateWorkspaceStep({
       toast({
         title:
           apiCode === "FORBIDDEN"
-            ? "Cannot create workspace"
-            : "Could not create workspace",
+            ? t("toastForbiddenTitle")
+            : t("toastErrorTitle"),
         description:
-          apiMessage ?? "Check the name and slug, then try again.",
+          apiMessage ?? t("toastErrorDescription"),
         variant: "error",
       });
     } finally {
       setSubmitting(false);
     }
-  }, [api, canSubmit, name, onCreated, slug, toast]);
+  }, [api, canSubmit, name, onCreated, slug, t, toast]);
 
   const slugHint = (() => {
     switch (slugState) {
       case "checking":
         return (
           <span className="pw-onboarding-slug-status pw-onboarding-slug-checking">
-            Checking availability…
+            {t("slugChecking")}
           </span>
         );
       case "available":
         return (
           <span className="pw-onboarding-slug-status pw-onboarding-slug-available">
-            {slug.trim()} is available
+            {t("slugAvailable", { slug: slug.trim() })}
           </span>
         );
       case "unavailable":
         return (
           <span className="pw-onboarding-slug-status pw-onboarding-slug-unavailable">
-            This slug is already taken
+            {t("slugTaken")}
           </span>
         );
       case "invalid":
         return (
           <span className="pw-onboarding-slug-status pw-onboarding-slug-unavailable">
-            Enter a valid slug (letters, numbers, hyphens)
+            {t("slugInvalid")}
           </span>
         );
       default:
@@ -171,49 +177,46 @@ export function CreateWorkspaceStep({
   return (
     <>
       <div className="pw-onboarding-card-header">
-        <h1 className="pw-onboarding-card-title">Create your workspace</h1>
-        <p className="pw-onboarding-card-subtitle">
-          A workspace groups the repositories you want to monitor together.
-        </p>
+        <h1 className="pw-onboarding-card-title">{t("title")}</h1>
+        <p className="pw-onboarding-card-subtitle">{t("subtitle")}</p>
       </div>
 
       <div className="pw-onboarding-card-body">
         <Input
-          label="Workspace name"
+          label={t("nameLabel")}
           value={name}
           onChange={(event) => {
             setName(event.target.value);
           }}
-          placeholder="Acme Engineering"
+          placeholder={t("namePlaceholder")}
           autoComplete="organization"
         />
 
         <Input
-          label="URL slug"
+          label={t("slugLabel")}
           value={slug}
           onChange={(event) => {
             setSlugTouched(true);
             setSlug(event.target.value);
           }}
           mono
-          prefix={<span>/workspaces/</span>}
+          prefix={<span>{t("slugPrefix")}</span>}
         />
         {slugHint}
 
         {flags.PLAN_LIMITS_ENABLED ? (
           <div style={{ marginTop: "var(--space-5)" }}>
             <RadioGroup
-              label="Plan"
+              label={t("planLabel")}
               name="workspace-plan"
               value={plan}
               onChange={(value) => {
                 setPlan(value as WorkspacePlan);
               }}
-              options={PLAN_OPTIONS}
+              options={planOptions}
             />
             <p className="pw-onboarding-plan-hint">
-              Free includes up to {freeRepoLimit ?? 10} repos. Upgrade anytime in
-              billing settings.
+              {t("planLimitHint", { repoLimit: freeRepoLimit ?? 10 })}
             </p>
           </div>
         ) : null}
@@ -222,7 +225,7 @@ export function CreateWorkspaceStep({
       <div className="pw-onboarding-card-footer">
         <div className="pw-onboarding-card-footer-actions">
           <Button disabled={!canSubmit} onClick={() => void handleSubmit()}>
-            {submitting ? "Creating…" : "Create workspace"}
+            {submitting ? t("submitCreating") : t("submitCreate")}
           </Button>
         </div>
       </div>

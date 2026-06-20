@@ -5,6 +5,7 @@ import { getPlanLimits } from "@pipewatch/config/plan-limits";
 import type { RepositorySummary, Workspace, WorkspacePlan } from "@pipewatch/types";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Badge, Button, Checkbox, Input, Skeleton, buttonClassName } from "@pipewatch/ui";
 
@@ -35,6 +36,8 @@ function repoLimitForPlan(plan: WorkspacePlan): number | null {
 
 /** Step 3 — multi-select repos, sync progress, optional plan limit badge. */
 export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposStepProps) {
+  const t = useTranslations("onboarding.selectRepos");
+  const tCommon = useTranslations("onboarding.common");
   const { api } = useApi();
   const scopedApi = useMemo(() => api.workspace(workspace.id), [api, workspace.id]);
   const { toast } = useToast();
@@ -207,25 +210,22 @@ export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposSt
       onComplete(selectedCount);
     } catch {
       toast({
-        title: "Could not start syncing",
-        description: "Try again or continue to the dashboard.",
+        title: t("toastErrorTitle"),
+        description: t("toastErrorDescription"),
         variant: "error",
       });
     } finally {
       setSubmitting(false);
     }
-  }, [onComplete, repos, scopedApi, selected, selectedCount, toast]);
+  }, [onComplete, repos, scopedApi, selected, selectedCount, t, toast]);
 
   const backfillCount = syncStatus ? countBackfillInProgress(syncStatus) : 0;
 
   return (
     <>
       <div className="pw-onboarding-card-header">
-        <h1 className="pw-onboarding-card-title">Select repositories</h1>
-        <p className="pw-onboarding-card-subtitle">
-          Choose which repositories PipeWatch should track. You can change this later
-          in settings.
-        </p>
+        <h1 className="pw-onboarding-card-title">{t("title")}</h1>
+        <p className="pw-onboarding-card-subtitle">{t("subtitle")}</p>
       </div>
 
       <div className="pw-onboarding-card-body">
@@ -236,14 +236,14 @@ export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposSt
               onChange={(event) => {
                 setFilter(event.target.value);
               }}
-              placeholder="Search repositories…"
-              aria-label="Filter repositories"
+              placeholder={t("searchPlaceholder")}
+              aria-label={t("filterAriaLabel")}
             />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)" }}>
             {repoLimit !== null ? (
               <Badge variant={atLimit ? "accent" : "default"}>
-                {selectedCount} / {repoLimit} repos
+                {t("repoCountBadge", { selected: selectedCount, limit: repoLimit })}
               </Badge>
             ) : null}
             <Button
@@ -252,7 +252,7 @@ export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposSt
               disabled={allInScopeSelected}
               onClick={handleSelectAll}
             >
-              Select all
+              {t("selectAll")}
             </Button>
             <Button
               size="sm"
@@ -260,14 +260,14 @@ export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposSt
               disabled={!hasInScopeSelection}
               onClick={handleDeselectAll}
             >
-              Deselect all
+              {t("deselectAll")}
             </Button>
           </div>
         </div>
 
         {repoLimit !== null ? (
           <p className="pw-onboarding-plan-hint" style={{ marginBottom: "var(--space-3)" }}>
-            You can track up to {repoLimit} repos on the Free plan.
+            {t("planLimitHint", { repoLimit })}
           </p>
         ) : null}
 
@@ -279,16 +279,14 @@ export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposSt
           </div>
         ) : loadError ? (
           <ErrorRetry
-            message="We could not load repositories from GitHub."
+            message={t("loadError")}
             onRetry={() => {
               setLoading(true);
               void loadRepos();
             }}
           />
         ) : repos.length === 0 ? (
-          <div className="pw-onboarding-empty-repos">
-            Discovering repositories from your GitHub installation…
-          </div>
+          <div className="pw-onboarding-empty-repos">{t("discovering")}</div>
         ) : (
           <div className="pw-onboarding-repo-list" role="list">
             {filteredRepos.map((repo) => (
@@ -299,10 +297,10 @@ export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposSt
                   onChange={(checked) => {
                     toggleRepo(repo.id, checked);
                   }}
-                  aria-label={`Track ${repo.full_name}`}
+                  aria-label={t("trackRepoAriaLabel", { fullName: repo.full_name })}
                 />
                 <span className="pw-onboarding-repo-name">{repo.full_name}</span>
-                {repo.private ? <Badge variant="default">Private</Badge> : null}
+                {repo.private ? <Badge variant="default">{t("privateBadge")}</Badge> : null}
               </label>
             ))}
           </div>
@@ -310,8 +308,7 @@ export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposSt
 
         {startedSync && backfillCount > 0 ? (
           <div className="pw-onboarding-sync-progress" role="status">
-            Syncing {backfillCount} {backfillCount === 1 ? "repo" : "repos"} — fetching
-            run history…
+            {t("syncProgress", { count: backfillCount })}
           </div>
         ) : null}
 
@@ -320,21 +317,21 @@ export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposSt
             className={buttonClassName({ variant: "ghost" })}
             href={dashboardHref}
           >
-            Go to Dashboard
+            {tCommon("goToDashboard")}
           </Link>
         </div>
       </div>
 
       <div className="pw-onboarding-card-footer">
         <Button variant="ghost" onClick={onBack}>
-          Back
+          {tCommon("back")}
         </Button>
         <div className="pw-onboarding-card-footer-actions">
           <Button
             disabled={selectedCount === 0 || submitting || loading}
             onClick={() => void handleStartSync()}
           >
-            {submitting ? "Starting…" : "Start syncing"}
+            {submitting ? t("submitStarting") : t("submitStart")}
           </Button>
         </div>
       </div>

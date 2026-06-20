@@ -2,6 +2,7 @@
 
 import { Check } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { Button, buttonClassName } from "@pipewatch/ui";
 
@@ -13,6 +14,8 @@ export type DoneStepProps = {
 
 /** Step 4 — success summary, tips, and dashboard CTA. */
 export function DoneStep({ workspaceSlug, enabledRepoCount, onBack }: DoneStepProps) {
+  const t = useTranslations("onboarding.done");
+  const tCommon = useTranslations("onboarding.common");
   const dashboardHref = `/workspaces/${workspaceSlug}/`;
 
   return (
@@ -21,26 +24,24 @@ export function DoneStep({ workspaceSlug, enabledRepoCount, onBack }: DoneStepPr
         <div className="pw-onboarding-success-icon" aria-hidden>
           <Check size={24} strokeWidth={2.5} />
         </div>
-        <h1 className="pw-onboarding-card-title">You&apos;re all set</h1>
+        <h1 className="pw-onboarding-card-title">{t("title")}</h1>
         <p className="pw-onboarding-card-subtitle">
-          {enabledRepoCount}{" "}
-          {enabledRepoCount === 1 ? "repository" : "repositories"} connected. Backfill is
-          running in the background.
+          {t("subtitle", { count: enabledRepoCount })}
         </p>
       </div>
 
       <div className="pw-onboarding-card-body">
         <ul className="pw-onboarding-tips">
-          <li>Live updates appear automatically on your dashboard.</li>
-          <li>Set up polling mode per repo in repository settings.</li>
-          <li>Invite teammates from workspace settings when you&apos;re ready.</li>
+          <li>{t("tipLiveUpdates")}</li>
+          <li>{t("tipPolling")}</li>
+          <li>{t("tipInvite")}</li>
         </ul>
       </div>
 
       <div className="pw-onboarding-card-footer">
         {onBack ? (
           <Button variant="ghost" onClick={onBack}>
-            Back
+            {tCommon("back")}
           </Button>
         ) : (
           <span />
@@ -50,7 +51,7 @@ export function DoneStep({ workspaceSlug, enabledRepoCount, onBack }: DoneStepPr
             className={buttonClassName({ variant: "primary" })}
             href={dashboardHref}
           >
-            Go to Dashboard
+            {tCommon("goToDashboard")}
           </Link>
         </div>
       </div>

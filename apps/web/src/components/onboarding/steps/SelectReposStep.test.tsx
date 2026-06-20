@@ -2,9 +2,12 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { NextIntlClientProvider } from "next-intl";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { RepositorySummary, Workspace } from "@pipewatch/types";
+
+import en from "@/i18n/locales/en.json";
 
 import { SelectReposStep } from "./SelectReposStep";
 
@@ -98,11 +101,13 @@ function selectedCheckboxCount(): number {
 async function renderStep() {
   await act(async () => {
     root.render(
-      <SelectReposStep
-        workspace={workspace}
-        onBack={() => undefined}
-        onComplete={() => undefined}
-      />,
+      <NextIntlClientProvider locale="en" messages={en}>
+        <SelectReposStep
+          workspace={workspace}
+          onBack={() => undefined}
+          onComplete={() => undefined}
+        />
+      </NextIntlClientProvider>,
     );
     await Promise.resolve();
     await Promise.resolve();
@@ -138,9 +143,9 @@ describe("SelectReposStep", () => {
   it("select all then deselect all clears selection and disables Start syncing", async () => {
     await renderStep();
 
-    const selectAllButton = findButtonByText("Select all");
-    const deselectAllButton = findButtonByText("Deselect all");
-    const startSyncButton = findButtonByText("Start syncing");
+    const selectAllButton = findButtonByText(en.onboarding.selectRepos.selectAll);
+    const deselectAllButton = findButtonByText(en.onboarding.selectRepos.deselectAll);
+    const startSyncButton = findButtonByText(en.onboarding.selectRepos.submitStart);
 
     expect(selectAllButton).not.toBeNull();
     expect(deselectAllButton).not.toBeNull();

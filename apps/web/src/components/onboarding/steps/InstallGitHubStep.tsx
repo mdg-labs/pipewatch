@@ -3,6 +3,7 @@
 import { flags } from "@pipewatch/config/edition";
 import { Check, Github, Minus } from "lucide-react";
 import { useCallback, useState } from "react";
+import { useTranslations } from "next-intl";
 
 import { Button, Input } from "@pipewatch/ui";
 
@@ -19,6 +20,8 @@ export type InstallGitHubStepProps = {
 
 /** Step 2 — GitHub App permissions explainer and install CTA. */
 export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepProps) {
+  const t = useTranslations("onboarding.installGithub");
+  const tCommon = useTranslations("onboarding.common");
   const installUrl = buildGitHubAppInstallUrl(githubAppSlug);
   const installConfigured = installUrl !== null;
   const [manualId, setManualId] = useState("");
@@ -37,16 +40,14 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
   return (
     <>
       <div className="pw-onboarding-card-header">
-        <h1 className="pw-onboarding-card-title">Install the GitHub App</h1>
-        <p className="pw-onboarding-card-subtitle">
-          PipeWatch needs read access to your GitHub Actions data.
-        </p>
+        <h1 className="pw-onboarding-card-title">{t("title")}</h1>
+        <p className="pw-onboarding-card-subtitle">{t("subtitle")}</p>
       </div>
 
       <div className="pw-onboarding-card-body">
         <div className="pw-onboarding-permissions">
           <div className="pw-onboarding-permissions-section">
-            <h2 className="pw-onboarding-permissions-heading">Read access granted</h2>
+            <h2 className="pw-onboarding-permissions-heading">{t("readAccessHeading")}</h2>
             <ul className="pw-onboarding-permission-list">
               <li className="pw-onboarding-permission-item">
                 <span
@@ -56,12 +57,12 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
                   <Check size={10} strokeWidth={2} />
                 </span>
                 <div>
-                  <div className="pw-onboarding-permission-title">Actions</div>
+                  <div className="pw-onboarding-permission-title">{t("actionsTitle")}</div>
                   <div className="pw-onboarding-permission-desc">
-                    Workflow runs, jobs, steps, and timing data
+                    {t("actionsDescription")}
                   </div>
                   <div className="pw-onboarding-permission-desc pw-onboarding-permission-desc-muted">
-                    Events: workflow_run, workflow_job
+                    {t("actionsEvents")}
                   </div>
                 </div>
               </li>
@@ -73,9 +74,9 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
                   <Check size={10} strokeWidth={2} />
                 </span>
                 <div>
-                  <div className="pw-onboarding-permission-title">Metadata</div>
+                  <div className="pw-onboarding-permission-title">{t("metadataTitle")}</div>
                   <div className="pw-onboarding-permission-desc">
-                    Repository names, visibility, and branch info
+                    {t("metadataDescription")}
                   </div>
                 </div>
               </li>
@@ -83,7 +84,7 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
           </div>
 
           <div className="pw-onboarding-permissions-section">
-            <h2 className="pw-onboarding-permissions-heading">Never requested</h2>
+            <h2 className="pw-onboarding-permissions-heading">{t("neverRequestedHeading")}</h2>
             <ul className="pw-onboarding-permission-list">
               <li className="pw-onboarding-permission-item">
                 <span
@@ -93,9 +94,9 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
                   <Minus size={9} strokeWidth={2} />
                 </span>
                 <div>
-                  <div className="pw-onboarding-permission-title">No write access</div>
+                  <div className="pw-onboarding-permission-title">{t("noWriteTitle")}</div>
                   <div className="pw-onboarding-permission-desc pw-onboarding-permission-desc-muted">
-                    PipeWatch cannot trigger, cancel, or modify runs
+                    {t("noWriteDescription")}
                   </div>
                 </div>
               </li>
@@ -107,9 +108,9 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
                   <Minus size={9} strokeWidth={2} />
                 </span>
                 <div>
-                  <div className="pw-onboarding-permission-title">No access to your code</div>
+                  <div className="pw-onboarding-permission-title">{t("noCodeTitle")}</div>
                   <div className="pw-onboarding-permission-desc pw-onboarding-permission-desc-muted">
-                    File contents, commits, and pull requests are not readable
+                    {t("noCodeDescription")}
                   </div>
                 </div>
               </li>
@@ -120,8 +121,7 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
         <div style={{ marginTop: "var(--space-5)" }}>
           {installConfigured ? null : (
             <p className="pw-onboarding-card-subtitle" role="alert">
-              GitHub App install is not configured yet. Set <code>GITHUB_APP_SLUG</code> on the
-              API server and refresh this page.
+              {t("notConfigured")}
             </p>
           )}
           <Button
@@ -135,15 +135,13 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
             }}
           >
             <Github size={16} strokeWidth={2} aria-hidden />
-            Install GitHub App →
+            {t("installButton")}
           </Button>
         </div>
 
         {flags.IS_CE ? (
           <div className="pw-onboarding-manual">
-            <p className="pw-onboarding-manual-label">
-              Already installed? Enter your installation ID manually.
-            </p>
+            <p className="pw-onboarding-manual-label">{t("manualLabel")}</p>
             <div className="pw-onboarding-manual-row">
               <Input
                 value={manualId}
@@ -152,14 +150,14 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
                 }}
                 placeholder="12345678"
                 mono
-                aria-label="GitHub installation ID"
+                aria-label={t("installationIdAriaLabel")}
               />
               <Button
                 variant="secondary"
                 disabled={!manualId.trim() || submittingManual}
                 onClick={handleManualSubmit}
               >
-                Connect
+                {t("connect")}
               </Button>
             </div>
           </div>
@@ -169,7 +167,7 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
       <div className="pw-onboarding-card-footer">
         {onBack ? (
           <Button variant="ghost" onClick={onBack}>
-            Back
+            {tCommon("back")}
           </Button>
         ) : (
           <span />
@@ -184,7 +182,7 @@ export function InstallGitHubStep({ githubAppSlug, onBack }: InstallGitHubStepPr
               }
             }}
           >
-            Open install page
+            {t("openInstallPage")}
           </Button>
         </div>
       </div>
