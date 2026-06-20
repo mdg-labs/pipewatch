@@ -2,12 +2,69 @@
   "app": {
     "metadata": {
       "title": "PipeWatch"
+    },
+    "shell": {
+      "appNavigationAriaLabel": "App navigation",
+      "workspaceNavAriaLabel": "Workspace"
+    },
+    "sidebar": {
+      "dashboard": "Dashboard",
+      "insights": "Insights",
+      "settings": "Settings",
+      "general": "General",
+      "members": "Members",
+      "integrations": "Integrations",
+      "apiKeys": "API Keys",
+      "billing": "Billing",
+      "apiDocs": "API Docs"
+    },
+    "breadcrumbs": {
+      "ariaLabel": "Breadcrumb",
+      "dashboard": "Dashboard",
+      "insights": "Insights",
+      "settings": "Settings",
+      "members": "Members",
+      "integrations": "Integrations",
+      "apiKeys": "API Keys",
+      "billing": "Billing",
+      "repos": "Repositories",
+      "runs": "Runs"
+    },
+    "workspaceSwitcher": {
+      "workspacesAriaLabel": "Workspaces",
+      "createWorkspace": "Create workspace"
+    },
+    "userMenu": {
+      "account": "Account",
+      "billing": "Billing",
+      "signOut": "Sign out",
+      "signingOut": "Signing out…"
+    },
+    "edition": {
+      "cloud": "Cloud",
+      "ce": "CE"
+    },
+    "liveIndicator": {
+      "connected": "Live",
+      "reconnecting": "Reconnecting",
+      "offline": "Offline"
     }
   },
   "common": {
     "error": {
       "title": "Something went wrong",
       "retry": "Retry"
+    },
+    "readOnlyNotice": "You have read-only access. Settings changes require admin or owner role.",
+    "loading": {
+      "cards": "Loading cards",
+      "table": "Loading table"
+    }
+  },
+  "access": {
+    "forbidden": {
+      "title": "Insufficient permissions",
+      "message": "You do not have access to this page. Contact a workspace owner if you need access."
     }
   },
   "ui": {

@@ -2,6 +2,7 @@
 
 import { Building2, ChevronDown, Plus } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Skeleton, classNames } from "@pipewatch/ui";
@@ -20,6 +21,7 @@ export function WorkspaceSwitcher({
   enabled,
   loading = false,
 }: WorkspaceSwitcherProps) {
+  const t = useTranslations("app.workspaceSwitcher");
   const menuId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -77,7 +79,7 @@ export function WorkspaceSwitcher({
           id={menuId}
           className="pw-app-workspace-menu"
           role="listbox"
-          aria-label="Workspaces"
+          aria-label={t("workspacesAriaLabel")}
         >
           {workspaces.map((workspace) => {
             const active = workspace.slug === activeSlug;
@@ -106,7 +108,7 @@ export function WorkspaceSwitcher({
               onClick={() => setOpen(false)}
             >
               <Plus size={12} aria-hidden style={{ marginRight: 6 }} />
-              Create workspace
+              {t("createWorkspace")}
             </Link>
           </div>
         </div>

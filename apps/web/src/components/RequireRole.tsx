@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
 import {
@@ -16,14 +17,15 @@ export type RequireRoleProps = {
 };
 
 function DefaultForbiddenMessage() {
+  const t = useTranslations("access.forbidden");
+
   return (
     <section className="pw-forbidden" role="alert">
       <h1 style={{ margin: 0, fontSize: 18, fontWeight: 600 }}>
-        Insufficient permissions
+        {t("title")}
       </h1>
       <p style={{ color: "var(--text-secondary)", marginTop: 8 }}>
-        You do not have access to this page. Contact a workspace owner if you
-        need access.
+        {t("message")}
       </p>
     </section>
   );

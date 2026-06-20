@@ -59,23 +59,21 @@ describe("Toast", () => {
 
 describe("TableSkeleton", () => {
   it("renders an accessible loading table", () => {
-    const html = renderToStaticMarkup(
-      <TableSkeleton columns={3} rows={2} />,
-    );
+    const html = renderWithIntl(<TableSkeleton columns={3} rows={2} />);
 
     expect(html).toContain("pw-table-skeleton");
     expect(html).toContain('aria-busy="true"');
-    expect(html).toContain('aria-label="Loading table"');
+    expect(html).toContain(`aria-label="${en.common.loading.table}"`);
   });
 });
 
 describe("CardSkeleton", () => {
   it("renders an accessible loading card grid", () => {
-    const html = renderToStaticMarkup(<CardSkeleton count={2} />);
+    const html = renderWithIntl(<CardSkeleton count={2} />);
 
     expect(html).toContain("pw-card-skeleton-grid");
     expect(html).toContain('aria-busy="true"');
-    expect(html).toContain('aria-label="Loading cards"');
+    expect(html).toContain(`aria-label="${en.common.loading.cards}"`);
   });
 });
 
@@ -91,6 +89,6 @@ describe("ErrorRetry", () => {
     expect(html).toContain("pw-error-retry");
     expect(html).toContain('role="alert"');
     expect(html).toContain("We could not load workflow runs.");
-    expect(html).toContain("Retry");
+    expect(html).toContain(en.common.error.retry);
   });
 });

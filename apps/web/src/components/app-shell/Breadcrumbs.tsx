@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 
 import { classNames } from "@pipewatch/ui";
@@ -15,16 +16,29 @@ export type BreadcrumbsProps = {
   workspaceSlug: string;
 };
 
-const SEGMENT_LABELS: Record<string, string> = {
-  insights: "Insights",
-  settings: "Settings",
-  members: "Members",
-  integrations: "Integrations",
-  "api-keys": "API Keys",
-  billing: "Billing",
-  repos: "Repositories",
-  runs: "Runs",
-};
+const KNOWN_SEGMENTS = [
+  "insights",
+  "settings",
+  "members",
+  "integrations",
+  "api-keys",
+  "billing",
+  "repos",
+  "runs",
+] as const;
+
+type BreadcrumbTranslator = (
+  key:
+    | "dashboard"
+    | "insights"
+    | "settings"
+    | "members"
+    | "integrations"
+    | "apiKeys"
+    | "billing"
+    | "repos"
+    | "runs",
+) => string;
 
 function titleCase(segment: string): string {
   return segment
@@ -33,9 +47,36 @@ function titleCase(segment: string): string {
     .join(" ");
 }
 
+function segmentLabel(
+  part: string,
+  t: BreadcrumbTranslator,
+): string {
+  switch (part) {
+    case "insights":
+      return t("insights");
+    case "settings":
+      return t("settings");
+    case "members":
+      return t("members");
+    case "integrations":
+      return t("integrations");
+    case "api-keys":
+      return t("apiKeys");
+    case "billing":
+      return t("billing");
+    case "repos":
+      return t("repos");
+    case "runs":
+      return t("runs");
+    default:
+      return titleCase(part);
+  }
+}
+
 export function buildBreadcrumbSegments(
   pathname: string,
   workspaceSlug: string,
+  t: BreadcrumbTranslator,
 ): BreadcrumbSegment[] {
   const prefix = `/workspaces/${workspaceSlug}`;
   const segments: BreadcrumbSegment[] = [
@@ -51,7 +92,7 @@ export function buildBreadcrumbSegments(
 
   const remainder = pathname.slice(prefix.length).replace(/^\//, "");
   if (!remainder) {
-    segments.push({ label: "Dashboard" });
+    segments.push({ label: t("dashboard") });
     return segments;
   }
 
@@ -61,7 +102,9 @@ export function buildBreadcrumbSegments(
   parts.forEach((part, index) => {
     currentPath += `/${part}`;
     const isLast = index === parts.length - 1;
-    const label = SEGMENT_LABELS[part] ?? titleCase(part);
+    const label = KNOWN_SEGMENTS.includes(part as (typeof KNOWN_SEGMENTS)[number])
+      ? segmentLabel(part, t)
+      : titleCase(part);
 
     segments.push({
       label,
@@ -74,13 +117,14 @@ export function buildBreadcrumbSegments(
 
 export function Breadcrumbs({ workspaceSlug }: BreadcrumbsProps) {
   const pathname = usePathname() ?? "";
+  const t = useTranslations("app.breadcrumbs");
   const segments = useMemo(
-    () => buildBreadcrumbSegments(pathname, workspaceSlug),
-    [pathname, workspaceSlug],
+    () => buildBreadcrumbSegments(pathname, workspaceSlug, t),
+    [pathname, workspaceSlug, t],
   );
 
   return (
-    <nav aria-label="Breadcrumb">
+    <nav aria-label={t("ariaLabel")}>
       <ol className="pw-app-breadcrumbs">
         {segments.map((segment, index) => {
           const isLast = index === segments.length - 1;

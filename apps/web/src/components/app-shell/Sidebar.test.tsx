@@ -1,6 +1,9 @@
 import type { ReactNode } from "react";
+import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
+
+import en from "@/i18n/locales/en.json";
 
 import { buildSettingsNavItems, Sidebar } from "./Sidebar";
 
@@ -29,9 +32,21 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+function sidebarT(key: keyof typeof en.app.sidebar): string {
+  return en.app.sidebar[key];
+}
+
+function renderSidebar(node: ReactNode): string {
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale="en" messages={en}>
+      {node}
+    </NextIntlClientProvider>,
+  );
+}
+
 describe("buildSettingsNavItems", () => {
   it("includes billing when enabled", () => {
-    const items = buildSettingsNavItems("mdg-labs", true);
+    const items = buildSettingsNavItems("mdg-labs", true, sidebarT);
     expect(items.map((item) => item.id)).toEqual([
       "general",
       "members",
@@ -42,7 +57,7 @@ describe("buildSettingsNavItems", () => {
   });
 
   it("hides billing when billing nav is disabled", () => {
-    const items = buildSettingsNavItems("mdg-labs", false);
+    const items = buildSettingsNavItems("mdg-labs", false, sidebarT);
     expect(items.map((item) => item.id)).toEqual([
       "general",
       "members",
@@ -55,19 +70,19 @@ describe("buildSettingsNavItems", () => {
 
 describe("Sidebar", () => {
   it("renders primary nav and settings children", () => {
-    const html = renderToStaticMarkup(
+    const html = renderSidebar(
       <Sidebar workspaceSlug="mdg-labs" showBilling={false} />,
     );
 
-    expect(html).toContain("Dashboard");
-    expect(html).toContain("Insights");
-    expect(html).toContain("Settings");
+    expect(html).toContain(en.app.sidebar.dashboard);
+    expect(html).toContain(en.app.sidebar.insights);
+    expect(html).toContain(en.app.sidebar.settings);
     expect(html).toContain('href="/workspaces/mdg-labs/settings/members"');
     expect(html).not.toContain('href="/workspaces/mdg-labs/settings/billing"');
   });
 
   it("renders billing settings link when billing nav is enabled", () => {
-    const html = renderToStaticMarkup(
+    const html = renderSidebar(
       <Sidebar workspaceSlug="mdg-labs" showBilling />,
     );
 
@@ -75,12 +90,12 @@ describe("Sidebar", () => {
   });
 
   it("renders API docs footer link from configured API URL", () => {
-    const html = renderToStaticMarkup(
+    const html = renderSidebar(
       <Sidebar workspaceSlug="mdg-labs" showBilling={false} />,
     );
 
     expect(html).toContain('href="https://api.example.test/api/docs"');
     expect(html).toContain('target="_blank"');
-    expect(html).toContain("API Docs");
+    expect(html).toContain(en.app.sidebar.apiDocs);
   });
 });

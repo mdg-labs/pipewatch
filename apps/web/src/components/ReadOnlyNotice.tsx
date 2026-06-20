@@ -1,10 +1,13 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { useWorkspaceRole } from "@/hooks/use-workspace-role";
 
 /** Inline banner when a member views an admin settings page read-only. */
 export function ReadOnlyNotice() {
   const { readOnly } = useWorkspaceRole();
+  const t = useTranslations("common");
 
   if (!readOnly) {
     return null;
@@ -23,7 +26,7 @@ export function ReadOnlyNotice() {
         fontSize: 14,
       }}
     >
-      You have read-only access. Settings changes require admin or owner role.
+      {t("readOnlyNotice")}
     </div>
   );
 }

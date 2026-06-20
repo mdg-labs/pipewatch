@@ -2,6 +2,7 @@
 
 import { ChevronDown, LogOut, UserRound } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Avatar, Badge, classNames } from "@pipewatch/ui";
@@ -16,6 +17,7 @@ export type UserMenuProps = {
 };
 
 export function UserMenu({ user, workspaceSlug, isCloud }: UserMenuProps) {
+  const t = useTranslations("app.userMenu");
   const menuId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -90,7 +92,7 @@ export function UserMenu({ user, workspaceSlug, isCloud }: UserMenuProps) {
               aria-hidden
               style={{ marginRight: 8, verticalAlign: "text-bottom" }}
             />
-            Account
+            {t("account")}
           </Link>
 
           {isCloud ? (
@@ -100,7 +102,7 @@ export function UserMenu({ user, workspaceSlug, isCloud }: UserMenuProps) {
               role="menuitem"
               onClick={() => setOpen(false)}
             >
-              Billing
+              {t("billing")}
             </Link>
           ) : null}
 
@@ -122,7 +124,7 @@ export function UserMenu({ user, workspaceSlug, isCloud }: UserMenuProps) {
               aria-hidden
               style={{ marginRight: 8, verticalAlign: "text-bottom" }}
             />
-            {loggingOut ? "Signing out…" : "Sign out"}
+            {loggingOut ? t("signingOut") : t("signOut")}
           </button>
         </div>
       ) : null}
@@ -131,9 +133,11 @@ export function UserMenu({ user, workspaceSlug, isCloud }: UserMenuProps) {
 }
 
 export function EditionBadge({ isCloud }: { isCloud: boolean }) {
+  const t = useTranslations("app.edition");
+
   return (
     <Badge variant="accent" mono className="pw-app-sidebar-edition">
-      {isCloud ? "Cloud" : "CE"}
+      {isCloud ? t("cloud") : t("ce")}
     </Badge>
   );
 }

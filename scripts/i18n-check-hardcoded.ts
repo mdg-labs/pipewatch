@@ -2,10 +2,8 @@
 /**
  * Fail on user-facing English string literals in UI .tsx sources.
  *
- * Phased enforcement (#199): scans packages/ui only. apps/web is deferred to #201
- * because most web components still carry inline English during migration.
- * Grandfathered packages/ui files with intentional English defaults are allowlisted
- * until follow-up tasks remove them.
+ * Scans packages/ui and apps/web. Grandfathered files with intentional English
+ * defaults are allowlisted until follow-up migration tasks remove them.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -14,17 +12,17 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_REPO_ROOT = join(__dirname, "..");
 
-/** Active scan roots — extend with apps/web/src in #201. */
-export const I18N_HARDCODED_SCAN_ROOTS = ["packages/ui/src"] as const;
-
-/** Deferred until apps/web migration lands (#201). */
-export const I18N_HARDCODED_DEFERRED_SCAN_ROOTS = ["apps/web/src"] as const;
+/** Active scan roots. */
+export const I18N_HARDCODED_SCAN_ROOTS = [
+  "packages/ui/src",
+  "apps/web/src",
+] as const;
 
 /**
  * packages/ui files still shipping English fallbacks until prop/i18n cleanup.
  * Remove entries as each file is migrated.
  */
-export const I18N_HARDCODED_ALLOWLISTED_FILES = [
+export const I18N_HARDCODED_UI_ALLOWLISTED_FILES = [
   "packages/ui/src/components/avatar.tsx",
   "packages/ui/src/components/bar-chart.tsx",
   "packages/ui/src/components/data-table.tsx",
@@ -32,6 +30,59 @@ export const I18N_HARDCODED_ALLOWLISTED_FILES = [
   "packages/ui/src/components/run-pulse.tsx",
   "packages/ui/src/components/status-badge.tsx",
   "packages/ui/src/components/time-series-chart.tsx",
+] as const;
+
+/**
+ * apps/web files not yet migrated to next-intl. Remove entries as each lands.
+ * App shell + shared primitives migrated in #201.
+ */
+export const I18N_HARDCODED_WEB_ALLOWLISTED_FILES = [
+  "apps/web/src/components/account/AccountSettings.tsx",
+  "apps/web/src/components/auth/BootstrapCard.tsx",
+  "apps/web/src/components/auth/SignInCard.tsx",
+  "apps/web/src/components/billing/BillingPlanCard.tsx",
+  "apps/web/src/components/billing/UsageMeter.tsx",
+  "apps/web/src/components/dashboard/DashboardControls.tsx",
+  "apps/web/src/components/dashboard/DashboardRepoCard.tsx",
+  "apps/web/src/components/dashboard/DashboardRepoTable.tsx",
+  "apps/web/src/components/dashboard/DashboardView.tsx",
+  "apps/web/src/components/dashboard/HealthBar.tsx",
+  "apps/web/src/components/insights/InsightsCharts.tsx",
+  "apps/web/src/components/insights/InsightsPageClient.tsx",
+  "apps/web/src/components/insights/InsightsTables.tsx",
+  "apps/web/src/components/insights/InsightsView.tsx",
+  "apps/web/src/components/invites/InviteAcceptCard.tsx",
+  "apps/web/src/components/onboarding/OnboardingWizard.tsx",
+  "apps/web/src/components/onboarding/steps/CreateWorkspaceStep.tsx",
+  "apps/web/src/components/onboarding/steps/DoneStep.tsx",
+  "apps/web/src/components/onboarding/steps/InstallGitHubStep.tsx",
+  "apps/web/src/components/onboarding/steps/SelectReposStep.tsx",
+  "apps/web/src/components/repos/ActiveRunBanner.tsx",
+  "apps/web/src/components/repos/RepoDetailPageClient.tsx",
+  "apps/web/src/components/repos/RepoDetailView.tsx",
+  "apps/web/src/components/repos/RepoHeader.tsx",
+  "apps/web/src/components/repos/RepoSettingsForm.tsx",
+  "apps/web/src/components/repos/WorkflowTabs.tsx",
+  "apps/web/src/components/runs/ElapsedTicker.tsx",
+  "apps/web/src/components/runs/JobGraph.tsx",
+  "apps/web/src/components/runs/JobPanel.tsx",
+  "apps/web/src/components/runs/RunDetailView.tsx",
+  "apps/web/src/components/runs/RunFilters.tsx",
+  "apps/web/src/components/runs/RunListTable.tsx",
+  "apps/web/src/components/runs/StepRow.tsx",
+  "apps/web/src/components/settings/ApiKeysTable.tsx",
+  "apps/web/src/components/settings/CreateApiKeyModal.tsx",
+  "apps/web/src/components/settings/IntegrationCard.tsx",
+  "apps/web/src/components/settings/IntegrationsSettingsView.tsx",
+  "apps/web/src/components/settings/InviteMemberModal.tsx",
+  "apps/web/src/components/settings/MembersTable.tsx",
+  "apps/web/src/components/settings/WorkspaceGeneralForm.tsx",
+  "apps/web/src/contexts/live-stream-override-context.tsx",
+] as const;
+
+export const I18N_HARDCODED_ALLOWLISTED_FILES = [
+  ...I18N_HARDCODED_UI_ALLOWLISTED_FILES,
+  ...I18N_HARDCODED_WEB_ALLOWLISTED_FILES,
 ] as const;
 
 const TEST_FILE_PATTERN = /\.(test|spec)\.tsx$/;
@@ -340,9 +391,7 @@ function main(): void {
 
   if (issues.length > 0) {
     console.error("i18n-check-hardcoded: FAIL\n");
-    console.error(
-      `Scan roots: ${I18N_HARDCODED_SCAN_ROOTS.join(", ")} (apps/web deferred — see #201)\n`,
-    );
+    console.error(`Scan roots: ${I18N_HARDCODED_SCAN_ROOTS.join(", ")}\n`);
     console.error(formatI18nHardcodedIssues(issues));
     process.exit(1);
   }

@@ -2,6 +2,7 @@
 
 import { LogoWordmark } from "@pipewatch/ui";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 
 import { isBillingNavEnabled, isWorkspaceSwitcherEnabled } from "@/lib/edition-guards";
@@ -30,6 +31,7 @@ function extractWorkspaceSlug(pathname: string, fallbackSlug: string): string {
 
 export function AppShell({ session, children }: AppShellProps) {
   const pathname = usePathname() ?? "";
+  const t = useTranslations("app.shell");
   const workspaceSlug = useMemo(
     () => extractWorkspaceSlug(pathname, session.activeWorkspaceSlug),
     [pathname, session.activeWorkspaceSlug],
@@ -44,7 +46,7 @@ export function AppShell({ session, children }: AppShellProps) {
 
   return (
     <div className="pw-app-shell">
-      <aside className="pw-app-sidebar" aria-label="App navigation">
+      <aside className="pw-app-sidebar" aria-label={t("appNavigationAriaLabel")}>
         <div className="pw-app-sidebar-header">
           <LogoWordmark markSize={20} />
           <EditionBadge isCloud={showWorkspaceSwitcher} />

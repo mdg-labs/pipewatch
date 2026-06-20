@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { classNames } from "@pipewatch/ui";
 
 export type LiveConnectionStatus = "connected" | "reconnecting" | "offline";
@@ -8,13 +10,9 @@ export type LiveIndicatorProps = {
   status?: LiveConnectionStatus;
 };
 
-const STATUS_LABELS: Record<LiveConnectionStatus, string> = {
-  connected: "Live",
-  reconnecting: "Reconnecting",
-  offline: "Offline",
-};
-
 export function LiveIndicator({ status = "offline" }: LiveIndicatorProps) {
+  const t = useTranslations("app.liveIndicator");
+
   return (
     <span
       className={classNames(
@@ -25,7 +23,7 @@ export function LiveIndicator({ status = "offline" }: LiveIndicatorProps) {
       aria-live="polite"
     >
       <span className="pw-app-live-dot" aria-hidden />
-      {STATUS_LABELS[status]}
+      {t(status)}
     </span>
   );
 }

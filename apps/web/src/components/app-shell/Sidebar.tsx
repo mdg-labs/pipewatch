@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMemo, useState, type ReactNode } from "react";
 
 import { classNames } from "@pipewatch/ui";
@@ -39,6 +40,19 @@ export type SidebarProps = {
   showBilling: boolean;
 };
 
+type SidebarTranslator = (
+  key:
+    | "general"
+    | "members"
+    | "integrations"
+    | "apiKeys"
+    | "billing"
+    | "dashboard"
+    | "insights"
+    | "settings"
+    | "apiDocs",
+) => string;
+
 function workspacePath(slug: string, segment = ""): string {
   return `/workspaces/${slug}${segment}`;
 }
@@ -54,30 +68,31 @@ function isActivePath(pathname: string, href: string): boolean {
 export function buildSettingsNavItems(
   workspaceSlug: string,
   showBilling: boolean,
+  t: SidebarTranslator,
 ): SettingsNavItem[] {
   const base = workspacePath(workspaceSlug, "/settings");
   const items: SettingsNavItem[] = [
     {
       id: "general",
-      label: "General",
+      label: t("general"),
       href: base,
       icon: <Settings size={13} aria-hidden />,
     },
     {
       id: "members",
-      label: "Members",
+      label: t("members"),
       href: `${base}/members`,
       icon: <Users size={13} aria-hidden />,
     },
     {
       id: "integrations",
-      label: "Integrations",
+      label: t("integrations"),
       href: `${base}/integrations`,
       icon: <Plug size={13} aria-hidden />,
     },
     {
       id: "api-keys",
-      label: "API Keys",
+      label: t("apiKeys"),
       href: `${base}/api-keys`,
       icon: <KeyRound size={13} aria-hidden />,
     },
@@ -86,7 +101,7 @@ export function buildSettingsNavItems(
   if (showBilling) {
     items.push({
       id: "billing",
-      label: "Billing",
+      label: t("billing"),
       href: `${base}/billing`,
       icon: <Wallet size={13} aria-hidden />,
     });
@@ -97,9 +112,11 @@ export function buildSettingsNavItems(
 
 export function Sidebar({ workspaceSlug, showBilling }: SidebarProps) {
   const pathname = usePathname() ?? "";
+  const t = useTranslations("app.sidebar");
+  const tShell = useTranslations("app.shell");
   const settingsItems = useMemo(
-    () => buildSettingsNavItems(workspaceSlug, showBilling),
-    [workspaceSlug, showBilling],
+    () => buildSettingsNavItems(workspaceSlug, showBilling, t),
+    [workspaceSlug, showBilling, t],
   );
   const settingsActive = settingsItems.some((item) =>
     isActivePath(pathname, item.href),
@@ -109,13 +126,13 @@ export function Sidebar({ workspaceSlug, showBilling }: SidebarProps) {
   const primaryNav: SidebarNavItem[] = [
     {
       id: "dashboard",
-      label: "Dashboard",
+      label: t("dashboard"),
       href: workspacePath(workspaceSlug),
       icon: <LayoutDashboard size={14} aria-hidden />,
     },
     {
       id: "insights",
-      label: "Insights",
+      label: t("insights"),
       href: workspacePath(workspaceSlug, "/insights"),
       icon: <BarChart3 size={14} aria-hidden />,
     },
@@ -125,7 +142,7 @@ export function Sidebar({ workspaceSlug, showBilling }: SidebarProps) {
 
   return (
     <>
-      <nav className="pw-app-sidebar-nav" aria-label="Workspace">
+      <nav className="pw-app-sidebar-nav" aria-label={tShell("workspaceNavAriaLabel")}>
         {primaryNav.map((item) => {
           const active = isActivePath(pathname, item.href);
 
@@ -159,7 +176,7 @@ export function Sidebar({ workspaceSlug, showBilling }: SidebarProps) {
             <span className="pw-app-nav-icon">
               <Settings size={14} aria-hidden />
             </span>
-            Settings
+            {t("settings")}
             <ChevronDown
               size={12}
               aria-hidden
@@ -206,7 +223,7 @@ export function Sidebar({ workspaceSlug, showBilling }: SidebarProps) {
             <span className="pw-app-nav-icon">
               <BookOpen size={14} aria-hidden />
             </span>
-            API Docs
+            {t("apiDocs")}
           </a>
         </div>
       ) : null}

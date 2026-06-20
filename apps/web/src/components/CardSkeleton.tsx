@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 import { Skeleton } from "@pipewatch/ui";
 
 import "./loading-skeletons.css";
@@ -7,11 +11,13 @@ export interface CardSkeletonProps {
 }
 
 export function CardSkeleton({ count = 1 }: CardSkeletonProps) {
+  const t = useTranslations("common.loading");
+
   return (
     <div
       className="pw-card-skeleton-grid"
       aria-busy="true"
-      aria-label="Loading cards"
+      aria-label={t("cards")}
     >
       {Array.from({ length: count }, (_, index) => (
         <div key={`card-${index}`} className="pw-card-skeleton">

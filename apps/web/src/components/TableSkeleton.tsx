@@ -1,3 +1,7 @@
+"use client";
+
+import { useTranslations } from "next-intl";
+
 import { Skeleton } from "@pipewatch/ui";
 
 import "./loading-skeletons.css";
@@ -8,11 +12,13 @@ export interface TableSkeletonProps {
 }
 
 export function TableSkeleton({ columns = 4, rows = 5 }: TableSkeletonProps) {
+  const t = useTranslations("common.loading");
+
   return (
     <div
       className="pw-table-skeleton"
       aria-busy="true"
-      aria-label="Loading table"
+      aria-label={t("table")}
     >
       <div className="pw-table-skeleton-header">
         {Array.from({ length: columns }, (_, index) => (
