@@ -1,0 +1,38 @@
+{
+  "name": "@pipewatch/db-admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./schema": {
+      "types": "./dist/schema/index.d.ts",
+      "default": "./dist/schema/index.js"
+    },
+    "./public-read": {
+      "types": "./dist/schema/public-read.d.ts",
+      "default": "./dist/schema/public-read.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.schema.json",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.schema.json",
+    "test:unit": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:migrate": "drizzle-kit migrate --config drizzle.config.ts"
+  },
+  "devDependencies": {
+    "@pipewatch/config": "workspace:*",
+    "@types/node": "^22.13.4",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "^3.0.5"
+  },
+  "dependencies": {
+    "@pipewatch/db": "workspace:*",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9"
+  }
+}
