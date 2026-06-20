@@ -12,8 +12,10 @@ export interface TypedConfirmDialogProps {
   title: string;
   description?: string;
   confirmLabel: string;
+  cancelLabel: string;
   expectedPhrase: string;
-  phraseLabel?: ReactNode;
+  phraseLabel: ReactNode;
+  closeAriaLabel: string;
   loading?: boolean;
 }
 
@@ -31,8 +33,10 @@ export function TypedConfirmDialog({
   title,
   description,
   confirmLabel,
+  cancelLabel,
   expectedPhrase,
   phraseLabel,
+  closeAriaLabel,
   loading = false,
 }: TypedConfirmDialogProps) {
   const inputId = useId();
@@ -54,6 +58,7 @@ export function TypedConfirmDialog({
       open={open}
       onClose={onClose}
       title={title}
+      closeAriaLabel={closeAriaLabel}
       {...(description ? { description } : {})}
       size="sm"
       footer={
@@ -67,20 +72,14 @@ export function TypedConfirmDialog({
             {confirmLabel}
           </Button>
           <Button variant="secondary" onClick={onClose} disabled={loading}>
-            Cancel
+            {cancelLabel}
           </Button>
         </div>
       }
     >
       <div className="pw-typed-confirm-body">
         <label htmlFor={inputId} className="pw-input-label pw-typed-confirm-label">
-          {phraseLabel ?? (
-            <>
-              Type{" "}
-              <strong className="pw-typed-confirm-phrase">{expectedPhrase}</strong>{" "}
-              to confirm
-            </>
-          )}
+          {phraseLabel}
         </label>
         <Input
           id={inputId}

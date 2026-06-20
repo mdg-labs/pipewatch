@@ -9,5 +9,55 @@
       "title": "Something went wrong",
       "retry": "Retry"
     }
+  },
+  "ui": {
+    "dangerZone": {
+      "title": "Danger Zone"
+    },
+    "dialog": {
+      "closeAriaLabel": "Close dialog"
+    },
+    "pagination": {
+      "prev": "Prev",
+      "next": "Next",
+      "previousPageAriaLabel": "Previous page",
+      "nextPageAriaLabel": "Next page",
+      "pagesAriaLabel": "Pages",
+      "pageAriaLabel": "Page {page}",
+      "noResults": "No results",
+      "showing": "Showing {start}–{end} of {total}"
+    },
+    "toast": {
+      "dismissAriaLabel": "Dismiss notification",
+      "stackAriaLabel": "Notifications"
+    },
+    "typedConfirm": {
+      "cancel": "Cancel",
+      "phrasePrefix": "Type",
+      "phraseSuffix": "to confirm"
+    },
+    "wizard": {
+      "ariaLabel": "Onboarding progress"
+    }
+  },
+  "onboarding": {
+    "steps": {
+      "workspace": {
+        "label": "Step 1",
+        "title": "Create workspace"
+      },
+      "github": {
+        "label": "Step 2",
+        "title": "Connect GitHub"
+      },
+      "repos": {
+        "label": "Step 3",
+        "title": "Select repos"
+      },
+      "done": {
+        "label": "Step 4",
+        "title": "Done"
+      }
+    }
   }
 }

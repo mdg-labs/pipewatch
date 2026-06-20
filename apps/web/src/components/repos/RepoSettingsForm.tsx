@@ -4,6 +4,7 @@ import { flags } from "@pipewatch/config/edition";
 import type { RepositorySummary, Workspace } from "@pipewatch/types";
 import { Clock3, Github } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -47,6 +48,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
   const { workspace, workspaceSlug } = useApi();
   const { canMutate } = useWorkspaceRole();
   const { toast } = useToast();
+  const tUi = useTranslations("ui");
 
   const [repository, setRepository] = useState<RepositorySummary | null>(null);
   const [workspaceData, setWorkspaceData] = useState<Workspace | null>(null);
@@ -401,7 +403,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
         </Button>
       </div>
 
-      <DangerZone id="pw-repo-danger-zone">
+      <DangerZone id="pw-repo-danger-zone" title={tUi("dangerZone.title")}>
         <DangerZoneItem
           title={repository.enabled ? "Disable this repository" : "Enable this repository"}
           description={
@@ -450,7 +452,16 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
         title={`Delete all data for ${confirmRepoName}?`}
         description={`This will permanently delete all runs, jobs, and steps for ${repository.full_name}. This cannot be undone.`}
         confirmLabel="Delete all data"
+        cancelLabel={tUi("typedConfirm.cancel")}
         expectedPhrase={confirmRepoName}
+        closeAriaLabel={tUi("dialog.closeAriaLabel")}
+        phraseLabel={
+          <>
+            {tUi("typedConfirm.phrasePrefix")}{" "}
+            <strong className="pw-typed-confirm-phrase">{confirmRepoName}</strong>{" "}
+            {tUi("typedConfirm.phraseSuffix")}
+          </>
+        }
         loading={deleting}
       />
     </div>

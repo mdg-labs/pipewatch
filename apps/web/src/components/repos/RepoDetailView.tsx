@@ -2,6 +2,7 @@
 
 import type { PipelineRun, RepositorySummary, SseDataEvent } from "@pipewatch/types";
 import { EmptyState, Pagination } from "@pipewatch/ui";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -14,6 +15,10 @@ import { RunFilters } from "@/components/runs/RunFilters";
 import { RunListTable } from "@/components/runs/RunListTable";
 import { useSetLiveStreamOverride } from "@/contexts/live-stream-override-context";
 import { useApi } from "@/hooks/use-api";
+import {
+  buildPaginationLabels,
+  formatPaginationSummary,
+} from "@/i18n/pagination-labels";
 import { useRepoStream } from "@/hooks/use-repo-stream";
 import { useWorkspaceRole } from "@/hooks/use-workspace-role";
 import { ApiClientError } from "@/lib/api-client";
@@ -65,6 +70,7 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
   const { canMutate } = useWorkspaceRole();
   const { toast } = useToast();
   const setLiveStreamOverride = useSetLiveStreamOverride();
+  const tPagination = useTranslations("ui.pagination");
 
   const filters = useMemo(
     () => parseRunFilters(new URLSearchParams(searchParams.toString())),
@@ -168,6 +174,26 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
   );
 
   const totalItems = estimateRunTotalItems(filters.page, RUN_PAGE_SIZE, runs.length, hasMore);
+  const paginationLabels = useMemo(
+    () =>
+      buildPaginationLabels({
+        summary: formatPaginationSummary({
+          page: filters.page,
+          pageSize: RUN_PAGE_SIZE,
+          totalItems,
+          noResults: tPagination("noResults"),
+          showing: ({ start, end, total }) =>
+            tPagination("showing", { start, end, total }),
+        }),
+        prev: tPagination("prev"),
+        next: tPagination("next"),
+        previousPageAriaLabel: tPagination("previousPageAriaLabel"),
+        nextPageAriaLabel: tPagination("nextPageAriaLabel"),
+        pagesAriaLabel: tPagination("pagesAriaLabel"),
+        pageAriaLabel: (page) => tPagination("pageAriaLabel", { page }),
+      }),
+    [filters.page, tPagination, totalItems],
+  );
 
   const handlePageChange = useCallback(
     (page: number) => {
@@ -262,6 +288,7 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
               totalItems={totalItems}
               pageSize={RUN_PAGE_SIZE}
               onPageChange={handlePageChange}
+              labels={paginationLabels}
             />
           </div>
         </>

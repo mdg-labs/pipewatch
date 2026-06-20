@@ -41,22 +41,3 @@ export function buildPageRange(
 
   return range;
 }
-
-export function paginationSummary({
-  page,
-  pageSize,
-  totalItems,
-}: {
-  page: number;
-  pageSize: number;
-  totalItems: number;
-}): string {
-  if (totalItems === 0) {
-    return "No results";
-  }
-
-  const start = (page - 1) * pageSize + 1;
-  const end = Math.min(page * pageSize, totalItems);
-
-  return `Showing ${start}–${end} of ${totalItems}`;
-}

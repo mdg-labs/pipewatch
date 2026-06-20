@@ -1,6 +1,7 @@
 "use client";
 
 import type { WorkspaceRole } from "@pipewatch/types";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
 import { Button, Dialog, Input, Select } from "@pipewatch/ui";
@@ -38,6 +39,7 @@ export type InviteMemberModalProps = {
 
 export function InviteMemberModal({ open, onClose, onInvite }: InviteMemberModalProps) {
   const { toast } = useToast();
+  const tUi = useTranslations("ui");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<WorkspaceRole>("member");
   const [submitting, setSubmitting] = useState(false);
@@ -108,6 +110,7 @@ export function InviteMemberModal({ open, onClose, onInvite }: InviteMemberModal
     <Dialog
       open={open}
       onClose={onClose}
+      closeAriaLabel={tUi("dialog.closeAriaLabel")}
       title="Invite member"
       description="Send an email invitation or share a link when SMTP is not configured."
       size="sm"

@@ -14,6 +14,7 @@ import {
   type ToastItem,
   type ToastVariant,
 } from "@pipewatch/ui";
+import { useTranslations } from "next-intl";
 
 export interface ToastInput {
   title?: string;
@@ -35,6 +36,7 @@ function createToastId(): string {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const tToast = useTranslations("ui.toast");
 
   const dismiss = useCallback((id: string) => {
     setToasts((current) => current.filter((toast) => toast.id !== id));
@@ -57,7 +59,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <ToastStack toasts={toasts} dismiss={dismiss} />
+      <ToastStack
+        toasts={toasts}
+        dismiss={dismiss}
+        ariaLabel={tToast("stackAriaLabel")}
+        dismissAriaLabel={tToast("dismissAriaLabel")}
+      />
     </ToastContext.Provider>
   );
 }

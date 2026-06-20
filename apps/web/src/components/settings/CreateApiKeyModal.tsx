@@ -1,6 +1,7 @@
 "use client";
 
 import type { CreateApiKeyInput, CreatedApiKey } from "@pipewatch/types";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 
 import { Button, Dialog, Input } from "@pipewatch/ui";
@@ -22,6 +23,7 @@ function toExpiresAtIso(dateValue: string): string {
 /** B11 create API key modal — form then one-time full key reveal. */
 export function CreateApiKeyModal({ open, onClose, onCreate }: CreateApiKeyModalProps) {
   const { toast } = useToast();
+  const tUi = useTranslations("ui");
   const [name, setName] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -155,6 +157,7 @@ export function CreateApiKeyModal({ open, onClose, onCreate }: CreateApiKeyModal
     <Dialog
       open={open}
       onClose={onClose}
+      closeAriaLabel={tUi("dialog.closeAriaLabel")}
       title="Create API key"
       description="Name your key and optionally set an expiry date."
       size="sm"

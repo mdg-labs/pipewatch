@@ -81,11 +81,27 @@ import {
   dangerZoneClassName,
   WizardProgress,
   wizardProgressClassName,
-  DEFAULT_ONBOARDING_STEPS,
   UsageMeter,
   usageMeterClassName,
   TypedConfirmDialog,
 } from "./index.js";
+
+const testPaginationLabels = {
+  summary: "Showing 21–40 of 47",
+  prev: "Prev",
+  next: "Next",
+  previousPageAriaLabel: "Previous page",
+  nextPageAriaLabel: "Next page",
+  pagesAriaLabel: "Pages",
+  pageAriaLabel: (page: number) => `Page ${page}`,
+};
+
+const testWizardSteps = [
+  { id: "workspace", label: "Step 1", title: "Create workspace" },
+  { id: "github", label: "Step 2", title: "Connect GitHub" },
+  { id: "repos", label: "Step 3", title: "Select repos" },
+  { id: "done", label: "Step 4", title: "Done" },
+];
 
 const componentsDir = join(dirname(fileURLToPath(import.meta.url)), "components");
 const stylesPath = join(dirname(fileURLToPath(import.meta.url)), "styles.css");
@@ -752,7 +768,12 @@ describe("BarChart", () => {
 describe("composite components", () => {
   it("renders pagination controls", () => {
     const html = renderToStaticMarkup(
-      <Pagination page={2} totalItems={47} onPageChange={() => undefined} />,
+      <Pagination
+        page={2}
+        totalItems={47}
+        onPageChange={() => undefined}
+        labels={testPaginationLabels}
+      />,
     );
 
     expect(html).toContain('class="pw-pagination"');
@@ -809,7 +830,7 @@ describe("composite components", () => {
 
   it("renders danger zone section", () => {
     const html = renderToStaticMarkup(
-      <DangerZone>
+      <DangerZone title="Danger Zone">
         <div>Delete workspace</div>
       </DangerZone>,
     );
@@ -820,7 +841,11 @@ describe("composite components", () => {
 
   it("renders wizard progress steps", () => {
     const html = renderToStaticMarkup(
-      <WizardProgress steps={DEFAULT_ONBOARDING_STEPS} currentStepId="github" />,
+      <WizardProgress
+        steps={testWizardSteps}
+        currentStepId="github"
+        ariaLabel="Onboarding progress"
+      />,
     );
 
     expect(html).toContain("pw-wizard-progress");
@@ -846,7 +871,10 @@ describe("composite components", () => {
         open={false}
         title="Delete repository data"
         confirmLabel="Delete"
+        cancelLabel="Cancel"
         expectedPhrase="DELETE"
+        closeAriaLabel="Close dialog"
+        phraseLabel="Type DELETE to confirm"
         onClose={() => undefined}
         onConfirm={() => undefined}
       />,

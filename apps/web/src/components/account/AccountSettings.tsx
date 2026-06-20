@@ -2,6 +2,7 @@
 
 import type { UpdateUserProfileInput, UserProfile, WorkspaceRole } from "@pipewatch/types";
 import { Github } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -46,6 +47,7 @@ export function AccountSettings() {
   const router = useRouter();
   const { api, workspaceId, workspaces } = useApi();
   const { toast } = useToast();
+  const tUi = useTranslations("ui");
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
@@ -396,7 +398,7 @@ export function AccountSettings() {
         </Card>
       </section>
 
-      <DangerZone id="pw-account-danger-zone">
+      <DangerZone id="pw-account-danger-zone" title={tUi("dangerZone.title")}>
         <DangerZoneItem
           title="Delete account"
           description="Permanently delete your PipeWatch account and remove your access to all workspaces. This cannot be undone."
@@ -425,7 +427,16 @@ export function AccountSettings() {
         title="Delete account"
         description="This permanently deletes your account. You will lose access to all workspaces."
         confirmLabel="Delete account"
+        cancelLabel={tUi("typedConfirm.cancel")}
         expectedPhrase={DELETE_CONFIRM_PHRASE}
+        closeAriaLabel={tUi("dialog.closeAriaLabel")}
+        phraseLabel={
+          <>
+            {tUi("typedConfirm.phrasePrefix")}{" "}
+            <strong className="pw-typed-confirm-phrase">{DELETE_CONFIRM_PHRASE}</strong>{" "}
+            {tUi("typedConfirm.phraseSuffix")}
+          </>
+        }
         loading={deleting}
       />
     </div>

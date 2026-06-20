@@ -4,6 +4,7 @@ import { flags } from "@pipewatch/config/edition";
 import { getPlanLimits } from "@pipewatch/config/plan-limits";
 import type { SlugAvailability, UpdateWorkspaceInput, Workspace, WorkspacePlan } from "@pipewatch/types";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -67,6 +68,7 @@ export function WorkspaceGeneralForm() {
   const { api, workspace, workspaceId, workspaceSlug, workspaces } = useApi();
   const { canMutate, meetsMinimum } = useWorkspaceRole();
   const { toast } = useToast();
+  const tUi = useTranslations("ui");
 
   const [workspaceData, setWorkspaceData] = useState<Workspace | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -425,7 +427,7 @@ export function WorkspaceGeneralForm() {
       ) : null}
 
       {meetsMinimum("owner") ? (
-        <DangerZone id="pw-ws-danger-zone">
+        <DangerZone id="pw-ws-danger-zone" title={tUi("dangerZone.title")}>
           <DangerZoneItem
             title="Delete workspace"
             description={
@@ -460,7 +462,16 @@ export function WorkspaceGeneralForm() {
         title="Delete workspace"
         description="This action cannot be undone. All integrations, repositories, and run history will be removed."
         confirmLabel="Delete workspace"
+        cancelLabel={tUi("typedConfirm.cancel")}
         expectedPhrase={workspaceData.name}
+        closeAriaLabel={tUi("dialog.closeAriaLabel")}
+        phraseLabel={
+          <>
+            {tUi("typedConfirm.phrasePrefix")}{" "}
+            <strong className="pw-typed-confirm-phrase">{workspaceData.name}</strong>{" "}
+            {tUi("typedConfirm.phraseSuffix")}
+          </>
+        }
         loading={deleting}
       />
     </div>

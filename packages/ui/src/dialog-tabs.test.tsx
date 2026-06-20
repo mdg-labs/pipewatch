@@ -34,7 +34,7 @@ describe("Dialog keyboard interaction", () => {
 
     act(() => {
       root.render(
-        <Dialog open title="Delete repository" onClose={onClose}>
+        <Dialog open title="Delete repository" onClose={onClose} closeAriaLabel="Close dialog">
           <button type="button">Confirm</button>
         </Dialog>,
       );
@@ -52,7 +52,7 @@ describe("Dialog keyboard interaction", () => {
   it("renders in a portal on document.body", () => {
     act(() => {
       root.render(
-        <Dialog open title="Settings" onClose={() => undefined}>
+        <Dialog open title="Settings" onClose={() => undefined} closeAriaLabel="Close dialog">
           Body
         </Dialog>,
       );
@@ -66,7 +66,7 @@ describe("Dialog keyboard interaction", () => {
   it("traps focus within the dialog on Tab", () => {
     act(() => {
       root.render(
-        <Dialog open title="Invite member" onClose={() => undefined}>
+        <Dialog open title="Invite member" onClose={() => undefined} closeAriaLabel="Close dialog">
           <button type="button" id="first-action">
             Send invite
           </button>

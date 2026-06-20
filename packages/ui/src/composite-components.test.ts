@@ -5,16 +5,9 @@ import {
   filtersToSearchParams,
   isTypedConfirmMatch,
   parseFiltersFromSearchParams,
-  paginationSummary,
 } from "./index.js";
 
 describe("pagination helpers", () => {
-  it("defaults summary to page size 20 ranges", () => {
-    expect(paginationSummary({ page: 2, pageSize: 20, totalItems: 47 })).toBe(
-      "Showing 21–40 of 47",
-    );
-  });
-
   it("builds page ranges with ellipses", () => {
     expect(buildPageRange(5, 10)).toEqual([1, "ellipsis", 4, 5, 6, "ellipsis", 10]);
   });

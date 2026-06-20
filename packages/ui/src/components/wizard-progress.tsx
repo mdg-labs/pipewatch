@@ -15,6 +15,7 @@ export interface WizardStep {
 export interface WizardProgressProps {
   steps: WizardStep[];
   currentStepId: string;
+  ariaLabel: string;
   className?: string;
   style?: CSSProperties;
 }
@@ -45,6 +46,7 @@ function getStepState(
 export function WizardProgress({
   steps,
   currentStepId,
+  ariaLabel,
   className,
   style,
 }: WizardProgressProps) {
@@ -57,7 +59,7 @@ export function WizardProgress({
     <div
       className={wizardProgressClassName({ className })}
       style={style}
-      aria-label="Onboarding progress"
+      aria-label={ariaLabel}
     >
       {steps.map((step, index) => {
         const state = getStepState(index, currentIndex);
@@ -106,10 +108,3 @@ export function WizardProgress({
     </div>
   );
 }
-
-export const DEFAULT_ONBOARDING_STEPS: WizardStep[] = [
-  { id: "workspace", label: "Step 1", title: "Create workspace" },
-  { id: "github", label: "Step 2", title: "Connect GitHub" },
-  { id: "repos", label: "Step 3", title: "Select repos" },
-  { id: "done", label: "Step 4", title: "Done" },
-];

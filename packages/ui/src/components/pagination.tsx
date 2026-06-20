@@ -5,19 +5,29 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   buildPageRange,
   DEFAULT_PAGE_SIZE,
-  paginationSummary,
   type PageToken,
 } from "../lib/pagination-range.js";
 import { classNames } from "../lib/class-names.js";
 
-export { DEFAULT_PAGE_SIZE, buildPageRange, paginationSummary };
+export { DEFAULT_PAGE_SIZE, buildPageRange };
 export type { PageToken };
+
+export interface PaginationLabels {
+  summary: string;
+  prev: string;
+  next: string;
+  previousPageAriaLabel: string;
+  nextPageAriaLabel: string;
+  pagesAriaLabel: string;
+  pageAriaLabel: (page: number) => string;
+}
 
 export interface PaginationProps {
   page: number;
   totalItems: number;
   pageSize?: number;
   onPageChange: (page: number) => void;
+  labels: PaginationLabels;
   className?: string;
   style?: CSSProperties;
 }
@@ -35,6 +45,7 @@ export function Pagination({
   totalItems,
   pageSize = DEFAULT_PAGE_SIZE,
   onPageChange,
+  labels,
   className,
   style,
 }: PaginationProps) {
@@ -46,21 +57,23 @@ export function Pagination({
 
   return (
     <div className={paginationClassName({ className })} style={style}>
-      <span className="pw-pagination-summary">
-        {paginationSummary({ page: safePage, pageSize, totalItems })}
-      </span>
+      <span className="pw-pagination-summary">{labels.summary}</span>
       <div className="pw-pagination-controls">
         <button
           type="button"
           className="pw-pagination-btn"
           disabled={!canGoPrev}
           onClick={() => onPageChange(safePage - 1)}
-          aria-label="Previous page"
+          aria-label={labels.previousPageAriaLabel}
         >
           <ChevronLeft size={12} strokeWidth={1.5} aria-hidden />
-          Prev
+          {labels.prev}
         </button>
-        <div className="pw-pagination-pages" role="group" aria-label="Pages">
+        <div
+          className="pw-pagination-pages"
+          role="group"
+          aria-label={labels.pagesAriaLabel}
+        >
           {pageRange.map((token, index) =>
             token === "ellipsis" ? (
               <span
@@ -80,7 +93,7 @@ export function Pagination({
                 )}
                 onClick={() => onPageChange(token)}
                 aria-current={token === safePage ? "page" : undefined}
-                aria-label={`Page ${token}`}
+                aria-label={labels.pageAriaLabel(token)}
               >
                 {token}
               </button>
@@ -92,9 +105,9 @@ export function Pagination({
           className="pw-pagination-btn"
           disabled={!canGoNext}
           onClick={() => onPageChange(safePage + 1)}
-          aria-label="Next page"
+          aria-label={labels.nextPageAriaLabel}
         >
-          Next
+          {labels.next}
           <ChevronRight size={12} strokeWidth={1.5} aria-hidden />
         </button>
       </div>

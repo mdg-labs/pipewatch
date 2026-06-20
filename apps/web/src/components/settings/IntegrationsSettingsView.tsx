@@ -3,6 +3,7 @@
 import { flags } from "@pipewatch/config/edition";
 import type { IntegrationSummary, RepositorySummary } from "@pipewatch/types";
 import { Github } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Badge, Button, Dialog, EmptyState, Input } from "@pipewatch/ui";
@@ -35,6 +36,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
   const { workspace, workspaceId } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
+  const tUi = useTranslations("ui");
 
   const [integrations, setIntegrations] = useState<IntegrationSummary[]>([]);
   const [repos, setRepos] = useState<RepositorySummary[]>([]);
@@ -422,6 +424,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
             setAddOpen(false);
           }
         }}
+        closeAriaLabel={tUi("dialog.closeAriaLabel")}
         title="Add GitHub integration"
         description="Install the PipeWatch GitHub App on your account or organization."
         size="sm"
@@ -496,6 +499,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
             setRemoveTarget(null);
           }
         }}
+        closeAriaLabel={tUi("dialog.closeAriaLabel")}
         title="Remove integration"
         {...(removeTarget
           ? {

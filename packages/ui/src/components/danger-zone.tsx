@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { classNames } from "../lib/class-names.js";
 
 export interface DangerZoneProps {
-  title?: string;
+  title: string;
   children?: ReactNode;
   className?: string;
   style?: CSSProperties;
@@ -25,7 +25,7 @@ export function dangerZoneClassName({
 }
 
 export function DangerZone({
-  title = "Danger Zone",
+  title,
   children,
   className,
   style,

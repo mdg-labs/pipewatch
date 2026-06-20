@@ -7,8 +7,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Card, DEFAULT_ONBOARDING_STEPS, LogoWordmark, WizardProgress } from "@pipewatch/ui";
+import { Card, LogoWordmark, WizardProgress } from "@pipewatch/ui";
+import { useTranslations } from "next-intl";
 
+import { buildOnboardingWizardSteps } from "@/i18n/onboarding-wizard-steps";
 import { useApi } from "@/hooks/use-api";
 import {
   clampOnboardingStep,
@@ -74,6 +76,14 @@ export function OnboardingWizard({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { api, claims } = useApi();
+  const tWizard = useTranslations("ui.wizard");
+  const tSteps = useTranslations("onboarding.steps");
+  const wizardSteps = buildOnboardingWizardSteps({
+    workspace: { label: tSteps("workspace.label"), title: tSteps("workspace.title") },
+    github: { label: tSteps("github.label"), title: tSteps("github.title") },
+    repos: { label: tSteps("repos.label"), title: tSteps("repos.title") },
+    done: { label: tSteps("done.label"), title: tSteps("done.title") },
+  });
   const [bootstrapping, setBootstrapping] = useState(true);
   const [context, setContext] = useState<WizardContext>({
     workspace: null,
@@ -253,8 +263,9 @@ export function OnboardingWizard({
       <main className="pw-onboarding-main">
         <WizardProgress
           className="pw-onboarding-progress"
-          steps={DEFAULT_ONBOARDING_STEPS}
+          steps={wizardSteps}
           currentStepId={progressStepId}
+          ariaLabel={tWizard("ariaLabel")}
         />
 
         <Card className="pw-onboarding-card">{stepContent}</Card>

@@ -2,6 +2,7 @@
 
 import type { UpdateWorkspaceMemberInput, WorkspaceMember, WorkspaceRole } from "@pipewatch/types";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -69,6 +70,7 @@ export function MembersTable() {
   const { workspace, workspaceId, claims, workspaces } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
+  const tUi = useTranslations("ui");
 
   const currentUserId = claims?.sub ?? null;
 
@@ -509,6 +511,7 @@ export function MembersTable() {
             setRoleTarget(null);
           }
         }}
+        closeAriaLabel={tUi("dialog.closeAriaLabel")}
         title="Change member role"
         {...(roleTarget
           ? { description: `Update the role for ${memberDisplayName(roleTarget)}.` }
@@ -556,6 +559,7 @@ export function MembersTable() {
             setConfirmAction(null);
           }
         }}
+        closeAriaLabel={tUi("dialog.closeAriaLabel")}
         title={confirmTitle}
         description={confirmDescription}
         size="sm"

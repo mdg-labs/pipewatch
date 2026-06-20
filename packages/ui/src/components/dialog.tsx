@@ -17,6 +17,7 @@ export interface DialogProps {
   children?: ReactNode;
   footer?: ReactNode;
   size?: DialogSize;
+  closeAriaLabel?: string;
 }
 
 export function dialogBoxClassName({
@@ -37,6 +38,7 @@ export function Dialog({
   children,
   footer,
   size = "md",
+  closeAriaLabel,
 }: DialogProps) {
   const boxRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -104,7 +106,7 @@ export function Dialog({
               type="button"
               className="pw-dlg-close"
               onClick={onClose}
-              aria-label="Close dialog"
+              aria-label={closeAriaLabel}
             >
               <X size={14} strokeWidth={2} aria-hidden />
             </button>

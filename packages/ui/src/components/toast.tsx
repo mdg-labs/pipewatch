@@ -20,6 +20,7 @@ export interface ToastProps {
   variant?: ToastVariant;
   onDismiss?: () => void;
   duration?: number;
+  dismissAriaLabel?: string;
 }
 
 export interface ToastItem extends Omit<ToastProps, "onDismiss"> {
@@ -29,6 +30,8 @@ export interface ToastItem extends Omit<ToastProps, "onDismiss"> {
 export interface ToastStackProps {
   toasts?: ToastItem[];
   dismiss?: (id: string) => void;
+  ariaLabel: string;
+  dismissAriaLabel: string;
 }
 
 const TOAST_ICONS: Record<Exclude<ToastVariant, "default">, ReactNode> = {
@@ -86,6 +89,7 @@ export function Toast({
   variant = "default",
   onDismiss,
   duration = 5000,
+  dismissAriaLabel,
 }: ToastProps) {
   useEffect(() => {
     if (!duration || !onDismiss) {
@@ -110,7 +114,7 @@ export function Toast({
           type="button"
           className="pw-toast-close"
           onClick={onDismiss}
-          aria-label="Dismiss notification"
+          aria-label={dismissAriaLabel}
         >
           <X size={10} strokeWidth={2.5} aria-hidden />
         </button>
@@ -119,13 +123,18 @@ export function Toast({
   );
 }
 
-export function ToastStack({ toasts = [], dismiss }: ToastStackProps) {
+export function ToastStack({
+  toasts = [],
+  dismiss,
+  ariaLabel,
+  dismissAriaLabel,
+}: ToastStackProps) {
   if (toasts.length === 0) {
     return null;
   }
 
   return createPortal(
-    <div className="pw-toast-stack" aria-label="Notifications">
+    <div className="pw-toast-stack" aria-label={ariaLabel}>
       {toasts.map((toast) => (
         <Toast
           key={toast.id}
@@ -133,6 +142,7 @@ export function ToastStack({ toasts = [], dismiss }: ToastStackProps) {
           {...(toast.description !== undefined ? { description: toast.description } : {})}
           {...(toast.variant !== undefined ? { variant: toast.variant } : {})}
           {...(toast.duration !== undefined ? { duration: toast.duration } : {})}
+          dismissAriaLabel={dismissAriaLabel}
           onDismiss={() => dismiss?.(toast.id)}
         />
       ))}

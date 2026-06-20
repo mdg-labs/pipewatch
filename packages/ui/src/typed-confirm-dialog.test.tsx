@@ -47,7 +47,10 @@ describe("TypedConfirmDialog", () => {
           title="Delete repository data"
           description="This cannot be undone."
           confirmLabel="Delete repository data"
+          cancelLabel="Cancel"
           expectedPhrase="inboxops"
+          closeAriaLabel="Close dialog"
+          phraseLabel="Type inboxops to confirm"
           onClose={() => undefined}
           onConfirm={onConfirm}
         />,

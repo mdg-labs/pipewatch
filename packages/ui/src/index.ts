@@ -212,8 +212,8 @@ export {
   DEFAULT_PAGE_SIZE,
   buildPageRange,
   paginationClassName,
-  paginationSummary,
   type PageToken,
+  type PaginationLabels,
   type PaginationProps,
 } from "./components/pagination.js";
 
@@ -264,7 +264,6 @@ export {
 
 export {
   WizardProgress,
-  DEFAULT_ONBOARDING_STEPS,
   wizardProgressClassName,
   type WizardProgressProps,
   type WizardStep,

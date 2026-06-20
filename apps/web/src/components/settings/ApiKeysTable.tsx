@@ -6,6 +6,7 @@ import type {
   CreatedApiKey,
   WorkspaceMember,
 } from "@pipewatch/types";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -117,6 +118,7 @@ export function ApiKeysTable() {
   const { workspace, claims, workspaceId } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
+  const tUi = useTranslations("ui");
   const apiDocsUrl = getApiDocsUrl();
 
   const [keys, setKeys] = useState<ApiKeyRow[]>([]);
@@ -512,6 +514,7 @@ export function ApiKeysTable() {
             setRevokeTarget(null);
           }
         }}
+        closeAriaLabel={tUi("dialog.closeAriaLabel")}
         title="Revoke API key"
         {...(revokeTarget
           ? {
