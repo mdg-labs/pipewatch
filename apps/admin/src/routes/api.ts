@@ -6,6 +6,8 @@ import type { AdminAppBindings, AdminAppDeps } from "../types.js";
 import { registerAdminInviteRoutes } from "./admin/invites.js";
 import { registerAcceptInviteRoute } from "./auth/accept-invite.js";
 import { registerLoginRoute, registerLogoutRoute } from "./auth/login.js";
+import { registerIntegrationRoutes } from "./integrations.js";
+import { registerWorkspaceRoutes } from "./workspaces.js";
 
 /** Register JSON API routes under `/api/*`. */
 export function registerApiRoutes(app: Hono, deps: AdminAppDeps): void {
@@ -29,6 +31,8 @@ export function registerApiRoutes(app: Hono, deps: AdminAppDeps): void {
 
   registerLogoutRoute(api);
   registerAdminInviteRoutes(api);
+  registerWorkspaceRoutes(api);
+  registerIntegrationRoutes(api);
 
   api.get("/v1/status", (c) =>
     c.json(
