@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from "next-intl";
+
 import { CardSkeleton } from "@/components/CardSkeleton";
 
 import { InsightsView } from "./InsightsView";
@@ -15,8 +17,10 @@ export function InsightsPageClient({ workspaceSlug }: InsightsPageClientProps) {
 }
 
 export function InsightsPageFallback() {
+  const t = useTranslations("insights");
+
   return (
-    <div className="pw-insights" aria-busy="true" aria-label="Loading insights">
+    <div className="pw-insights" aria-busy="true" aria-label={t("loadingAriaLabel")}>
       <CardSkeleton count={4} />
     </div>
   );

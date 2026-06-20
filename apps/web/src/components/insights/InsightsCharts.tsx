@@ -7,6 +7,7 @@ import {
   chartColorForIndex,
   classNames,
 } from "@pipewatch/ui";
+import { useTranslations } from "next-intl";
 import {
   useCallback,
   useEffect,
@@ -16,15 +17,8 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 
-import {
-  buildDurationAxisLabels,
-  buildPercentAxisLabels,
-  buildTimeSeriesChartData,
-  formatChartDateLabel,
-  formatMsAsDuration,
-  formatPercent,
-  rankWorkflowKeys,
-} from "@/lib/insights-utils";
+import { useInsightsFormatters } from "@/i18n/use-insights-formatters";
+import { buildTimeSeriesChartData, rankWorkflowKeys } from "@/lib/insights-utils";
 
 import "./insights.css";
 
@@ -49,6 +43,9 @@ type InteractiveChartProps = {
   valueFormatter: (value: number) => string;
   yAxisBuilder: (min: number, max: number) => string[];
   showArea?: boolean;
+  noDataLabel: string;
+  legendAriaLabel: string;
+  formatChartDate: (isoDate: string) => string;
 };
 
 function InteractiveInsightsChart({
@@ -58,6 +55,9 @@ function InteractiveInsightsChart({
   valueFormatter,
   yAxisBuilder,
   showArea = false,
+  noDataLabel,
+  legendAriaLabel,
+  formatChartDate,
 }: InteractiveChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(528);
@@ -85,8 +85,8 @@ function InteractiveInsightsChart({
 
   const keys = useMemo(() => rankWorkflowKeys(days), [days]);
   const chartData = useMemo(
-    () => buildTimeSeriesChartData(days, keys),
-    [days, keys],
+    () => buildTimeSeriesChartData(days, keys, formatChartDate),
+    [days, keys, formatChartDate],
   );
 
   const allValues = chartData.series.flatMap((entry) => entry.data);
@@ -184,7 +184,7 @@ function InteractiveInsightsChart({
             role="tooltip"
           >
             <div className="pw-insights-chart-tooltip-date">
-              {formatChartDateLabel(tooltipDay.date)}
+              {formatChartDate(tooltipDay.date)}
             </div>
             {tooltipPoints.length > 0 ? (
               <ul className="pw-insights-chart-tooltip-list">
@@ -203,14 +203,14 @@ function InteractiveInsightsChart({
                 ))}
               </ul>
             ) : (
-              <p className="pw-insights-chart-tooltip-empty">No data</p>
+              <p className="pw-insights-chart-tooltip-empty">{noDataLabel}</p>
             )}
           </div>
         ) : null}
       </div>
 
       {chartData.series.length > 0 ? (
-        <ul className="pw-insights-chart-legend" aria-label={`${title} legend`}>
+        <ul className="pw-insights-chart-legend" aria-label={legendAriaLabel}>
           {chartData.series.map((entry, index) => (
             <li key={entry.id}>
               <span
@@ -228,6 +228,18 @@ function InteractiveInsightsChart({
 }
 
 export function InsightsCharts({ durationDays, failureDays, range }: InsightsChartsProps) {
+  const t = useTranslations("insights.charts");
+  const {
+    formatChartDate,
+    formatMsAsDuration,
+    formatPercent,
+    buildDurationAxisLabels,
+    buildPercentAxisLabels,
+  } = useInsightsFormatters();
+
+  const durationTitle = t("durationTitle");
+  const failureRateTitle = t("failureRateTitle");
+
   return (
     <div
       className={classNames(
@@ -236,19 +248,25 @@ export function InsightsCharts({ durationDays, failureDays, range }: InsightsCha
       )}
     >
       <InteractiveInsightsChart
-        title="Duration over time"
-        unitLabel="minutes"
+        title={durationTitle}
+        unitLabel={t("minutesUnit")}
         days={durationDays}
         valueFormatter={(value) => formatMsAsDuration(value)}
         yAxisBuilder={buildDurationAxisLabels}
+        noDataLabel={t("noData")}
+        legendAriaLabel={t("legendAriaLabel", { title: durationTitle })}
+        formatChartDate={formatChartDate}
       />
       <InteractiveInsightsChart
-        title="Failure rate over time"
-        unitLabel="percent"
+        title={failureRateTitle}
+        unitLabel={t("percentUnit")}
         days={failureDays}
         valueFormatter={(value) => formatPercent(value)}
         yAxisBuilder={(_min, max) => buildPercentAxisLabels(max)}
         showArea
+        noDataLabel={t("noData")}
+        legendAriaLabel={t("legendAriaLabel", { title: failureRateTitle })}
+        formatChartDate={formatChartDate}
       />
     </div>
   );

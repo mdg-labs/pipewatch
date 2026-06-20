@@ -7,15 +7,12 @@ import type {
 } from "@pipewatch/types";
 import { DataTable, type DataTableColumn } from "@pipewatch/ui";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 
-import {
-  buildWorkflowRunsHref,
-  formatMsAsDuration,
-  formatPercent,
-  formatSignedPercent,
-  resolveTrendTone,
-} from "@/lib/insights-utils";
+import { formatPercent, formatSignedPercent } from "@/i18n/insights-formatters";
+import { useInsightsFormatters } from "@/i18n/use-insights-formatters";
+import { buildWorkflowRunsHref, resolveTrendTone } from "@/lib/insights-utils";
 
 import "./insights.css";
 
@@ -29,15 +26,23 @@ export type InsightsTablesProps = {
 function TrendIndicator({
   value,
   positiveIsGood,
+  noTrendAriaLabel,
+  trendAriaLabel,
 }: {
   value: number | null | undefined;
   positiveIsGood: boolean;
+  noTrendAriaLabel: string;
+  trendAriaLabel: (label: string) => string;
 }) {
   const tone = resolveTrendTone(value, positiveIsGood);
   const label = formatSignedPercent(value);
 
   if (!label) {
-    return <span className="pw-insights-trend pw-insights-trend-neutral" aria-label="No trend">→</span>;
+    return (
+      <span className="pw-insights-trend pw-insights-trend-neutral" aria-label={noTrendAriaLabel}>
+        →
+      </span>
+    );
   }
 
   const arrow = tone === "up" ? "↑" : tone === "down" ? "↓" : "→";
@@ -49,7 +54,7 @@ function TrendIndicator({
         : "pw-insights-trend pw-insights-trend-neutral";
 
   return (
-    <span className={className} aria-label={`Trend ${label}`}>
+    <span className={className} aria-label={trendAriaLabel(label)}>
       {arrow}
     </span>
   );
@@ -82,11 +87,14 @@ export function InsightsTables({
   workspaceSlug,
   range,
 }: InsightsTablesProps) {
+  const t = useTranslations("insights.tables");
+  const { formatMsAsDuration } = useInsightsFormatters();
+
   const slowestColumns = useMemo<DataTableColumn<InsightsSlowestWorkflow>[]>(
     () => [
       {
         id: "workflow",
-        header: "Workflow",
+        header: t("workflow"),
         render: (row) => (
           <WorkflowLink
             workflow={row.workflow}
@@ -98,21 +106,21 @@ export function InsightsTables({
       },
       {
         id: "avg",
-        header: "Avg",
+        header: t("avg"),
         align: "right",
         mono: true,
         render: (row) => formatMsAsDuration(row.avg_duration_ms),
       },
       {
         id: "p50",
-        header: "p50",
+        header: t("p50"),
         align: "right",
         mono: true,
         render: (row) => formatMsAsDuration(row.p50_duration_ms),
       },
       {
         id: "p95",
-        header: "p95",
+        header: t("p95"),
         align: "right",
         mono: true,
         render: (row) => formatMsAsDuration(row.p95_duration_ms),
@@ -121,17 +129,24 @@ export function InsightsTables({
         id: "trend",
         header: "",
         align: "right",
-        render: (row) => <TrendIndicator value={row.trend_percent} positiveIsGood={false} />,
+        render: (row) => (
+          <TrendIndicator
+            value={row.trend_percent}
+            positiveIsGood={false}
+            noTrendAriaLabel={t("noTrendAriaLabel")}
+            trendAriaLabel={(label) => t("trendAriaLabel", { label })}
+          />
+        ),
       },
     ],
-    [range, workspaceSlug],
+    [formatMsAsDuration, range, t, workspaceSlug],
   );
 
   const failingColumns = useMemo<DataTableColumn<InsightsMostFailingWorkflow>[]>(
     () => [
       {
         id: "workflow",
-        header: "Workflow",
+        header: t("workflow"),
         render: (row) => (
           <WorkflowLink
             workflow={row.workflow}
@@ -143,7 +158,7 @@ export function InsightsTables({
       },
       {
         id: "rate",
-        header: "Rate",
+        header: t("rate"),
         align: "right",
         mono: true,
         render: (row) => (
@@ -160,7 +175,7 @@ export function InsightsTables({
       },
       {
         id: "count",
-        header: "# Failures",
+        header: t("failureCount"),
         align: "right",
         mono: true,
         render: (row) => row.failure_count,
@@ -169,18 +184,25 @@ export function InsightsTables({
         id: "trend",
         header: "",
         align: "right",
-        render: (row) => <TrendIndicator value={row.trend_percent} positiveIsGood={false} />,
+        render: (row) => (
+          <TrendIndicator
+            value={row.trend_percent}
+            positiveIsGood={false}
+            noTrendAriaLabel={t("noTrendAriaLabel")}
+            trendAriaLabel={(label) => t("trendAriaLabel", { label })}
+          />
+        ),
       },
     ],
-    [range, workspaceSlug],
+    [range, t, workspaceSlug],
   );
 
   return (
     <div className="pw-insights-tables-grid">
       <section className="pw-insights-table-card">
         <header className="pw-insights-table-header">
-          <h2 className="pw-insights-table-title">Slowest workflows</h2>
-          <span className="pw-insights-table-subtitle">avg duration</span>
+          <h2 className="pw-insights-table-title">{t("slowestTitle")}</h2>
+          <span className="pw-insights-table-subtitle">{t("slowestSubtitle")}</span>
         </header>
         <DataTable
           columns={slowestColumns}
@@ -191,8 +213,8 @@ export function InsightsTables({
 
       <section className="pw-insights-table-card">
         <header className="pw-insights-table-header">
-          <h2 className="pw-insights-table-title">Most failing workflows</h2>
-          <span className="pw-insights-table-subtitle">failure rate</span>
+          <h2 className="pw-insights-table-title">{t("mostFailingTitle")}</h2>
+          <span className="pw-insights-table-subtitle">{t("mostFailingSubtitle")}</span>
         </header>
         <DataTable
           columns={failingColumns}

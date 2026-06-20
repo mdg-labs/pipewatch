@@ -3,12 +3,18 @@
 import type { InsightsRange, RepositorySummary, WorkspaceInsights } from "@pipewatch/types";
 import { EmptyState, FilterBar, Select, StatCard, classNames } from "@pipewatch/ui";
 import { GitBranch } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CardSkeleton } from "@/components/CardSkeleton";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { useApi } from "@/hooks/use-api";
+import { useInsightsFormatters } from "@/i18n/use-insights-formatters";
+import {
+  formatSignedPercent,
+  formatSignedPoints,
+} from "@/i18n/insights-formatters";
 import {
   buildInsightsPath,
   insightsApiQueryString,
@@ -17,11 +23,6 @@ import {
   type InsightsFilters,
 } from "@/lib/insights-filters";
 import {
-  formatInsightsCount,
-  formatMsAsDuration,
-  formatPercent,
-  formatSignedPercent,
-  formatSignedPoints,
   hasInsightsData,
   parseRepoShortName,
   resolveTrendTone,
@@ -43,18 +44,20 @@ function TrendLine({
   suffix,
   positiveIsGood,
   format = "percent",
+  noPriorPeriodLabel,
 }: {
   value: number | null | undefined;
   suffix: string;
   positiveIsGood: boolean;
   format?: TrendFormat;
+  noPriorPeriodLabel: string;
 }) {
   const tone = resolveTrendTone(value, positiveIsGood);
   const formatted =
     format === "points" ? formatSignedPoints(value) : formatSignedPercent(value);
 
   if (!formatted) {
-    return <span className="pw-insights-trend pw-insights-trend-neutral">No prior period data</span>;
+    return <span className="pw-insights-trend pw-insights-trend-neutral">{noPriorPeriodLabel}</span>;
   }
 
   const arrow = tone === "up" ? "↑" : tone === "down" ? "↓" : "→";
@@ -75,13 +78,25 @@ function TrendLine({
   );
 }
 
-function DurationTrend({ percent }: { percent: number | null }) {
+function DurationTrend({
+  percent,
+  noPriorPeriodLabel,
+  noChangeLabel,
+  fasterLabel,
+  slowerLabel,
+}: {
+  percent: number | null;
+  noPriorPeriodLabel: string;
+  noChangeLabel: string;
+  fasterLabel: (percent: string) => string;
+  slowerLabel: (percent: string) => string;
+}) {
   if (percent == null) {
-    return <span className="pw-insights-trend pw-insights-trend-neutral">No prior period data</span>;
+    return <span className="pw-insights-trend pw-insights-trend-neutral">{noPriorPeriodLabel}</span>;
   }
 
   if (percent === 0) {
-    return <span className="pw-insights-trend pw-insights-trend-neutral">→ No change vs prev. period</span>;
+    return <span className="pw-insights-trend pw-insights-trend-neutral">{noChangeLabel}</span>;
   }
 
   const improved = percent < 0;
@@ -95,9 +110,7 @@ function DurationTrend({ percent }: { percent: number | null }) {
       )}
     >
       <span aria-hidden>{improved ? "↓" : "↑"}</span>
-      <span>
-        {formatted} {improved ? "faster" : "slower"} vs prev. period
-      </span>
+      <span>{improved ? fasterLabel(formatted ?? "") : slowerLabel(formatted ?? "")}</span>
     </span>
   );
 }
@@ -105,12 +118,16 @@ function DurationTrend({ percent }: { percent: number | null }) {
 function InsightsRangeToggle({
   range,
   onChange,
+  ariaLabel,
+  labels,
 }: {
   range: InsightsRange;
   onChange: (range: InsightsRange) => void;
+  ariaLabel: string;
+  labels: Record<InsightsRange, string>;
 }) {
   return (
-    <div className="pw-insights-range-toggle" role="group" aria-label="Time range">
+    <div className="pw-insights-range-toggle" role="group" aria-label={ariaLabel}>
       {(["7d", "30d"] as const).map((option) => (
         <button
           key={option}
@@ -122,7 +139,7 @@ function InsightsRangeToggle({
           aria-pressed={range === option}
           onClick={() => onChange(option)}
         >
-          {option}
+          {labels[option]}
         </button>
       ))}
     </div>
@@ -130,6 +147,8 @@ function InsightsRangeToggle({
 }
 
 export function InsightsView({ workspaceSlug }: InsightsViewProps) {
+  const t = useTranslations("insights");
+  const { formatCount, formatMsAsDuration, formatPercent, emDash } = useInsightsFormatters();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { workspace, workspaceId } = useApi();
@@ -207,11 +226,53 @@ export function InsightsView({ workspaceSlug }: InsightsViewProps) {
     [repositories],
   );
 
+  const rangeLabels = useMemo(
+    () => ({
+      "7d": t("range.7d"),
+      "30d": t("range.30d"),
+    }),
+    [t],
+  );
+
+  const filterBar = (
+    <FilterBar className="pw-insights-filters">
+      <Select
+        label={t("filters.repository")}
+        size="sm"
+        value={filters.repoId ?? "all"}
+        options={[
+          { value: "all", label: t("filters.allRepos") },
+          ...enabledRepositories.map((repo) => ({
+            value: repo.id,
+            label: repo.full_name,
+          })),
+        ]}
+        onChange={(value) => updateFilters({ repoId: value === "all" ? undefined : value })}
+        className="pw-insights-filter"
+        mono
+      />
+      <Select
+        label={t("filters.workflow")}
+        size="sm"
+        value={filters.workflow ?? "all"}
+        options={[
+          { value: "all", label: t("filters.allWorkflows") },
+          ...workflowOptions.map((workflow) => ({
+            value: workflow,
+            label: workflow,
+          })),
+        ]}
+        onChange={(value) => updateFilters({ workflow: value === "all" ? undefined : value })}
+        className="pw-insights-filter"
+      />
+    </FilterBar>
+  );
+
   if (loading) {
     return (
-      <div className="pw-insights" aria-busy="true" aria-label="Loading insights">
+      <div className="pw-insights" aria-busy="true" aria-label={t("loadingAriaLabel")}>
         <div className="pw-insights-header">
-          <h1 className="pw-insights-title">Insights</h1>
+          <h1 className="pw-insights-title">{t("title")}</h1>
         </div>
         <CardSkeleton count={4} />
       </div>
@@ -222,9 +283,9 @@ export function InsightsView({ workspaceSlug }: InsightsViewProps) {
     return (
       <div className="pw-insights">
         <div className="pw-insights-header">
-          <h1 className="pw-insights-title">Insights</h1>
+          <h1 className="pw-insights-title">{t("title")}</h1>
         </div>
-        <ErrorRetry message="We could not load workspace insights." onRetry={() => void loadInsights()} />
+        <ErrorRetry message={t("loadError")} onRetry={() => void loadInsights()} />
       </div>
     );
   }
@@ -233,45 +294,20 @@ export function InsightsView({ workspaceSlug }: InsightsViewProps) {
     return (
       <div className="pw-insights">
         <div className="pw-insights-header">
-          <h1 className="pw-insights-title">Insights</h1>
-          <InsightsRangeToggle range={filters.range} onChange={(range) => updateFilters({ range })} />
+          <h1 className="pw-insights-title">{t("title")}</h1>
+          <InsightsRangeToggle
+            range={filters.range}
+            onChange={(range) => updateFilters({ range })}
+            ariaLabel={t("filters.timeRangeAriaLabel")}
+            labels={rangeLabels}
+          />
         </div>
 
-        <FilterBar className="pw-insights-filters">
-          <Select
-            label="Repository"
-            size="sm"
-            value={filters.repoId ?? "all"}
-            options={[
-              { value: "all", label: "All repos" },
-              ...enabledRepositories.map((repo) => ({
-                value: repo.id,
-                label: repo.full_name,
-              })),
-            ]}
-            onChange={(value) => updateFilters({ repoId: value === "all" ? undefined : value })}
-            className="pw-insights-filter"
-            mono
-          />
-          <Select
-            label="Workflow"
-            size="sm"
-            value={filters.workflow ?? "all"}
-            options={[
-              { value: "all", label: "All workflows" },
-              ...workflowOptions.map((workflow) => ({
-                value: workflow,
-                label: workflow,
-              })),
-            ]}
-            onChange={(value) => updateFilters({ workflow: value === "all" ? undefined : value })}
-            className="pw-insights-filter"
-          />
-        </FilterBar>
+        {filterBar}
 
         <EmptyState
           icon={<GitBranch size={20} aria-hidden />}
-          title="Not enough data yet — insights appear once runs are recorded."
+          title={t("empty.title")}
         />
       </div>
     );
@@ -282,84 +318,71 @@ export function InsightsView({ workspaceSlug }: InsightsViewProps) {
   return (
     <div className="pw-insights">
       <div className="pw-insights-header">
-        <h1 className="pw-insights-title">Insights</h1>
-        <InsightsRangeToggle range={filters.range} onChange={(range) => updateFilters({ range })} />
+        <h1 className="pw-insights-title">{t("title")}</h1>
+        <InsightsRangeToggle
+          range={filters.range}
+          onChange={(range) => updateFilters({ range })}
+          ariaLabel={t("filters.timeRangeAriaLabel")}
+          labels={rangeLabels}
+        />
       </div>
 
-      <FilterBar className="pw-insights-filters">
-        <Select
-          label="Repository"
-          size="sm"
-          value={filters.repoId ?? "all"}
-          options={[
-            { value: "all", label: "All repos" },
-            ...enabledRepositories.map((repo) => ({
-              value: repo.id,
-              label: repo.full_name,
-            })),
-          ]}
-          onChange={(value) => updateFilters({ repoId: value === "all" ? undefined : value })}
-          className="pw-insights-filter"
-          mono
-        />
-        <Select
-          label="Workflow"
-          size="sm"
-          value={filters.workflow ?? "all"}
-          options={[
-            { value: "all", label: "All workflows" },
-            ...workflowOptions.map((workflow) => ({
-              value: workflow,
-              label: workflow,
-            })),
-          ]}
-          onChange={(value) => updateFilters({ workflow: value === "all" ? undefined : value })}
-          className="pw-insights-filter"
-        />
-      </FilterBar>
+      {filterBar}
 
       <div className="pw-insights-summary-grid">
         <StatCard
-          label="Total runs"
-          value={formatInsightsCount(summary.total_runs)}
+          label={t("summary.totalRuns")}
+          value={formatCount(summary.total_runs)}
           trend={
             <TrendLine
               value={summary.trends.total_runs_percent}
-              suffix="vs prev. period"
+              suffix={t("trends.vsPrevPeriod")}
               positiveIsGood
+              noPriorPeriodLabel={t("trends.noPriorPeriod")}
             />
           }
         />
         <StatCard
-          label="Success rate"
+          label={t("summary.successRate")}
           value={formatPercent(summary.success_rate)}
           trend={
             <TrendLine
               value={summary.trends.success_rate_points}
-              suffix="vs prev. period"
+              suffix={t("trends.vsPrevPeriod")}
               positiveIsGood
               format="points"
+              noPriorPeriodLabel={t("trends.noPriorPeriod")}
             />
           }
         />
         <StatCard
-          label="Avg duration"
+          label={t("summary.avgDuration")}
           value={formatMsAsDuration(summary.avg_duration_ms)}
           mono
-          trend={<DurationTrend percent={summary.trends.avg_duration_percent} />}
+          trend={
+            <DurationTrend
+              percent={summary.trends.avg_duration_percent}
+              noPriorPeriodLabel={t("trends.noPriorPeriod")}
+              noChangeLabel={t("trends.noChange")}
+              fasterLabel={(percent) => t("trends.fasterVsPrev", { percent })}
+              slowerLabel={(percent) => t("trends.slowerVsPrev", { percent })}
+            />
+          }
         />
         <StatCard
-          label="Most active repo"
+          label={t("summary.mostActiveRepo")}
           value={
             summary.most_active_repo
               ? parseRepoShortName(summary.most_active_repo.full_name)
-              : "—"
+              : emDash
           }
           mono
           trend={
             summary.most_active_repo ? (
               <p className="pw-insights-summary-meta">
-                {formatInsightsCount(summary.most_active_repo.run_count)} runs this period
+                {t("summary.runsThisPeriod", {
+                  formattedCount: formatCount(summary.most_active_repo.run_count),
+                })}
               </p>
             ) : undefined
           }

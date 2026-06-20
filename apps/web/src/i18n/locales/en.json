@@ -424,5 +424,60 @@
       "issue": "Issue",
       "unknown": "Unknown"
     }
+  },
+  "insights": {
+    "title": "Insights",
+    "loadingAriaLabel": "Loading insights",
+    "loadError": "We could not load workspace insights.",
+    "empty": {
+      "title": "Not enough data yet — insights appear once runs are recorded."
+    },
+    "filters": {
+      "repository": "Repository",
+      "allRepos": "All repos",
+      "workflow": "Workflow",
+      "allWorkflows": "All workflows",
+      "timeRangeAriaLabel": "Time range"
+    },
+    "range": {
+      "7d": "7d",
+      "30d": "30d"
+    },
+    "summary": {
+      "totalRuns": "Total runs",
+      "successRate": "Success rate",
+      "avgDuration": "Avg duration",
+      "mostActiveRepo": "Most active repo",
+      "runsThisPeriod": "{formattedCount} runs this period"
+    },
+    "trends": {
+      "noPriorPeriod": "No prior period data",
+      "noChange": "→ No change vs prev. period",
+      "vsPrevPeriod": "vs prev. period",
+      "fasterVsPrev": "{percent} faster vs prev. period",
+      "slowerVsPrev": "{percent} slower vs prev. period"
+    },
+    "charts": {
+      "durationTitle": "Duration over time",
+      "failureRateTitle": "Failure rate over time",
+      "minutesUnit": "minutes",
+      "percentUnit": "percent",
+      "noData": "No data",
+      "legendAriaLabel": "{title} legend"
+    },
+    "tables": {
+      "slowestTitle": "Slowest workflows",
+      "slowestSubtitle": "avg duration",
+      "mostFailingTitle": "Most failing workflows",
+      "mostFailingSubtitle": "failure rate",
+      "workflow": "Workflow",
+      "avg": "Avg",
+      "p50": "p50",
+      "p95": "p95",
+      "rate": "Rate",
+      "failureCount": "# Failures",
+      "noTrendAriaLabel": "No trend",
+      "trendAriaLabel": "Trend {label}"
+    }
   }
 }

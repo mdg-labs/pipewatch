@@ -5,6 +5,7 @@ import type {
 } from "@pipewatch/types";
 import type { TimeSeriesSeries } from "@pipewatch/ui";
 
+import { formatChartDateLabel } from "@/i18n/insights-formatters";
 import { runFiltersQueryString, type RunListFilters } from "@/lib/run-filters";
 
 const MAX_CHART_SERIES = 5;
@@ -56,8 +57,9 @@ export function rankWorkflowKeys(days: InsightsTimeSeriesDay[]): string[] {
 export function buildTimeSeriesChartData(
   days: InsightsTimeSeriesDay[],
   keys: string[],
+  formatChartDate: (isoDate: string) => string = formatChartDateLabel,
 ): { labels: string[]; series: TimeSeriesSeries[]; pointsByDay: InsightsTimeSeriesDay["points"][] } {
-  const labels = days.map((day) => formatChartDateLabel(day.date));
+  const labels = days.map((day) => formatChartDate(day.date));
   const meta = new Map<string, WorkflowSeriesKey>();
 
   for (const day of days) {
@@ -98,71 +100,6 @@ export function buildTimeSeriesChartData(
   };
 }
 
-export function formatChartDateLabel(isoDate: string): string {
-  const date = new Date(`${isoDate}T00:00:00.000Z`);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
-}
-
-export function formatInsightsCount(value: number): string {
-  return new Intl.NumberFormat().format(value);
-}
-
-export function formatPercent(value: number, fractionDigits = 1): string {
-  return `${value.toFixed(fractionDigits)}%`;
-}
-
-export function formatMsAsDuration(ms: number | null | undefined): string {
-  if (ms == null || !Number.isFinite(ms) || ms < 0) {
-    return "—";
-  }
-
-  const totalSeconds = Math.round(ms / 1_000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) {
-    return `${hours}h ${String(minutes).padStart(2, "0")}m`;
-  }
-
-  if (minutes > 0) {
-    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
-  }
-
-  return `${seconds}s`;
-}
-
-export function formatDurationAxisLabel(ms: number): string {
-  const minutes = ms / 60_000;
-  if (minutes >= 10) {
-    return `${Math.round(minutes)}m`;
-  }
-
-  if (minutes >= 1) {
-    return `${minutes.toFixed(minutes >= 5 ? 0 : 1)}m`;
-  }
-
-  return `${Math.round(ms / 1_000)}s`;
-}
-
-export function buildDurationAxisLabels(minMs: number, maxMs: number): string[] {
-  const steps = [1, 0.75, 0.5, 0.25, 0];
-  const range = maxMs - minMs || 1;
-
-  return steps.map((step) => formatDurationAxisLabel(minMs + range * step));
-}
-
-export function buildPercentAxisLabels(maxPercent: number): string[] {
-  const max = Math.max(maxPercent, 1);
-  const steps = [1, 0.75, 0.5, 0.25, 0];
-
-  return steps.map((step) => `${Math.round(max * step)}%`);
-}
-
 export type TrendTone = "up" | "down" | "neutral";
 
 export function resolveTrendTone(
@@ -179,26 +116,6 @@ export function resolveTrendTone(
   }
 
   return positive ? "down" : "up";
-}
-
-export function formatSignedPercent(value: number | null | undefined): string | null {
-  if (value == null) {
-    return null;
-  }
-
-  const absolute = Math.abs(value);
-  const formatted = absolute >= 10 ? absolute.toFixed(0) : absolute.toFixed(1);
-  return `${value > 0 ? "+" : value < 0 ? "−" : ""}${formatted}%`;
-}
-
-export function formatSignedPoints(value: number | null | undefined): string | null {
-  if (value == null) {
-    return null;
-  }
-
-  const absolute = Math.abs(value);
-  const formatted = absolute >= 10 ? absolute.toFixed(0) : absolute.toFixed(1);
-  return `${value > 0 ? "+" : value < 0 ? "−" : ""}${formatted} pts`;
 }
 
 export function hasInsightsData(insights: WorkspaceInsights | null): boolean {

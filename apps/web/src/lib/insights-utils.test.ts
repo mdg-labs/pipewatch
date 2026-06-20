@@ -8,12 +8,14 @@ import {
 } from "@/lib/insights-filters";
 import {
   buildWorkflowRunsHref,
-  formatChartDateLabel,
-  formatMsAsDuration,
   hasInsightsData,
   rankWorkflowKeys,
   resolveTrendTone,
 } from "@/lib/insights-utils";
+import {
+  formatChartDateLabel,
+  formatMsAsDuration,
+} from "@/i18n/insights-formatters";
 
 describe("insights-filters", () => {
   it("parses range, repo, and workflow from the URL", () => {
