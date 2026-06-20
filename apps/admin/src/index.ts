@@ -6,7 +6,13 @@ import { parseAdminEnv } from "@pipewatch/config/env";
 import { closeDb, createDb } from "@pipewatch/db";
 
 import { createApp } from "./app.js";
+import { registerWebhookPollSchedule } from "./queues/webhook-poll.js";
+import { resolveRedisUrl } from "./queues/connection.js";
 import { bootstrapAdminUser } from "./services/auth/bootstrap.js";
+import { initSentry } from "./sentry.js";
+import { startAdminWorkers } from "./worker.js";
+
+initSentry();
 
 const env = parseAdminEnv();
 
@@ -26,7 +32,13 @@ const staticRoot =
 const app = createApp({ env, db }, staticRoot);
 const port = env.PORT;
 
+const redisUrl = resolveRedisUrl(env.REDIS_URL);
+const workerRuntime = startAdminWorkers({ env, db, redisUrl });
+await registerWebhookPollSchedule(redisUrl, env.ADMIN_POLL_INTERVAL_CRON);
+await workerRuntime.worker.waitUntilReady();
+
 const shutdown = async () => {
+  await workerRuntime.close();
   await closeDb();
   process.exit(0);
 };
