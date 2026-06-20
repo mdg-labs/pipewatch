@@ -7,7 +7,7 @@ import { and, eq } from "drizzle-orm";
 import { flags } from "@pipewatch/config/edition";
 import type { WorkerEnv } from "@pipewatch/config/env";
 import type { Db } from "@pipewatch/db";
-import { integrations, repositories, workspaces } from "@pipewatch/db/schema";
+import { integrations, pipelineJobs, repositories, workspaces } from "@pipewatch/db/schema";
 import type { WorkspacePlan } from "@pipewatch/types";
 import {
   createGuardedGitHubFetch,
@@ -25,6 +25,10 @@ import {
   upsertPipelineJobAndSteps,
   upsertPipelineRun,
 } from "../pipeline-upsert.js";
+
+type PipelineJobRow = typeof pipelineJobs.$inferSelect;
+
+export type { PipelineJobRow };
 
 const GITHUB_API_BASE = "https://api.github.com";
 const APP_JWT_TTL_SECONDS = 9 * 60;
@@ -757,6 +761,31 @@ export function mapRestWorkflowRun(
   );
 }
 
+function isPipelineJobChanged(
+  existing: PipelineJobRow | undefined,
+  upserted: PipelineJobRow,
+): boolean {
+  if (!existing) {
+    return true;
+  }
+
+  return (
+    existing.name !== upserted.name ||
+    existing.status !== upserted.status ||
+    existing.conclusion !== upserted.conclusion ||
+    existing.runnerName !== upserted.runnerName ||
+    existing.startedAt.getTime() !== upserted.startedAt.getTime() ||
+    existing.completedAt?.getTime() !== upserted.completedAt?.getTime() ||
+    existing.durationMs !== upserted.durationMs
+  );
+}
+
+export type IngestWorkflowJobsForRunResult = {
+  jobsIngested: number;
+  changedJobs: PipelineJobRow[];
+};
+
+/** Paginated jobs ingest for one run — returns rows that changed on upsert. */
 export async function ingestWorkflowJobsForRun(
   database: Db,
   fullName: string,
@@ -764,9 +793,10 @@ export async function ingestWorkflowJobsForRun(
   runId: string,
   workspaceId: string,
   fetchDeps: GitHubFetchDeps,
-): Promise<number> {
+): Promise<IngestWorkflowJobsForRunResult> {
   let page = 1;
   let jobsIngested = 0;
+  const changedJobs: PipelineJobRow[] = [];
 
   while (true) {
     const response = await fetchWorkflowJobsPage(
@@ -778,7 +808,28 @@ export async function ingestWorkflowJobsForRun(
 
     for (const job of response.jobs) {
       const mapped = mapRestWorkflowJob(job, { workspaceId, runId });
-      await upsertPipelineJobAndSteps(database, mapped.job, mapped.steps);
+
+      const [existing] = await database
+        .select()
+        .from(pipelineJobs)
+        .where(
+          and(
+            eq(pipelineJobs.runId, runId),
+            eq(pipelineJobs.externalJobId, mapped.job.externalJobId),
+          ),
+        )
+        .limit(1);
+
+      const upserted = await upsertPipelineJobAndSteps(
+        database,
+        mapped.job,
+        mapped.steps,
+      );
+
+      if (isPipelineJobChanged(existing, upserted)) {
+        changedJobs.push(upserted);
+      }
+
       jobsIngested += 1;
     }
 
@@ -789,7 +840,7 @@ export async function ingestWorkflowJobsForRun(
     page += 1;
   }
 
-  return jobsIngested;
+  return { jobsIngested, changedJobs };
 }
 
 export async function ingestWorkflowRuns(

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { parseWorkerEnv } from "@pipewatch/config/env";
 import { closeDb, createDb, type Db } from "@pipewatch/db";
 import {
   integrations,
@@ -14,9 +15,11 @@ import {
   workspaces,
 } from "@pipewatch/db/schema";
 import type {
+  GitHubWorkflowJob,
   GitHubWorkflowJobWebhookPayload,
   GitHubWorkflowRunWebhookPayload,
 } from "@pipewatch/utils";
+import { encrypt } from "@pipewatch/utils";
 import { and, eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -29,6 +32,17 @@ const fixturesDir = join(
   repoRoot,
   "packages/utils/src/github/fixtures",
 );
+
+const encryptionKey = "d".repeat(32);
+
+const workerEnv = parseWorkerEnv({
+  NODE_ENV: "development",
+  PIPEWATCH_EDITION: "cloud",
+  ENCRYPTION_KEY: encryptionKey,
+  GITHUB_APP_ID: "123456",
+  GITHUB_APP_PRIVATE_KEY: "unused-for-tests",
+  RETENTION_DAYS: "30",
+});
 
 function loadFixture<T>(name: string): T {
   const raw = readFileSync(join(fixturesDir, name), "utf8");
@@ -58,10 +72,16 @@ async function waitForPostgres(databaseUrl: string, attempts = 30): Promise<void
 type SeedContext = {
   workspaceId: string;
   repoId: string;
+  integrationId?: string;
+  fullName?: string;
 };
 
-async function seedRepository(database: Db): Promise<SeedContext> {
+async function seedRepository(
+  database: Db,
+  options?: { withGitHubToken?: boolean },
+): Promise<SeedContext> {
   const suffix = randomBytes(4).toString("hex");
+  const fullName = `org-${suffix}/hello-world`;
 
   const [workspace] = await database
     .insert(workspaces)
@@ -84,7 +104,12 @@ async function seedRepository(database: Db): Promise<SeedContext> {
       externalInstallationId: `install-${suffix}`,
       accountLogin: `org-${suffix}`,
       accountType: "organization",
-      accessToken: "encrypted-token",
+      accessToken: options?.withGitHubToken
+        ? encrypt("ghs_test_token", encryptionKey)
+        : "encrypted-token",
+      tokenExpiresAt: options?.withGitHubToken
+        ? new Date(Date.now() + 60 * 60 * 1000)
+        : null,
     })
     .returning();
 
@@ -98,7 +123,7 @@ async function seedRepository(database: Db): Promise<SeedContext> {
       workspaceId: workspace.id,
       integrationId: integration.id,
       externalRepoId: `repo-${suffix}`,
-      fullName: `org-${suffix}/hello-world`,
+      fullName: options?.withGitHubToken ? fullName : `org-${suffix}/hello-world`,
       private: false,
       enabled: true,
     })
@@ -111,7 +136,39 @@ async function seedRepository(database: Db): Promise<SeedContext> {
   return {
     workspaceId: workspace.id,
     repoId: repository.id,
+    integrationId: integration.id,
+    fullName: repository.fullName,
   };
+}
+
+function loadFixtureJob(name: string): GitHubWorkflowJobWebhookPayload {
+  const raw = readFileSync(join(fixturesDir, name), "utf8");
+  return JSON.parse(raw) as GitHubWorkflowJobWebhookPayload;
+}
+
+function createMockJobsFetch(fullName: string, jobs: GitHubWorkflowJob[]) {
+  const fetchImpl = vi.fn(async (input: string | URL) => {
+    const url = typeof input === "string" ? input : input.toString();
+
+    if (!url.includes(`/repos/${fullName}/actions/runs/`) || !url.includes("/jobs")) {
+      return new Response("not found", { status: 404 });
+    }
+
+    expect(url).toContain("filter=latest");
+
+    return new Response(
+      JSON.stringify({
+        total_count: jobs.length,
+        jobs,
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      },
+    );
+  }) as typeof fetch;
+
+  return fetchImpl;
 }
 
 let containerId = "";
@@ -450,6 +507,201 @@ describe("process-pipeline-run integration", () => {
     expect(
       await database.select().from(pipelineJobs).where(eq(pipelineJobs.externalJobId, "2891501297")),
     ).toHaveLength(1);
+  });
+
+  it("reconciles missed workflow_job webhooks from GitHub jobs API on run completed", async () => {
+    const seed = await seedRepository(database, { withGitHubToken: true });
+    if (!seed.fullName) {
+      throw new Error("Expected repository full name");
+    }
+
+    const runPayload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
+    const jobFixture = loadFixtureJob("workflow-job-completed.json");
+    const restJob: GitHubWorkflowJob = jobFixture.workflow_job;
+    const fetchImpl = createMockJobsFetch(seed.fullName, [restJob]);
+    const publishSse = vi.fn(async () => undefined);
+
+    await processPipelineRun(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: runPayload.action,
+        payload: runPayload,
+        deliveryId: "delivery-reconcile-191",
+      },
+      { db: database, env: workerEnv, fetchImpl, publishSse },
+    );
+
+    const parentRun = await findPipelineRunByExternalId(
+      database,
+      seed.repoId,
+      String(runPayload.workflow_run.id),
+    );
+    if (!parentRun) {
+      throw new Error("Expected parent run");
+    }
+
+    const [job] = await database
+      .select()
+      .from(pipelineJobs)
+      .where(
+        and(
+          eq(pipelineJobs.runId, parentRun.id),
+          eq(pipelineJobs.externalJobId, "2891501297"),
+        ),
+      );
+
+    expect(job).toBeDefined();
+    expect(job?.status).toBe("completed");
+    expect(job?.conclusion).toBe("success");
+    expect(job?.startedAt.toISOString()).toBe("2022-10-11T14:22:35.000Z");
+    expect(job?.completedAt?.toISOString()).toBe("2022-10-11T14:23:40.000Z");
+    expect(job?.durationMs).toBe(65_000);
+    expect(job?.completedAt?.toISOString()).not.toBe(
+      new Date(runPayload.workflow_run.updated_at).toISOString(),
+    );
+
+    const steps = await database
+      .select()
+      .from(pipelineSteps)
+      .where(eq(pipelineSteps.jobId, job?.id ?? ""))
+      .orderBy(pipelineSteps.number);
+
+    expect(steps).toHaveLength(3);
+
+    expect(publishSse).toHaveBeenCalledTimes(2);
+    expect(publishSse).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "run:completed" }),
+    );
+    expect(publishSse).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "job:updated",
+        data: expect.objectContaining({
+          id: job?.id,
+          status: "completed",
+          conclusion: "success",
+        }),
+      }),
+    );
+
+    publishSse.mockClear();
+
+    await processPipelineRun(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: runPayload.action,
+        payload: runPayload,
+      },
+      { db: database, env: workerEnv, fetchImpl, publishSse },
+    );
+
+    expect(
+      publishSse.mock.calls.filter((call) => call[0]?.type === "job:updated"),
+    ).toHaveLength(0);
+    expect(
+      await database.select().from(pipelineJobs).where(eq(pipelineJobs.runId, parentRun.id)),
+    ).toHaveLength(1);
+  });
+
+  it("fixes queued jobs left behind when workflow_job completed webhook was missed", async () => {
+    const seed = await seedRepository(database, { withGitHubToken: true });
+    if (!seed.fullName) {
+      throw new Error("Expected repository full name");
+    }
+
+    const runPayload = loadFixture<GitHubWorkflowRunWebhookPayload>(
+      "workflow-run-completed.json",
+    );
+    const queuedPayload = loadFixtureJob("workflow-job-queued.json");
+    queuedPayload.workflow_job.run_id = runPayload.workflow_run.id;
+    queuedPayload.workflow_job.id = 2891501297;
+
+    await processPipelineRun(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: runPayload.action,
+        payload: runPayload,
+      },
+      { db: database },
+    );
+
+    const parentRun = await findPipelineRunByExternalId(
+      database,
+      seed.repoId,
+      String(runPayload.workflow_run.id),
+    );
+    if (!parentRun) {
+      throw new Error("Expected parent run");
+    }
+
+    await processPipelineJob(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: queuedPayload.action,
+        payload: queuedPayload,
+      },
+      { db: database },
+    );
+
+    const [staleJob] = await database
+      .select()
+      .from(pipelineJobs)
+      .where(
+        and(
+          eq(pipelineJobs.runId, parentRun.id),
+          eq(pipelineJobs.externalJobId, "2891501297"),
+        ),
+      );
+
+    expect(staleJob?.status).toBe("queued");
+    expect(staleJob?.completedAt).toBeNull();
+
+    const completedFixture = loadFixtureJob("workflow-job-completed.json");
+    const fetchImpl = createMockJobsFetch(seed.fullName, [
+      completedFixture.workflow_job,
+    ]);
+
+    await processPipelineRun(
+      {
+        workspaceId: seed.workspaceId,
+        repoId: seed.repoId,
+        action: "completed",
+        payload: runPayload,
+      },
+      { db: database, env: workerEnv, fetchImpl },
+    );
+
+    const [reconciledJob] = await database
+      .select()
+      .from(pipelineJobs)
+      .where(
+        and(
+          eq(pipelineJobs.runId, parentRun.id),
+          eq(pipelineJobs.externalJobId, "2891501297"),
+        ),
+      );
+
+    expect(reconciledJob?.status).toBe("completed");
+    expect(reconciledJob?.conclusion).toBe("success");
+    expect(reconciledJob?.completedAt?.toISOString()).toBe(
+      "2022-10-11T14:23:40.000Z",
+    );
+    expect(
+      await database
+        .select()
+        .from(pipelineJobs)
+        .where(
+          and(
+            eq(pipelineJobs.runId, parentRun.id),
+            eq(pipelineJobs.status, "queued"),
+          ),
+        ),
+    ).toHaveLength(0);
   });
 });
 

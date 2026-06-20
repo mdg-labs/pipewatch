@@ -42,7 +42,7 @@ export type WorkerRuntime = {
 
 function createWebhookEventsProcessor(env: WorkerEnv): Processor {
   const db = getDb();
-  const handlerDeps = env.REDIS_URL ? { db, redisUrl: env.REDIS_URL } : { db };
+  const handlerDeps = { db, env, ...(env.REDIS_URL ? { redisUrl: env.REDIS_URL } : {}) };
 
   return async (job) => {
     try {

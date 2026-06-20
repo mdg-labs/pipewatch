@@ -1,11 +1,25 @@
 import * as Sentry from "@sentry/node";
+import type { WorkerEnv } from "@pipewatch/config/env";
 import type { Db } from "@pipewatch/db";
-import type { PipelineConclusion, PipelineRunSummary, PipelineStatus, SseEventType } from "@pipewatch/types";
+import type {
+  PipelineConclusion,
+  PipelineJobSummary,
+  PipelineRunSummary,
+  PipelineStatus,
+  SseEventType,
+} from "@pipewatch/types";
 import {
   mapWorkflowRunPayload,
   type GitHubWorkflowRunWebhookPayload,
 } from "@pipewatch/utils";
 
+import {
+  gitHubAppConfigFromWorkerEnv,
+  ingestWorkflowJobsForRun,
+  loadIntegrationRecord,
+  loadRepositoryRecord,
+  type PipelineJobRow,
+} from "../services/github/backfill.js";
 import { upsertPipelineRun } from "../services/pipeline-upsert.js";
 import {
   publishSseEvent,
@@ -25,8 +39,10 @@ export type ProcessPipelineRunJobPayload = {
 
 export type ProcessPipelineRunDeps = {
   db: Db;
+  env?: WorkerEnv;
   publishSse?: (input: PublishSseEventInput) => Promise<void>;
   redisUrl?: string;
+  fetchImpl?: typeof fetch;
 };
 
 function toRunSummary(run: {
@@ -51,6 +67,22 @@ function toRunSummary(run: {
   };
 }
 
+function toJobSummary(job: {
+  id: string;
+  name: string;
+  status: string;
+  conclusion: string | null;
+  durationMs: number | null;
+}): PipelineJobSummary {
+  return {
+    id: job.id,
+    name: job.name,
+    status: job.status as PipelineStatus,
+    conclusion: job.conclusion as PipelineConclusion,
+    durationMs: job.durationMs,
+  };
+}
+
 function resolveRunSseEventType(action: string): SseEventType {
   switch (action) {
     case "requested":
@@ -70,6 +102,46 @@ function logUnknownGitHubStatus(status: string): void {
   });
 }
 
+async function reconcileJobsOnRunCompleted(
+  data: ProcessPipelineRunJobPayload,
+  runId: string,
+  deps: ProcessPipelineRunDeps,
+): Promise<PipelineJobRow[]> {
+  if (!deps.env) {
+    return [];
+  }
+
+  const repository = await loadRepositoryRecord(
+    deps.db,
+    data.repoId,
+    data.workspaceId,
+  );
+  const integration = await loadIntegrationRecord(
+    deps.db,
+    repository.integrationId,
+    data.workspaceId,
+  );
+  const config = gitHubAppConfigFromWorkerEnv(deps.env);
+  const fetchDeps = {
+    database: deps.db,
+    config,
+    integration,
+    ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
+  };
+
+  const externalRunId = String(data.payload.workflow_run.id);
+  const { changedJobs } = await ingestWorkflowJobsForRun(
+    deps.db,
+    repository.fullName,
+    externalRunId,
+    runId,
+    data.workspaceId,
+    fetchDeps,
+  );
+
+  return changedJobs;
+}
+
 /** Consume a `workflow_run` webhook job — map, upsert, publish SSE stub. */
 export async function processPipelineRun(
   data: ProcessPipelineRunJobPayload,
@@ -84,6 +156,11 @@ export async function processPipelineRun(
 
   const run = await upsertPipelineRun(deps.db, mapped);
 
+  const changedJobs =
+    action === "completed"
+      ? await reconcileJobsOnRunCompleted(data, run.id, deps)
+      : [];
+
   const shouldPublish = await claimWebhookDeliveryForSse(
     data.deliveryId,
     deps.redisUrl ?? process.env.REDIS_URL,
@@ -97,6 +174,15 @@ export async function processPipelineRun(
       type: resolveRunSseEventType(action),
       data: toRunSummary(run),
     });
+
+    for (const job of changedJobs) {
+      await publish({
+        workspaceId: data.workspaceId,
+        repoId: data.repoId,
+        type: "job:updated",
+        data: toJobSummary(job),
+      });
+    }
   }
 
   return { runId: run.id };
