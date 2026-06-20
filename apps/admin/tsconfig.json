@@ -6,6 +6,10 @@
     "outDir": "dist",
     "noEmit": false
   },
-  "references": [{ "path": "../../packages/config" }],
+  "references": [
+    { "path": "../../packages/config" },
+    { "path": "../../packages/db" },
+    { "path": "../../packages/utils" }
+  ],
   "include": ["src"]
 }

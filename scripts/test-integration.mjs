@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-const defaultPackages = ["@pipewatch/api", "@pipewatch/worker"];
+const defaultPackages = ["@pipewatch/api", "@pipewatch/worker", "@pipewatch/admin"];
 const requested = process.argv.slice(2).filter(Boolean);
 const packages = requested.length > 0 ? requested : defaultPackages;
 

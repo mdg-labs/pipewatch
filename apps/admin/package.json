@@ -12,20 +12,31 @@
     "lint": "eslint .",
     "start": "node dist/index.js",
     "test:unit": "vitest run --config vitest.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "typecheck": "tsc --build && tsc --noEmit -p web/tsconfig.json",
     "deploy:admin": "node -e \"process.exit(0)\""
   },
   "dependencies": {
     "@hono/node-server": "^1.14.0",
     "@pipewatch/config": "workspace:*",
-    "hono": "catalog:"
+    "@pipewatch/db": "workspace:*",
+    "@pipewatch/db-admin": "workspace:*",
+    "@pipewatch/utils": "workspace:*",
+    "bcryptjs": "^3.0.2",
+    "drizzle-orm": "^0.45.2",
+    "hono": "catalog:",
+    "nodemailer": "^9.0.1",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.13.4",
+    "@types/nodemailer": "^8.0.1",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "catalog:",
+    "postgres": "^3.4.9",
     "react": "catalog:",
     "react-dom": "catalog:",
     "typescript": "catalog:",

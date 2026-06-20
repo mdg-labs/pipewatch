@@ -1697,11 +1697,11 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `GH_CLIENT_ID` | staging, production | api | For OAuth flow — runtime: `GITHUB_CLIENT_ID` |
 | `GH_CLIENT_SECRET` | staging, production | api | For OAuth flow — runtime: `GITHUB_CLIENT_SECRET` |
 | `GH_APP_SLUG` | staging, production | api | e.g. `pipewatch` — install URL — runtime: `GITHUB_APP_SLUG` |
-| `SMTP_HOST` | staging, production | api | Postmark SMTP (cloud) or user-configured (self-hosted) |
-| `SMTP_PORT` | staging, production | api | 587 |
-| `SMTP_USER` | staging, production | api | Postmark SMTP token |
-| `SMTP_PASS` | staging, production | api | Postmark SMTP token |
-| `SMTP_FROM` | staging, production | api | `noreply@pipewatch.app` |
+| `SMTP_HOST` | staging, production | api, admin | Postmark SMTP (cloud) or user-configured (self-hosted) |
+| `SMTP_PORT` | staging, production | api, admin | 587 |
+| `SMTP_USER` | staging, production | api, admin | Postmark SMTP token |
+| `SMTP_PASS` | staging, production | api, admin | Postmark SMTP token |
+| `SMTP_FROM` | staging, production | api, admin | `noreply@pipewatch.app` |
 | `POSTMARK_API_KEY` | staging, production | api | Broadcast stream only — bulk/newsletter sends |
 | `POSTMARK_BROADCAST_STREAM` | staging, production | api | Postmark Message Stream ID for broadcast |
 | `POSTMARK_WEBHOOK_SECRET` | staging, production | api | For Postmark `X-Postmark-Signature` HMAC validation |
@@ -1712,6 +1712,11 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `SENTRY_DSN_API` | staging, production | api | Sentry project DSN — runtime: `SENTRY_DSN` on api Fly app |
 | `SENTRY_DSN_WORKER` | staging, production | worker | Sentry project DSN — runtime: `SENTRY_DSN` on worker Fly app |
 | `SENTRY_DSN_WEB` | staging, production | web | Sentry project DSN — runtime: `SENTRY_DSN` on web Cloudflare Worker |
+| `SENTRY_DSN_ADMIN` | staging, production | admin | Sentry project DSN — runtime: `SENTRY_DSN` on admin Fly app |
+| `ADMIN_SESSION_SECRET` | staging, production | admin | Min 32 chars — signs admin session cookies (`pw_admin_session`); separate from `JWT_SECRET` |
+| `ADMIN_URL` | staging, production | admin | Admin portal origin for invite links (`https://admin.pipewatch.app`; staging: `https://staging-admin.pipewatch.app`) |
+| `ADMIN_BOOTSTRAP_EMAIL` | staging, production | admin | One-time first-deploy bootstrap `platform_admin` email — remove after bootstrap |
+| `ADMIN_BOOTSTRAP_PASSWORD` | staging, production | admin | One-time first-deploy bootstrap password — remove after bootstrap |
 | `SENTRY_AUTH_TOKEN` | ci | CI builds | Source map upload |
 | `SENTRY_ORG` | ci | CI builds | Sentry org slug |
 | `SENTRY_PROJECT` | ci (secret) | CI builds | Sentry project slug |
