@@ -36,6 +36,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
   const { workspace, workspaceId } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
+  const t = useTranslations("settings.integrations");
   const tUi = useTranslations("ui");
 
   const [integrations, setIntegrations] = useState<IntegrationSummary[]>([]);
@@ -220,19 +221,19 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
           }),
         );
         toast({
-          title: enabled ? "Repository enabled" : "Repository disabled",
+          title: enabled ? t("toast.repoEnabledTitle") : t("toast.repoDisabledTitle"),
           variant: "success",
         });
       } catch {
         toast({
-          title: "Could not update repository",
+          title: t("toast.repoUpdateErrorTitle"),
           variant: "error",
         });
       } finally {
         setTogglingRepoId(null);
       }
     },
-    [readOnly, toast, workspaceId],
+    [readOnly, t, toast, workspaceId],
   );
 
   const handleResync = useCallback(
@@ -246,8 +247,8 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
 
       if (enabledRepos.length === 0) {
         toast({
-          title: "No enabled repositories",
-          description: "Enable at least one repository before re-syncing.",
+          title: t("toast.noEnabledReposTitle"),
+          description: t("toast.noEnabledReposDescription"),
           variant: "error",
         });
         return;
@@ -262,7 +263,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
         );
         await pollSyncStatus(integration.id);
         toast({
-          title: "Re-sync started",
+          title: t("toast.resyncStartedTitle"),
           variant: "success",
         });
       } catch {
@@ -272,12 +273,12 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
           return next;
         });
         toast({
-          title: "Could not start re-sync",
+          title: t("toast.resyncErrorTitle"),
           variant: "error",
         });
       }
     },
-    [pollSyncStatus, readOnly, reposByIntegration, toast, workspaceId],
+    [pollSyncStatus, readOnly, reposByIntegration, t, toast, workspaceId],
   );
 
   const handleRemove = useCallback(async () => {
@@ -303,19 +304,19 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
         setExpandedId(null);
       }
       toast({
-        title: "Integration removed",
+        title: t("toast.removedTitle"),
         variant: "success",
       });
       setRemoveTarget(null);
     } catch {
       toast({
-        title: "Could not remove integration",
+        title: t("toast.removeErrorTitle"),
         variant: "error",
       });
     } finally {
       setRemoveLoading(false);
     }
-  }, [expandedId, removeTarget, toast, workspaceId]);
+  }, [expandedId, removeTarget, t, toast, workspaceId]);
 
   const handleManualConnect = useCallback(() => {
     const trimmed = manualId.trim();
@@ -338,7 +339,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
   if (loadError) {
     return (
       <ErrorRetry
-        message="We could not load integrations. Check your connection and try again."
+        message={t("loadError")}
         onRetry={() => {
           void loadData();
         }}
@@ -350,11 +351,11 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
     <div className="pw-integrations-settings">
       <header className="pw-integrations-settings-header">
         <div>
-          <h1>Integrations</h1>
-          <p>Connect GitHub App installations and choose which repositories to track.</p>
+          <h1>{t("title")}</h1>
+          <p>{t("subtitle")}</p>
           <div className="pw-integrations-header-badges">
             <Badge variant="outline" pill>
-              MVP: GitHub only
+              {t("mvpBadge")}
             </Badge>
           </div>
         </div>
@@ -364,7 +365,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
               setAddOpen(true);
             }}
           >
-            Add integration
+            {t("addButton")}
           </Button>
         ) : null}
       </header>
@@ -372,8 +373,8 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
       {integrations.length === 0 ? (
         <EmptyState
           icon={<Github size={24} strokeWidth={1.75} aria-hidden />}
-          title="No integrations connected"
-          description="Install the PipeWatch GitHub App to start tracking workflow runs."
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
           actions={
             canMutate ? (
               <Button
@@ -381,7 +382,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
                   setAddOpen(true);
                 }}
               >
-                Add integration
+                {t("addButton")}
               </Button>
             ) : undefined
           }
@@ -425,8 +426,8 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
           }
         }}
         closeAriaLabel={tUi("dialog.closeAriaLabel")}
-        title="Add GitHub integration"
-        description="Install the PipeWatch GitHub App on your account or organization."
+        title={t("addDialog.title")}
+        description={t("addDialog.description")}
         size="sm"
         footer={
           <div className="pw-integrations-actions">
@@ -437,7 +438,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
                 setAddOpen(false);
               }}
             >
-              Cancel
+              {tUi("typedConfirm.cancel")}
             </Button>
             <Button
               disabled={!installConfigured}
@@ -448,7 +449,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
               }}
             >
               <Github size={16} strokeWidth={2} aria-hidden />
-              Install GitHub App
+              {t("addDialog.installButton")}
             </Button>
           </div>
         }
@@ -456,35 +457,29 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
         <div className="pw-integrations-add-body">
           {installConfigured ? null : (
             <p className="pw-integrations-add-hint" role="alert">
-              GitHub App install is not configured. Set <code>GITHUB_APP_SLUG</code> on the API
-              server and refresh this page.
+              {t("addDialog.notConfigured")}
             </p>
           )}
-          <p className="pw-integrations-add-hint">
-            After installing, GitHub redirects back to PipeWatch to finish connecting
-            repositories.
-          </p>
+          <p className="pw-integrations-add-hint">{t("addDialog.redirectHint")}</p>
           {flags.IS_CE ? (
             <div>
-              <p className="pw-integrations-add-hint">
-                Already installed? Enter your installation ID manually.
-              </p>
+              <p className="pw-integrations-add-hint">{t("addDialog.manualHint")}</p>
               <div className="pw-integrations-manual-row">
                 <Input
                   value={manualId}
                   onChange={(event) => {
                     setManualId(event.target.value);
                   }}
-                  placeholder="12345678"
+                  placeholder={t("addDialog.installationIdPlaceholder")}
                   mono
-                  aria-label="GitHub installation ID"
+                  aria-label={t("addDialog.installationIdAriaLabel")}
                 />
                 <Button
                   variant="secondary"
                   disabled={!manualId.trim() || submittingManual}
                   onClick={handleManualConnect}
                 >
-                  Connect
+                  {t("addDialog.connect")}
                 </Button>
               </div>
             </div>
@@ -500,10 +495,12 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
           }
         }}
         closeAriaLabel={tUi("dialog.closeAriaLabel")}
-        title="Remove integration"
+        title={t("removeDialog.title")}
         {...(removeTarget
           ? {
-              description: `Disconnect ${removeTarget.account_login}? All tracked repositories for this installation will be disabled and removed.`,
+              description: t("removeDialog.description", {
+                accountLogin: removeTarget.account_login,
+              }),
             }
           : {})}
         size="sm"
@@ -516,7 +513,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
                 setRemoveTarget(null);
               }}
             >
-              Cancel
+              {tUi("typedConfirm.cancel")}
             </Button>
             <Button
               variant="danger"
@@ -526,7 +523,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
                 void handleRemove();
               }}
             >
-              Remove integration
+              {t("removeDialog.confirmButton")}
             </Button>
           </div>
         }

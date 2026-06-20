@@ -1,8 +1,8 @@
 "use client";
 
 import type { UpdateWorkspaceMemberInput, WorkspaceMember, WorkspaceRole } from "@pipewatch/types";
-import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
@@ -33,30 +33,14 @@ import {
 } from "./InviteMemberModal";
 import "./members-settings.css";
 
-const ROLE_LABELS: Record<WorkspaceRole, string> = {
-  owner: "Owner",
-  admin: "Admin",
-  member: "Member",
-};
-
 const ROLE_BADGE_VARIANT = {
   owner: "accent",
   admin: "default",
   member: "outline",
 } as const;
 
-const ROLE_OPTIONS: Array<{ value: WorkspaceRole; label: string }> = [
-  { value: "member", label: "Member" },
-  { value: "admin", label: "Admin" },
-  { value: "owner", label: "Owner" },
-];
-
 function formatDate(iso: string): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(iso));
-}
-
-function memberDisplayName(member: WorkspaceMember): string {
-  return member.name?.trim() || member.email || "Unknown member";
 }
 
 type ConfirmAction =
@@ -70,6 +54,9 @@ export function MembersTable() {
   const { workspace, workspaceId, claims, workspaces } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
+  const t = useTranslations("settings.members");
+  const tRoles = useTranslations("invite.roles");
+  const tCommon = useTranslations("common");
   const tUi = useTranslations("ui");
 
   const currentUserId = claims?.sub ?? null;
@@ -86,6 +73,22 @@ export function MembersTable() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
+
+  const roleOptions = useMemo(
+    (): Array<{ value: WorkspaceRole; label: string }> => [
+      { value: "member", label: tRoles("member") },
+      { value: "admin", label: tRoles("admin") },
+      { value: "owner", label: tRoles("owner") },
+    ],
+    [tRoles],
+  );
+
+  const memberDisplayName = useCallback(
+    (member: WorkspaceMember): string => {
+      return member.name?.trim() || member.email || t("unknownMember");
+    },
+    [t],
+  );
 
   const ownerCount = useMemo(
     () => members.filter((member) => member.role === "owner").length,
@@ -138,7 +141,7 @@ export function MembersTable() {
   const handleInvite = useCallback(
     async (input: CreateWorkspaceInviteInput) => {
       if (!workspace) {
-        throw new Error("Workspace unavailable");
+        throw new Error("workspace_unavailable");
       }
 
       const invite = await workspace.post<WorkspaceInvite>("/invites", input);
@@ -172,20 +175,20 @@ export function MembersTable() {
         ),
       );
       toast({
-        title: "Role updated",
+        title: t("toast.roleUpdatedTitle"),
         variant: "success",
       });
       setRoleTarget(null);
     } catch {
       toast({
-        title: "Could not update role",
-        description: "You may not demote the last owner.",
+        title: t("toast.roleUpdateErrorTitle"),
+        description: t("toast.roleUpdateErrorDescription"),
         variant: "error",
       });
     } finally {
       setRoleSaving(false);
     }
-  }, [roleTarget, roleValue, toast, workspaceId]);
+  }, [roleTarget, roleValue, t, toast, workspaceId]);
 
   const handleConfirm = useCallback(async () => {
     if (!workspace || !confirmAction) {
@@ -199,13 +202,13 @@ export function MembersTable() {
         setMembers((current) =>
           current.filter((member) => member.user_id !== confirmAction.member.user_id),
         );
-        toast({ title: "Member removed", variant: "success" });
+        toast({ title: t("toast.memberRemovedTitle"), variant: "success" });
       } else if (confirmAction.kind === "leave") {
         if (!currentUserId) {
           return;
         }
         await workspace.delete(`/members/${currentUserId}`);
-        toast({ title: "You left the workspace", variant: "success" });
+        toast({ title: t("toast.leftTitle"), variant: "success" });
         const fallback = workspaces.find((item) => item.id !== workspaceId);
         if (fallback) {
           router.replace(`/workspaces/${fallback.slug}`);
@@ -217,23 +220,23 @@ export function MembersTable() {
         setInvites((current) =>
           current.filter((invite) => invite.id !== confirmAction.invite.id),
         );
-        toast({ title: "Invite revoked", variant: "success" });
+        toast({ title: t("toast.inviteRevokedTitle"), variant: "success" });
       }
       setConfirmAction(null);
     } catch {
       toast({
         title:
           confirmAction.kind === "leave"
-            ? "Could not leave workspace"
+            ? t("toast.leaveErrorTitle")
             : confirmAction.kind === "remove"
-              ? "Could not remove member"
-              : "Could not revoke invite",
+              ? t("toast.removeErrorTitle")
+              : t("toast.revokeErrorTitle"),
         variant: "error",
       });
     } finally {
       setConfirmLoading(false);
     }
-  }, [confirmAction, currentUserId, router, toast, workspaceId, workspaces]);
+  }, [confirmAction, currentUserId, router, t, toast, workspaceId, workspaces]);
 
   const handleResend = useCallback(
     async (invite: WorkspaceInvite) => {
@@ -250,20 +253,22 @@ export function MembersTable() {
           current.map((row) => (row.id === updated.id ? updated : row)),
         );
         toast({
-          title: updated.email_sent ? "Invite resent" : "Invite link refreshed",
+          title: updated.email_sent
+            ? t("toast.inviteResentTitle")
+            : t("toast.inviteRefreshedTitle"),
           ...(updated.invite_url ? { description: updated.invite_url } : {}),
           variant: "success",
         });
       } catch {
         toast({
-          title: "Could not resend invite",
+          title: t("toast.inviteResendErrorTitle"),
           variant: "error",
         });
       } finally {
         setResendingId(null);
       }
     },
-    [toast, workspaceId],
+    [t, toast, workspaceId],
   );
 
   if (loading) {
@@ -277,7 +282,7 @@ export function MembersTable() {
   if (loadError) {
     return (
       <ErrorRetry
-        message="We could not load workspace members. Check your connection and try again."
+        message={t("loadError")}
         onRetry={() => {
           void loadData();
         }}
@@ -290,12 +295,12 @@ export function MembersTable() {
       return "";
     }
     if (confirmAction.kind === "leave") {
-      return "Leave workspace";
+      return t("confirmLeaveTitle");
     }
     if (confirmAction.kind === "remove") {
-      return "Remove member";
+      return t("confirmRemoveTitle");
     }
-    return "Revoke invite";
+    return t("confirmRevokeTitle");
   })();
 
   const confirmDescription = (() => {
@@ -303,20 +308,22 @@ export function MembersTable() {
       return "";
     }
     if (confirmAction.kind === "leave") {
-      return "You will lose access to this workspace and its pipeline data.";
+      return t("confirmLeaveDescription");
     }
     if (confirmAction.kind === "remove") {
-      return `${memberDisplayName(confirmAction.member)} will lose access to this workspace.`;
+      return t("confirmRemoveDescription", {
+        name: memberDisplayName(confirmAction.member),
+      });
     }
-    return `${confirmAction.invite.email} will no longer be able to accept this invitation.`;
+    return t("confirmRevokeDescription", { email: confirmAction.invite.email });
   })();
 
   return (
     <div className="pw-members-settings">
       <header className="pw-members-settings-header">
         <div>
-          <h1>Members</h1>
-          <p>Manage who has access to this workspace.</p>
+          <h1>{t("title")}</h1>
+          <p>{t("subtitle")}</p>
         </div>
         {canMutate ? (
           <Button
@@ -324,30 +331,30 @@ export function MembersTable() {
               setInviteOpen(true);
             }}
           >
-            Invite member
+            {t("inviteButton")}
           </Button>
         ) : null}
       </header>
 
       <section className="pw-members-section" aria-labelledby="pw-members-active-title">
         <h2 id="pw-members-active-title" className="pw-members-section-title">
-          Active members
+          {t("activeTitle")}
         </h2>
 
         {members.length === 0 ? (
           <EmptyState
-            title="No members yet"
-            description="Invite teammates to collaborate on pipeline visibility."
+            title={t("emptyActiveTitle")}
+            description={t("emptyActiveDescription")}
           />
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Member</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead align="right">Actions</TableHead>
+                <TableHead>{t("columns.member")}</TableHead>
+                <TableHead>{t("columns.email")}</TableHead>
+                <TableHead>{t("columns.role")}</TableHead>
+                <TableHead>{t("columns.joined")}</TableHead>
+                <TableHead align="right">{t("columns.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -369,17 +376,17 @@ export function MembersTable() {
                             {memberDisplayName(member)}
                             {isSelf ? (
                               <Badge variant="outline" pill className="pw-members-you-badge">
-                                You
+                                {t("youBadge")}
                               </Badge>
                             ) : null}
                           </span>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{member.email ?? "—"}</TableCell>
+                    <TableCell>{member.email ?? tCommon("emDash")}</TableCell>
                     <TableCell>
                       <Badge variant={ROLE_BADGE_VARIANT[member.role]} pill>
-                        {ROLE_LABELS[member.role]}
+                        {tRoles(member.role)}
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDate(member.joined_at)}</TableCell>
@@ -394,7 +401,7 @@ export function MembersTable() {
                               setConfirmAction({ kind: "leave" });
                             }}
                           >
-                            Leave workspace
+                            {t("leaveWorkspace")}
                           </Button>
                         ) : null}
                         {showAdminActions ? (
@@ -406,7 +413,7 @@ export function MembersTable() {
                                 openRoleDialog(member);
                               }}
                             >
-                              Change role
+                              {t("changeRole")}
                             </Button>
                             <Button
                               variant="danger"
@@ -415,13 +422,13 @@ export function MembersTable() {
                                 setConfirmAction({ kind: "remove", member });
                               }}
                             >
-                              Remove
+                              {t("remove")}
                             </Button>
                           </>
                         ) : null}
                         {readOnly && !isSelf ? (
                           <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>
-                            —
+                            {tCommon("emDash")}
                           </span>
                         ) : null}
                       </div>
@@ -437,20 +444,20 @@ export function MembersTable() {
       {canMutate ? (
         <section className="pw-members-section" aria-labelledby="pw-members-pending-title">
           <h2 id="pw-members-pending-title" className="pw-members-section-title">
-            Pending invites
+            {t("pendingTitle")}
           </h2>
 
           {invites.length === 0 ? (
-            <p className="pw-members-empty">No pending invitations.</p>
+            <p className="pw-members-empty">{t("emptyPending")}</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Invited</TableHead>
-                  <TableHead>Expires</TableHead>
-                  <TableHead align="right">Actions</TableHead>
+                  <TableHead>{t("columns.email")}</TableHead>
+                  <TableHead>{t("columns.role")}</TableHead>
+                  <TableHead>{t("columns.invited")}</TableHead>
+                  <TableHead>{t("columns.expires")}</TableHead>
+                  <TableHead align="right">{t("columns.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -459,7 +466,7 @@ export function MembersTable() {
                     <TableCell>{invite.email}</TableCell>
                     <TableCell>
                       <Badge variant={ROLE_BADGE_VARIANT[invite.role]} pill>
-                        {ROLE_LABELS[invite.role]}
+                        {tRoles(invite.role)}
                       </Badge>
                     </TableCell>
                     <TableCell>{formatDate(invite.invited_at)}</TableCell>
@@ -475,7 +482,7 @@ export function MembersTable() {
                             void handleResend(invite);
                           }}
                         >
-                          Resend
+                          {t("resend")}
                         </Button>
                         <Button
                           variant="danger"
@@ -484,7 +491,7 @@ export function MembersTable() {
                             setConfirmAction({ kind: "revoke", invite });
                           }}
                         >
-                          Revoke
+                          {t("revoke")}
                         </Button>
                       </div>
                     </TableCell>
@@ -512,9 +519,13 @@ export function MembersTable() {
           }
         }}
         closeAriaLabel={tUi("dialog.closeAriaLabel")}
-        title="Change member role"
+        title={t("changeRoleTitle")}
         {...(roleTarget
-          ? { description: `Update the role for ${memberDisplayName(roleTarget)}.` }
+          ? {
+              description: t("changeRoleDescription", {
+                name: memberDisplayName(roleTarget),
+              }),
+            }
           : {})}
         size="sm"
         footer={
@@ -526,7 +537,7 @@ export function MembersTable() {
               }}
               disabled={roleSaving}
             >
-              Cancel
+              {tUi("typedConfirm.cancel")}
             </Button>
             <Button
               loading={roleSaving}
@@ -535,19 +546,19 @@ export function MembersTable() {
                 void handleRoleSave();
               }}
             >
-              Save role
+              {t("saveRole")}
             </Button>
           </div>
         }
       >
         <div className="pw-members-role-dialog-body">
           <Select
-            label="Role"
+            label={t("columns.role")}
             value={roleValue}
             onChange={(value) => {
               setRoleValue(value as WorkspaceRole);
             }}
-            options={ROLE_OPTIONS}
+            options={roleOptions}
           />
         </div>
       </Dialog>
@@ -572,7 +583,7 @@ export function MembersTable() {
               }}
               disabled={confirmLoading}
             >
-              Cancel
+              {tUi("typedConfirm.cancel")}
             </Button>
             <Button
               variant="danger"
@@ -582,7 +593,7 @@ export function MembersTable() {
                 void handleConfirm();
               }}
             >
-              Confirm
+              {t("confirm")}
             </Button>
           </div>
         }

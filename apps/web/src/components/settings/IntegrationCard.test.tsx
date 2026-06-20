@@ -1,7 +1,10 @@
+import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 import type { IntegrationSummary, RepositorySummary } from "@pipewatch/types";
+
+import en from "@/i18n/locales/en.json";
 
 import { IntegrationCard } from "./IntegrationCard";
 
@@ -49,20 +52,22 @@ const noop = vi.fn();
 
 function renderCard(overrides: Partial<Parameters<typeof IntegrationCard>[0]> = {}) {
   return renderToStaticMarkup(
-    <IntegrationCard
-      integration={integration}
-      repos={repos}
-      syncStatus={null}
-      expanded
-      readOnly={false}
-      resyncing={false}
-      togglingRepoId={null}
-      onToggleExpand={noop}
-      onResync={noop}
-      onRemove={noop}
-      onRepoToggle={noop}
-      {...overrides}
-    />,
+    <NextIntlClientProvider locale="en" messages={en}>
+      <IntegrationCard
+        integration={integration}
+        repos={repos}
+        syncStatus={null}
+        expanded
+        readOnly={false}
+        resyncing={false}
+        togglingRepoId={null}
+        onToggleExpand={noop}
+        onResync={noop}
+        onRemove={noop}
+        onRepoToggle={noop}
+        {...overrides}
+      />
+    </NextIntlClientProvider>,
   );
 }
 

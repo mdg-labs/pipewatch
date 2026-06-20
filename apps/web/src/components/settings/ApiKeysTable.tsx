@@ -44,49 +44,56 @@ function formatDate(iso: string): string {
   return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(new Date(iso));
 }
 
-function formatRelative(iso: string | null): string {
+function formatRelative(
+  iso: string | null,
+  t: ReturnType<typeof useTranslations<"settings.apiKeys">>,
+  tCommon: ReturnType<typeof useTranslations<"common">>,
+): string {
   if (!iso) {
-    return "Never";
+    return t("neverUsed");
   }
 
   const deltaMs = Date.now() - new Date(iso).getTime();
   const deltaMinutes = Math.round(deltaMs / 60_000);
 
   if (deltaMinutes < 1) {
-    return "Just now";
+    return tCommon("relativeTime.justNow");
   }
 
   if (deltaMinutes < 60) {
-    return `${deltaMinutes} min ago`;
+    return tCommon("relativeTime.minutesAgo", { count: deltaMinutes });
   }
 
   const deltaHours = Math.round(deltaMinutes / 60);
   if (deltaHours < 24) {
-    return `${deltaHours} hour${deltaHours === 1 ? "" : "s"} ago`;
+    return tCommon("relativeTime.hoursAgo", { count: deltaHours });
   }
 
   const deltaDays = Math.round(deltaHours / 24);
   if (deltaDays < 30) {
-    return `${deltaDays} day${deltaDays === 1 ? "" : "s"} ago`;
+    return tCommon("relativeTime.daysAgo", { count: deltaDays });
   }
 
   return formatDate(iso);
 }
 
-function formatExpiry(iso: string | null): string {
+function formatExpiry(
+  iso: string | null,
+  t: ReturnType<typeof useTranslations<"settings.apiKeys">>,
+): string {
   if (!iso) {
-    return "No expiry";
+    return t("noExpiry");
   }
 
   const expiresAt = new Date(iso);
   const daysUntil = Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000);
 
   if (daysUntil < 0) {
-    return "Expired";
+    return t("expired");
   }
 
   if (daysUntil <= 14) {
-    return `in ${daysUntil} day${daysUntil === 1 ? "" : "s"}`;
+    return t("expiresInDays", { count: daysUntil });
   }
 
   return formatDate(iso);
@@ -97,20 +104,22 @@ function formatPrefix(prefix: string): string {
   return prefix.length > 8 ? `${visible}…` : visible;
 }
 
-function memberDisplayName(member: WorkspaceMember): string {
-  return member.name?.trim() || member.email || "Unknown member";
-}
-
 function resolveCreatorLabel(
   key: ApiKeyRow,
   membersById: Map<string, WorkspaceMember>,
+  t: ReturnType<typeof useTranslations<"settings.apiKeys">>,
+  tCommon: ReturnType<typeof useTranslations<"common">>,
 ): string {
   if (!key.created_by) {
-    return "—";
+    return tCommon("emDash");
   }
 
   const member = membersById.get(key.created_by);
-  return member ? memberDisplayName(member) : "—";
+  if (!member) {
+    return tCommon("emDash");
+  }
+
+  return member.name?.trim() || member.email || t("unknownMember");
 }
 
 /** B11 API keys settings — list, create, revoke, show revoked toggle. */
@@ -118,6 +127,8 @@ export function ApiKeysTable() {
   const { workspace, claims, workspaceId } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
+  const t = useTranslations("settings.apiKeys");
+  const tCommon = useTranslations("common");
   const tUi = useTranslations("ui");
   const apiDocsUrl = getApiDocsUrl();
 
@@ -176,7 +187,7 @@ export function ApiKeysTable() {
   const handleCreate = useCallback(
     async (input: CreateApiKeyInput): Promise<CreatedApiKey> => {
       if (!workspace) {
-        throw new Error("Workspace unavailable");
+        throw new Error("workspace_unavailable");
       }
 
       const created = await workspace.post<CreatedApiKey>("/api-keys", input);
@@ -202,17 +213,17 @@ export function ApiKeysTable() {
       try {
         await navigator.clipboard.writeText(prefix);
         toast({
-          title: "Prefix copied",
+          title: t("toast.prefixCopiedTitle"),
           variant: "success",
         });
       } catch {
         toast({
-          title: "Could not copy prefix",
+          title: t("toast.prefixCopyErrorTitle"),
           variant: "error",
         });
       }
     },
-    [toast],
+    [t, toast],
   );
 
   const handleRevoke = useCallback(async () => {
@@ -230,17 +241,17 @@ export function ApiKeysTable() {
             : key,
         ),
       );
-      toast({ title: "API key revoked", variant: "success" });
+      toast({ title: t("toast.revokedTitle"), variant: "success" });
       setRevokeTarget(null);
     } catch {
       toast({
-        title: "Could not revoke API key",
+        title: t("toast.revokeErrorTitle"),
         variant: "error",
       });
     } finally {
       setRevokeLoading(false);
     }
-  }, [revokeTarget, toast, workspaceId]);
+  }, [revokeTarget, t, toast, workspaceId]);
 
   if (loading) {
     return (
@@ -253,10 +264,8 @@ export function ApiKeysTable() {
   if (forbidden) {
     return (
       <section className="pw-members-settings" role="alert">
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>API Keys</h1>
-        <p style={{ color: "var(--text-secondary)", marginTop: 8 }}>
-          API keys require workspace admin or owner access.
-        </p>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{t("title")}</h1>
+        <p style={{ color: "var(--text-secondary)", marginTop: 8 }}>{t("forbiddenMessage")}</p>
       </section>
     );
   }
@@ -264,7 +273,7 @@ export function ApiKeysTable() {
   if (loadError) {
     return (
       <ErrorRetry
-        message="We could not load API keys. Check your connection and try again."
+        message={t("loadError")}
         onRetry={() => {
           void loadData();
         }}
@@ -276,11 +285,8 @@ export function ApiKeysTable() {
     <div className="pw-members-settings">
       <header className="pw-members-settings-header">
         <div>
-          <h1>API Keys</h1>
-          <p>
-            Use API keys to access PipeWatch programmatically. Keys are
-            workspace-scoped and never shown again after creation.
-          </p>
+          <h1>{t("title")}</h1>
+          <p>{t("subtitle")}</p>
         </div>
         {canMutate ? (
           <Button
@@ -288,15 +294,15 @@ export function ApiKeysTable() {
               setCreateOpen(true);
             }}
           >
-            Create API key
+            {t("createButton")}
           </Button>
         ) : null}
       </header>
 
       {keys.length === 0 ? (
         <EmptyState
-          title="No API keys yet"
-          description="Create a key for CI, scripts, or other programmatic access."
+          title={t("emptyTitle")}
+          description={t("emptyDescription")}
           actions={
             <div className="pw-members-actions" style={{ justifyContent: "center" }}>
               {canMutate ? (
@@ -305,7 +311,7 @@ export function ApiKeysTable() {
                     setCreateOpen(true);
                   }}
                 >
-                  Create API key
+                  {t("createButton")}
                 </Button>
               ) : null}
               <a
@@ -314,33 +320,31 @@ export function ApiKeysTable() {
                 rel="noopener noreferrer"
                 style={{ fontSize: 14, fontWeight: 500 }}
               >
-                View API docs
+                {t("viewApiDocs")}
               </a>
             </div>
           }
         />
       ) : visibleKeys.length === 0 ? (
-        <p className="pw-members-empty">
-          No active API keys. Turn on &ldquo;Show revoked keys&rdquo; to view revoked keys.
-        </p>
+        <p className="pw-members-empty">{t("noActiveKeys")}</p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Prefix</TableHead>
-              <TableHead>Created by</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Last used</TableHead>
-              <TableHead>Expires</TableHead>
-              <TableHead align="right">Actions</TableHead>
+              <TableHead>{t("columns.name")}</TableHead>
+              <TableHead>{t("columns.prefix")}</TableHead>
+              <TableHead>{t("columns.createdBy")}</TableHead>
+              <TableHead>{t("columns.created")}</TableHead>
+              <TableHead>{t("columns.lastUsed")}</TableHead>
+              <TableHead>{t("columns.expires")}</TableHead>
+              <TableHead align="right">{t("columns.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {visibleKeys.map((key) => {
               const revoked = key.revoked_at !== null;
               const creator = membersById.get(key.created_by ?? "");
-              const creatorLabel = resolveCreatorLabel(key, membersById);
+              const creatorLabel = resolveCreatorLabel(key, membersById, t, tCommon);
 
               return (
                 <TableRow key={key.id}>
@@ -349,7 +353,7 @@ export function ApiKeysTable() {
                       <span>{key.name}</span>
                       {revoked ? (
                         <Badge variant="outline" pill>
-                          Revoked
+                          {t("revokedBadge")}
                         </Badge>
                       ) : null}
                     </div>
@@ -357,7 +361,7 @@ export function ApiKeysTable() {
                   <TableCell>
                     <button
                       type="button"
-                      title="Copy prefix"
+                      title={t("copyPrefixTitle")}
                       style={{
                         fontFamily: "var(--font-mono)",
                         fontSize: 12,
@@ -407,7 +411,7 @@ export function ApiKeysTable() {
                           : { color: "var(--text-tertiary)", fontStyle: "italic" }
                       }
                     >
-                      {formatRelative(key.last_used_at)}
+                      {formatRelative(key.last_used_at, t, tCommon)}
                     </span>
                   </TableCell>
                   <TableCell>
@@ -419,7 +423,7 @@ export function ApiKeysTable() {
                           : undefined
                       }
                     >
-                      {formatExpiry(key.expires_at)}
+                      {formatExpiry(key.expires_at, t)}
                     </span>
                   </TableCell>
                   <TableCell align="right">
@@ -431,10 +435,12 @@ export function ApiKeysTable() {
                           setRevokeTarget(key);
                         }}
                       >
-                        Revoke
+                        {t("revokeButton")}
                       </Button>
                     ) : readOnly || revoked ? (
-                      <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>—</span>
+                      <span style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+                        {tCommon("emDash")}
+                      </span>
                     ) : null}
                   </TableCell>
                 </TableRow>
@@ -445,7 +451,7 @@ export function ApiKeysTable() {
       )}
 
       <Switch
-        label="Show revoked keys"
+        label={t("showRevokedLabel")}
         checked={showRevoked}
         onChange={(checked) => {
           setShowRevoked(checked);
@@ -462,14 +468,13 @@ export function ApiKeysTable() {
             background: "var(--bg-surface)",
           }}
         >
-          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>API documentation</h2>
+          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>{t("docsTitle")}</h2>
           <p style={{ color: "var(--text-secondary)", marginTop: 8, marginBottom: 12 }}>
-            Browse the interactive API reference for endpoint details, schemas, and
-            try-it requests.
+            {t("docsDescription")}
           </p>
           <p style={{ margin: 0 }}>
             <a href={apiDocsUrl} target="_blank" rel="noopener noreferrer">
-              Open API docs
+              {t("docsLink")}
             </a>
           </p>
           <p
@@ -480,7 +485,7 @@ export function ApiKeysTable() {
               fontSize: 13,
             }}
           >
-            Authenticate requests with a session JWT or a workspace API key:
+            {t("authHint")}
           </p>
           <pre
             style={{
@@ -515,10 +520,10 @@ export function ApiKeysTable() {
           }
         }}
         closeAriaLabel={tUi("dialog.closeAriaLabel")}
-        title="Revoke API key"
+        title={t("revokeDialog.title")}
         {...(revokeTarget
           ? {
-              description: `"${revokeTarget.name}" will stop working immediately. This cannot be undone.`,
+              description: t("revokeDialog.description", { name: revokeTarget.name }),
             }
           : {})}
         size="sm"
@@ -531,7 +536,7 @@ export function ApiKeysTable() {
               }}
               disabled={revokeLoading}
             >
-              Cancel
+              {tUi("typedConfirm.cancel")}
             </Button>
             <Button
               variant="danger"
@@ -541,7 +546,7 @@ export function ApiKeysTable() {
                 void handleRevoke();
               }}
             >
-              Revoke key
+              {t("revokeDialog.confirmButton")}
             </Button>
           </div>
         }

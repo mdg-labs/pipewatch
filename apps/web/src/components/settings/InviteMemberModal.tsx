@@ -2,7 +2,7 @@
 
 import type { WorkspaceRole } from "@pipewatch/types";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button, Dialog, Input, Select } from "@pipewatch/ui";
 
@@ -25,25 +25,31 @@ export type CreateWorkspaceInviteInput = {
   role: WorkspaceRole;
 };
 
-const ROLE_OPTIONS: Array<{ value: WorkspaceRole; label: string }> = [
-  { value: "member", label: "Member" },
-  { value: "admin", label: "Admin" },
-  { value: "owner", label: "Owner" },
-];
-
 export type InviteMemberModalProps = {
   open: boolean;
   onClose: () => void;
-  onInvite: (input: CreateWorkspaceInviteInput) => Promise<WorkspaceInvite>;
+  onInvite(input: CreateWorkspaceInviteInput): Promise<WorkspaceInvite>;
 };
 
 export function InviteMemberModal({ open, onClose, onInvite }: InviteMemberModalProps) {
   const { toast } = useToast();
+  const t = useTranslations("settings.members.inviteModal");
+  const tToast = useTranslations("settings.members.toast");
+  const tRoles = useTranslations("invite.roles");
   const tUi = useTranslations("ui");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<WorkspaceRole>("member");
   const [submitting, setSubmitting] = useState(false);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+
+  const roleOptions = useMemo(
+    (): Array<{ value: WorkspaceRole; label: string }> => [
+      { value: "member", label: tRoles("member") },
+      { value: "admin", label: tRoles("admin") },
+      { value: "owner", label: tRoles("owner") },
+    ],
+    [tRoles],
+  );
 
   useEffect(() => {
     if (!open) {
@@ -64,10 +70,10 @@ export function InviteMemberModal({ open, onClose, onInvite }: InviteMemberModal
     try {
       const invite = await onInvite({ email: trimmed, role });
       toast({
-        title: invite.email_sent ? "Invite sent" : "Invite created",
+        title: invite.email_sent ? tToast("inviteSentTitle") : tToast("inviteCreatedTitle"),
         description: invite.email_sent
-          ? `An invitation email was sent to ${invite.email}.`
-          : "Copy the invite link below — email is not configured.",
+          ? tToast("inviteSentDescription", { email: invite.email })
+          : tToast("inviteCreatedDescription"),
         variant: "success",
       });
       if (invite.invite_url) {
@@ -77,14 +83,14 @@ export function InviteMemberModal({ open, onClose, onInvite }: InviteMemberModal
       }
     } catch {
       toast({
-        title: "Could not send invite",
-        description: "Check the email address and try again.",
+        title: tToast("inviteSendErrorTitle"),
+        description: tToast("inviteSendErrorDescription"),
         variant: "error",
       });
     } finally {
       setSubmitting(false);
     }
-  }, [email, onClose, onInvite, role, toast]);
+  }, [email, onClose, onInvite, role, tToast, toast]);
 
   const handleCopyLink = useCallback(async () => {
     if (!inviteUrl) {
@@ -94,45 +100,45 @@ export function InviteMemberModal({ open, onClose, onInvite }: InviteMemberModal
     try {
       await navigator.clipboard.writeText(inviteUrl);
       toast({
-        title: "Invite link copied",
+        title: tToast("inviteLinkCopiedTitle"),
         variant: "success",
       });
       onClose();
     } catch {
       toast({
-        title: "Could not copy link",
+        title: tToast("inviteLinkCopyErrorTitle"),
         variant: "error",
       });
     }
-  }, [inviteUrl, onClose, toast]);
+  }, [inviteUrl, onClose, tToast, toast]);
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
       closeAriaLabel={tUi("dialog.closeAriaLabel")}
-      title="Invite member"
-      description="Send an email invitation or share a link when SMTP is not configured."
+      title={t("title")}
+      description={t("description")}
       size="sm"
       footer={
         inviteUrl ? (
           <div className="pw-members-actions">
             <Button variant="secondary" onClick={onClose}>
-              Close
+              {t("close")}
             </Button>
-            <Button onClick={() => void handleCopyLink()}>Copy invite link</Button>
+            <Button onClick={() => void handleCopyLink()}>{t("copyInviteLink")}</Button>
           </div>
         ) : (
           <div className="pw-members-actions">
             <Button variant="secondary" onClick={onClose} disabled={submitting}>
-              Cancel
+              {tUi("typedConfirm.cancel")}
             </Button>
             <Button
               loading={submitting}
               disabled={submitting || email.trim().length === 0}
               onClick={() => void handleSubmit()}
             >
-              Send invite
+              {t("sendInvite")}
             </Button>
           </div>
         )
@@ -141,29 +147,29 @@ export function InviteMemberModal({ open, onClose, onInvite }: InviteMemberModal
       {inviteUrl ? (
         <div>
           <p style={{ margin: 0, fontSize: 14, color: "var(--text-secondary)" }}>
-            Share this link with the invitee. It expires in 7 days.
+            {t("linkHint")}
           </p>
           <p className="pw-members-invite-link">{inviteUrl}</p>
         </div>
       ) : (
         <>
           <Input
-            label="Email address"
+            label={t("emailLabel")}
             type="email"
             value={email}
             onChange={(event) => {
               setEmail(event.target.value);
             }}
             autoComplete="email"
-            placeholder="colleague@example.com"
+            placeholder={t("emailPlaceholder")}
           />
           <Select
-            label="Role"
+            label={t("roleLabel")}
             value={role}
             onChange={(value) => {
               setRole(value as WorkspaceRole);
             }}
-            options={ROLE_OPTIONS}
+            options={roleOptions}
           />
         </>
       )}

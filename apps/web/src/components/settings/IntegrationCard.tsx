@@ -7,23 +7,14 @@ import type {
   RepositorySummary,
 } from "@pipewatch/types";
 import { ChevronDown, ChevronUp, Github } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useMemo } from "react";
 
 import { Badge, Button, Switch } from "@pipewatch/ui";
 
 import type { WorkspaceSyncStatusIntegration } from "@/lib/onboarding/sync-status";
 
 import "./integration-card.css";
-
-const ACCOUNT_TYPE_LABELS: Record<IntegrationAccountType, string> = {
-  Organization: "Org",
-  User: "User",
-};
-
-const TOKEN_HEALTH_LABELS: Record<IntegrationTokenHealth, string> = {
-  healthy: "Healthy",
-  expiring: "Expiring",
-  expired: "Expired",
-};
 
 const TOKEN_HEALTH_VARIANT = {
   healthy: "success",
@@ -80,6 +71,25 @@ export function IntegrationCard({
   onRemove,
   onRepoToggle,
 }: IntegrationCardProps) {
+  const t = useTranslations("settings.integrations.card");
+
+  const accountTypeLabel = useMemo(() => {
+    const labels: Record<IntegrationAccountType, string> = {
+      Organization: t("accountTypeOrg"),
+      User: t("accountTypeUser"),
+    };
+    return labels[integration.account_type];
+  }, [integration.account_type, t]);
+
+  const tokenHealthLabel = useMemo(() => {
+    const labels: Record<IntegrationTokenHealth, string> = {
+      healthy: t("tokenHealthHealthy"),
+      expiring: t("tokenHealthExpiring"),
+      expired: t("tokenHealthExpired"),
+    };
+    return labels[integration.token_health];
+  }, [integration.token_health, t]);
+
   const backfillCount = countBackfillInProgress(syncStatus);
   const showSyncProgress = resyncing || backfillCount > 0 || syncStatus?.backfill_in_progress;
 
@@ -96,18 +106,17 @@ export function IntegrationCard({
               {integration.account_login}
             </h2>
             <Badge variant="outline" pill>
-              {ACCOUNT_TYPE_LABELS[integration.account_type]}
+              {accountTypeLabel}
             </Badge>
             <Badge variant="default" pill>
-              GitHub
+              {t("github")}
             </Badge>
           </div>
           <div className="pw-integration-card-meta">
             <span>
-              {integration.connected_repo_count}{" "}
-              {integration.connected_repo_count === 1 ? "repo" : "repos"} connected
+              {t("reposConnected", { count: integration.connected_repo_count })}
             </span>
-            <span>Connected {formatDate(integration.created_at)}</span>
+            <span>{t("connectedAt", { date: formatDate(integration.created_at) })}</span>
           </div>
         </div>
 
@@ -121,10 +130,10 @@ export function IntegrationCard({
                 disabled={resyncing}
                 onClick={onResync}
               >
-                Re-sync
+                {t("resync")}
               </Button>
               <Button variant="danger" size="sm" onClick={onRemove}>
-                Remove
+                {t("remove")}
               </Button>
             </>
           ) : null}
@@ -137,12 +146,12 @@ export function IntegrationCard({
           >
             {expanded ? (
               <>
-                Collapse
+                {t("collapse")}
                 <ChevronUp size={14} strokeWidth={2} aria-hidden />
               </>
             ) : (
               <>
-                Expand
+                {t("expand")}
                 <ChevronDown size={14} strokeWidth={2} aria-hidden />
               </>
             )}
@@ -153,20 +162,20 @@ export function IntegrationCard({
       {expanded ? (
         <div className="pw-integration-card-body">
           <div className="pw-integration-card-token">
-            <span className="pw-integration-card-token-label">Token health</span>
+            <span className="pw-integration-card-token-label">{t("tokenHealth")}</span>
             <Badge variant={TOKEN_HEALTH_VARIANT[integration.token_health]} pill>
-              {TOKEN_HEALTH_LABELS[integration.token_health]}
+              {tokenHealthLabel}
             </Badge>
             {integration.token_expires_at ? (
               <span className="pw-integration-card-token-label">
-                Last refresh due {formatDateTime(integration.token_expires_at)}
+                {t("tokenRefreshDue", { dateTime: formatDateTime(integration.token_expires_at) })}
               </span>
             ) : (
-              <span className="pw-integration-card-token-label">No token expiry recorded</span>
+              <span className="pw-integration-card-token-label">{t("tokenNoExpiry")}</span>
             )}
             {syncStatus?.last_synced_at ? (
               <span className="pw-integration-card-token-label">
-                Last synced {formatDateTime(syncStatus.last_synced_at)}
+                {t("lastSynced", { dateTime: formatDateTime(syncStatus.last_synced_at) })}
               </span>
             ) : null}
           </div>
@@ -174,17 +183,15 @@ export function IntegrationCard({
           {showSyncProgress ? (
             <div className="pw-integration-card-sync-progress" role="status">
               {backfillCount > 0
-                ? `Syncing ${backfillCount} ${backfillCount === 1 ? "repo" : "repos"} — fetching run history…`
-                : "Re-sync in progress…"}
+                ? t("syncProgressRepos", { count: backfillCount })
+                : t("syncProgressResync")}
             </div>
           ) : null}
 
           <div className="pw-integration-card-repos">
-            <h3 className="pw-integration-card-repos-title">Repositories</h3>
+            <h3 className="pw-integration-card-repos-title">{t("reposTitle")}</h3>
             {repos.length === 0 ? (
-              <p className="pw-integration-card-empty-repos">
-                No repositories discovered yet. Try re-syncing this integration.
-              </p>
+              <p className="pw-integration-card-empty-repos">{t("reposEmpty")}</p>
             ) : (
               repos.map((repo) => {
                 const repoSync = syncStatus?.repos.find((item) => item.id === repo.id);
@@ -195,15 +202,15 @@ export function IntegrationCard({
                     <span className="pw-integration-card-repo-name">{repo.full_name}</span>
                     <div className="pw-integration-card-repo-meta">
                       {repoSyncing ? (
-                        <span className="pw-integration-card-repo-sync">Syncing…</span>
+                        <span className="pw-integration-card-repo-sync">{t("repoSyncing")}</span>
                       ) : repoSync?.last_synced_at ? (
                         <span className="pw-integration-card-repo-sync">
-                          Synced {formatDate(repoSync.last_synced_at)}
+                          {t("repoSynced", { date: formatDate(repoSync.last_synced_at) })}
                         </span>
                       ) : null}
                       {repo.private ? (
                         <Badge variant="outline" pill>
-                          Private
+                          {t("privateBadge")}
                         </Badge>
                       ) : null}
                       <Switch
@@ -212,7 +219,11 @@ export function IntegrationCard({
                         onChange={(checked) => {
                           onRepoToggle(repo.id, checked);
                         }}
-                        aria-label={`${repo.enabled ? "Disable" : "Enable"} ${repo.full_name}`}
+                        aria-label={
+                          repo.enabled
+                            ? t("disableRepoAriaLabel", { fullName: repo.full_name })
+                            : t("enableRepoAriaLabel", { fullName: repo.full_name })
+                        }
                         size="sm"
                       />
                     </div>

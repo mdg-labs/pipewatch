@@ -29,29 +29,26 @@ import { useToast } from "@/providers/ToastProvider";
 
 import "./workspace-settings.css";
 
-const PLAN_LABELS: Record<WorkspacePlan, string> = {
-  free: "Free",
-  pro: "Pro",
-  business: "Business",
-};
-
 type SlugCheckState = "idle" | "checking" | "available" | "unavailable" | "invalid" | "unchanged";
 
-function buildRetentionOptions(plan: WorkspacePlan): Array<{ value: string; label: string }> {
+function buildRetentionOptions(
+  plan: WorkspacePlan,
+  t: ReturnType<typeof useTranslations<"settings.general">>,
+): Array<{ value: string; label: string }> {
   const { minRetentionDays, maxRetentionDays } = getPlanLimits(plan);
   const options: Array<{ value: string; label: string }> = [];
 
   for (let days = minRetentionDays; days <= maxRetentionDays; days += 30) {
     options.push({
       value: String(days),
-      label: `${String(days)} days`,
+      label: t("retentionDays", { days }),
     });
   }
 
   if (options.length === 0 || options[options.length - 1]?.value !== String(maxRetentionDays)) {
     options.push({
       value: String(maxRetentionDays),
-      label: `${String(maxRetentionDays)} days`,
+      label: t("retentionDays", { days: maxRetentionDays }),
     });
   }
 
@@ -68,6 +65,7 @@ export function WorkspaceGeneralForm() {
   const { api, workspace, workspaceId, workspaceSlug, workspaces } = useApi();
   const { canMutate, meetsMinimum } = useWorkspaceRole();
   const { toast } = useToast();
+  const t = useTranslations("settings.general");
   const tUi = useTranslations("ui");
 
   const [workspaceData, setWorkspaceData] = useState<Workspace | null>(null);
@@ -178,25 +176,25 @@ export function WorkspaceGeneralForm() {
       case "checking":
         return (
           <span className="pw-workspace-slug-status pw-workspace-slug-checking">
-            Checking availability…
+            {t("slugChecking")}
           </span>
         );
       case "available":
         return (
           <span className="pw-workspace-slug-status pw-workspace-slug-available">
-            {slug.trim()} is available
+            {t("slugAvailable", { slug: slug.trim() })}
           </span>
         );
       case "unavailable":
         return (
           <span className="pw-workspace-slug-status pw-workspace-slug-unavailable">
-            This slug is already taken
+            {t("slugTaken")}
           </span>
         );
       case "invalid":
         return (
           <span className="pw-workspace-slug-status pw-workspace-slug-unavailable">
-            Enter a valid slug (letters, numbers, hyphens)
+            {t("slugInvalid")}
           </span>
         );
       default:
@@ -241,7 +239,7 @@ export function WorkspaceGeneralForm() {
       setSlugState("unchanged");
 
       toast({
-        title: "Workspace settings saved",
+        title: t("toast.savedTitle"),
         variant: "success",
       });
 
@@ -252,8 +250,8 @@ export function WorkspaceGeneralForm() {
       }
     } catch {
       toast({
-        title: "Could not save settings",
-        description: "Check your inputs and try again.",
+        title: t("toast.saveErrorTitle"),
+        description: t("toast.saveErrorDescription"),
         variant: "error",
       });
     } finally {
@@ -265,6 +263,7 @@ export function WorkspaceGeneralForm() {
     retentionDays,
     router,
     slug,
+    t,
     toast,
     workspaceId,
     workspaceData,
@@ -280,7 +279,7 @@ export function WorkspaceGeneralForm() {
     try {
       await workspace.delete("");
       toast({
-        title: "Workspace deleted",
+        title: t("toast.deletedTitle"),
         variant: "success",
       });
       setDeleteOpen(false);
@@ -293,16 +292,16 @@ export function WorkspaceGeneralForm() {
       }
     } catch {
       toast({
-        title: "Could not delete workspace",
+        title: t("toast.deleteErrorTitle"),
         description: onlyWorkspaceOnCe
-          ? "You cannot delete your only workspace in this edition."
-          : "Try again in a moment.",
+          ? t("toast.deleteErrorOnlyWorkspace")
+          : t("toast.deleteErrorDescription"),
         variant: "error",
       });
     } finally {
       setDeleting(false);
     }
-  }, [canDelete, onlyWorkspaceOnCe, router, toast, workspaceId, workspaceData, workspaces]);
+  }, [canDelete, onlyWorkspaceOnCe, router, t, toast, workspaceId, workspaceData, workspaces]);
 
   if (loading) {
     return <CardSkeleton count={2} />;
@@ -311,7 +310,7 @@ export function WorkspaceGeneralForm() {
   if (loadError || !workspaceData) {
     return (
       <ErrorRetry
-        message="We could not load workspace settings. Check your connection and try again."
+        message={t("loadError")}
         onRetry={() => {
           void loadWorkspace();
         }}
@@ -321,22 +320,22 @@ export function WorkspaceGeneralForm() {
 
   const plan = workspaceData.plan;
   const billingEnabled = isBillingNavEnabled();
-  const retentionOptions = buildRetentionOptions(plan);
+  const retentionOptions = buildRetentionOptions(plan, t);
 
   return (
     <div className="pw-workspace-settings">
       <header className="pw-workspace-settings-header">
-        <h1>General</h1>
-        <p>Workspace name, URL, and defaults.</p>
+        <h1>{t("title")}</h1>
+        <p>{t("subtitle")}</p>
       </header>
 
       <section className="pw-workspace-settings-section" aria-labelledby="pw-ws-general-title">
         <h2 id="pw-ws-general-title" className="pw-workspace-settings-section-title">
-          General
+          {t("sectionTitle")}
         </h2>
 
         <Input
-          label="Workspace name"
+          label={t("nameLabel")}
           value={name}
           onChange={(event) => {
             setName(event.target.value);
@@ -347,46 +346,45 @@ export function WorkspaceGeneralForm() {
 
         <div>
           <Input
-            label="URL slug"
+            label={t("slugLabel")}
             value={slug}
             onChange={(event) => {
               setSlug(event.target.value);
             }}
             disabled={!canMutate}
             mono
-            prefix={<span>/workspaces/</span>}
+            prefix={<span>{t("slugPrefix")}</span>}
           />
           {slugHint}
           {slugChanged ? (
             <p className="pw-workspace-slug-warning" role="status">
-              Changing the slug updates workspace URLs. Bookmarks and shared links
-              to the old path will stop working.
+              {t("slugWarning")}
             </p>
           ) : null}
         </div>
 
         <div className="pw-workspace-settings-actions">
           <Button disabled={!canSave} loading={saving} onClick={() => void handleSave()}>
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("saveSaving") : t("saveChanges")}
           </Button>
         </div>
       </section>
 
       {billingEnabled ? (
         <Card
-          title="Plan"
+          title={t("planTitle")}
           actions={
             <Link href={`/workspaces/${workspaceSlug}/settings/billing`}>
               <Button variant="secondary" size="sm">
-                Manage billing
+                {t("planManageBilling")}
               </Button>
             </Link>
           }
         >
           <div className="pw-workspace-plan-row">
-            <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>Current plan</span>
+            <span style={{ color: "var(--text-secondary)", fontSize: 14 }}>{t("planCurrent")}</span>
             <Badge variant="accent" pill>
-              {PLAN_LABELS[plan]}
+              {t(`planLabels.${plan}`)}
             </Badge>
           </div>
         </Card>
@@ -398,13 +396,13 @@ export function WorkspaceGeneralForm() {
           aria-labelledby="pw-ws-retention-title"
         >
           <h2 id="pw-ws-retention-title" className="pw-workspace-settings-section-title">
-            Default retention
+            {t("retentionTitle")}
           </h2>
           <p style={{ margin: 0, fontSize: 14, color: "var(--text-secondary)" }}>
-            Used by repositories set to follow the workspace plan default.
+            {t("retentionHint")}
           </p>
           <Select
-            label="Retention period"
+            label={t("retentionLabel")}
             value={retentionDays}
             onChange={setRetentionDays}
             options={retentionOptions}
@@ -417,11 +415,10 @@ export function WorkspaceGeneralForm() {
           aria-labelledby="pw-ws-retention-title"
         >
           <h2 id="pw-ws-retention-title" className="pw-workspace-settings-section-title">
-            Default retention
+            {t("retentionTitle")}
           </h2>
           <p style={{ margin: 0, fontSize: 14, color: "var(--text-secondary)" }}>
-            Free plan workspaces use a fixed {getPlanLimits("free").maxRetentionDays}-day
-            retention default.
+            {t("retentionFreeFixed", { days: getPlanLimits("free").maxRetentionDays })}
           </p>
         </section>
       ) : null}
@@ -429,11 +426,9 @@ export function WorkspaceGeneralForm() {
       {meetsMinimum("owner") ? (
         <DangerZone id="pw-ws-danger-zone" title={tUi("dangerZone.title")}>
           <DangerZoneItem
-            title="Delete workspace"
+            title={t("deleteTitle")}
             description={
-              onlyWorkspaceOnCe
-                ? "You cannot delete your only workspace in PipeWatch CE."
-                : "Permanently delete this workspace, its integrations, and all pipeline data."
+              onlyWorkspaceOnCe ? t("deleteDescriptionCe") : t("deleteDescription")
             }
             action={
               <Button
@@ -444,7 +439,7 @@ export function WorkspaceGeneralForm() {
                   setDeleteOpen(true);
                 }}
               >
-                Delete workspace
+                {t("deleteButton")}
               </Button>
             }
           />
@@ -459,9 +454,9 @@ export function WorkspaceGeneralForm() {
         onConfirm={() => {
           void handleDelete();
         }}
-        title="Delete workspace"
-        description="This action cannot be undone. All integrations, repositories, and run history will be removed."
-        confirmLabel="Delete workspace"
+        title={t("deleteConfirmTitle")}
+        description={t("deleteConfirmDescription")}
+        confirmLabel={t("deleteButton")}
         cancelLabel={tUi("typedConfirm.cancel")}
         expectedPhrase={workspaceData.name}
         closeAriaLabel={tUi("dialog.closeAriaLabel")}

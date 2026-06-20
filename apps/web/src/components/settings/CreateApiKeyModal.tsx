@@ -13,7 +13,7 @@ import "./members-settings.css";
 export type CreateApiKeyModalProps = {
   open: boolean;
   onClose: () => void;
-  onCreate: (input: CreateApiKeyInput) => Promise<CreatedApiKey>;
+  onCreate(input: CreateApiKeyInput): Promise<CreatedApiKey>;
 };
 
 function toExpiresAtIso(dateValue: string): string {
@@ -23,6 +23,8 @@ function toExpiresAtIso(dateValue: string): string {
 /** B11 create API key modal — form then one-time full key reveal. */
 export function CreateApiKeyModal({ open, onClose, onCreate }: CreateApiKeyModalProps) {
   const { toast } = useToast();
+  const t = useTranslations("settings.apiKeys.createModal");
+  const tToast = useTranslations("settings.apiKeys.toast");
   const tUi = useTranslations("ui");
   const [name, setName] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
@@ -57,14 +59,14 @@ export function CreateApiKeyModal({ open, onClose, onCreate }: CreateApiKeyModal
       setCreated(result);
     } catch {
       toast({
-        title: "Could not create API key",
-        description: "Check the name and expiry date, then try again.",
+        title: tToast("createdErrorTitle"),
+        description: tToast("createdErrorDescription"),
         variant: "error",
       });
     } finally {
       setSubmitting(false);
     }
-  }, [expiryDate, name, onCreate, toast]);
+  }, [expiryDate, name, onCreate, tToast, toast]);
 
   const handleCopyKey = useCallback(async () => {
     if (!created?.key) {
@@ -75,16 +77,16 @@ export function CreateApiKeyModal({ open, onClose, onCreate }: CreateApiKeyModal
       await navigator.clipboard.writeText(created.key);
       setCopied(true);
       toast({
-        title: "API key copied",
+        title: tToast("keyCopiedTitle"),
         variant: "success",
       });
     } catch {
       toast({
-        title: "Could not copy key",
+        title: tToast("keyCopyErrorTitle"),
         variant: "error",
       });
     }
-  }, [created?.key, toast]);
+  }, [created?.key, tToast, toast]);
 
   const handleDone = useCallback(() => {
     onClose();
@@ -94,11 +96,11 @@ export function CreateApiKeyModal({ open, onClose, onCreate }: CreateApiKeyModal
     return (
       <Dialog
         open={open}
-        title="API key created"
-        description="Copy this key now. It won't be shown again."
+        title={t("createdTitle")}
+        description={t("createdDescription")}
         size="md"
         footer={
-          <Button onClick={handleDone}>Done</Button>
+          <Button onClick={handleDone}>{t("done")}</Button>
         }
       >
         <div className="pw-members-role-dialog-body">
@@ -113,7 +115,7 @@ export function CreateApiKeyModal({ open, onClose, onCreate }: CreateApiKeyModal
                 letterSpacing: "0.07em",
               }}
             >
-              Your new API key
+              {t("keyLabel")}
             </p>
             <div
               style={{
@@ -127,7 +129,7 @@ export function CreateApiKeyModal({ open, onClose, onCreate }: CreateApiKeyModal
                 {created.key}
               </p>
               <Button variant="secondary" size="sm" onClick={() => void handleCopyKey()}>
-                {copied ? "Copied" : "Copy"}
+                {copied ? t("copied") : t("copy")}
               </Button>
             </div>
           </div>
@@ -144,10 +146,10 @@ export function CreateApiKeyModal({ open, onClose, onCreate }: CreateApiKeyModal
               lineHeight: 1.5,
             }}
           >
-            Store this key securely. PipeWatch cannot recover it if lost.
+            {t("storeSecurely")}
           </p>
 
-          <Input label="Key name" value={created.name} disabled />
+          <Input label={t("keyNameLabel")} value={created.name} disabled />
         </div>
       </Dialog>
     );
@@ -158,42 +160,42 @@ export function CreateApiKeyModal({ open, onClose, onCreate }: CreateApiKeyModal
       open={open}
       onClose={onClose}
       closeAriaLabel={tUi("dialog.closeAriaLabel")}
-      title="Create API key"
-      description="Name your key and optionally set an expiry date."
+      title={t("title")}
+      description={t("description")}
       size="sm"
       footer={
         <div className="pw-members-actions">
           <Button variant="secondary" onClick={onClose} disabled={submitting}>
-            Cancel
+            {tUi("typedConfirm.cancel")}
           </Button>
           <Button
             loading={submitting}
             disabled={submitting || name.trim().length === 0}
             onClick={() => void handleSubmit()}
           >
-            Create key
+            {t("createButton")}
           </Button>
         </div>
       }
     >
       <div className="pw-members-role-dialog-body">
         <Input
-          label="Name"
+          label={t("nameLabel")}
           value={name}
           onChange={(event) => {
             setName(event.target.value);
           }}
-          placeholder="CI pipeline"
+          placeholder={t("namePlaceholder")}
           autoComplete="off"
         />
         <Input
-          label="Expiry date (optional)"
+          label={t("expiryLabel")}
           type="date"
           value={expiryDate}
           onChange={(event) => {
             setExpiryDate(event.target.value);
           }}
-          hint="Leave blank for a key that never expires."
+          hint={t("expiryHint")}
         />
       </div>
     </Dialog>

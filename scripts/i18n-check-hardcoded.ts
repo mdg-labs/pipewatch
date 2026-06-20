@@ -41,13 +41,6 @@ export const I18N_HARDCODED_WEB_ALLOWLISTED_FILES = [
   "apps/web/src/components/billing/BillingPlanCard.tsx",
   "apps/web/src/components/billing/UsageMeter.tsx",
   "apps/web/src/components/repos/RepoSettingsForm.tsx",
-  "apps/web/src/components/settings/ApiKeysTable.tsx",
-  "apps/web/src/components/settings/CreateApiKeyModal.tsx",
-  "apps/web/src/components/settings/IntegrationCard.tsx",
-  "apps/web/src/components/settings/IntegrationsSettingsView.tsx",
-  "apps/web/src/components/settings/InviteMemberModal.tsx",
-  "apps/web/src/components/settings/MembersTable.tsx",
-  "apps/web/src/components/settings/WorkspaceGeneralForm.tsx",
   "apps/web/src/contexts/live-stream-override-context.tsx",
 ] as const;
 
