@@ -1,0 +1,28 @@
+{
+  "name": "@pipewatch/github-app-auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "lint": "eslint .",
+    "typecheck": "tsc --build",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "jose": "^6.0.11"
+  },
+  "devDependencies": {
+    "@pipewatch/config": "workspace:*",
+    "@types/node": "^22.13.4",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "^3.0.5"
+  }
+}

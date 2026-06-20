@@ -68,6 +68,9 @@ importers:
       '@pipewatch/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@pipewatch/github-app-auth':
+        specifier: workspace:*
+        version: link:../../packages/github-app-auth
       '@pipewatch/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -230,6 +233,9 @@ importers:
       '@pipewatch/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@pipewatch/github-app-auth':
+        specifier: workspace:*
+        version: link:../../packages/github-app-auth
       '@pipewatch/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -348,6 +354,28 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.4
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: ^3.0.5
+        version: 3.2.6(@types/debug@4.1.13)(@types/node@22.19.21)(happy-dom@20.10.5)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+
+  packages/github-app-auth:
+    dependencies:
+      jose:
+        specifier: ^6.0.11
+        version: 6.2.3
+    devDependencies:
+      '@pipewatch/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/node':
+        specifier: ^22.13.4
+        version: 22.19.21
       eslint:
         specifier: 'catalog:'
         version: 9.39.4

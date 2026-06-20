@@ -4,6 +4,7 @@
     { "path": "./packages/config" },
     { "path": "./packages/db" },
     { "path": "./packages/types" },
+    { "path": "./packages/github-app-auth" },
     { "path": "./packages/utils" },
     { "path": "./packages/ui" },
     { "path": "./apps/api" },

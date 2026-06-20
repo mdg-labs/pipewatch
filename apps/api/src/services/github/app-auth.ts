@@ -1,15 +1,16 @@
-import { createPrivateKey, type KeyObject } from "node:crypto";
-
-import { SignJWT } from "jose";
 import { eq } from "drizzle-orm";
 
 import type { ApiEnv } from "@pipewatch/config/env";
 import type { Db } from "@pipewatch/db";
 import { integrations } from "@pipewatch/db/schema";
+import {
+  createAppJwt as createAppJwtShared,
+  GitHubAppJwtError,
+  normalizePrivateKey as normalizePrivateKeyShared,
+} from "@pipewatch/github-app-auth";
 import { decrypt, encrypt } from "@pipewatch/utils";
 
 const GITHUB_API_BASE = "https://api.github.com";
-const APP_JWT_TTL_SECONDS = 9 * 60;
 /** Refresh installation tokens this many ms before `token_expires_at`. */
 export const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
@@ -78,74 +79,36 @@ export function gitHubAppConfigFromEnv(env: ApiEnv): GitHubAppConfig {
   };
 }
 
-/**
- * Normalize PEM private key from env — supports literal newlines, escaped `\\n`, and
- * base64-encoded PEM blobs (Phase stores `GITHUB_APP_PRIVATE_KEY` base64-encoded).
- */
-export function normalizePrivateKey(rawKey: string): string {
-  const trimmed = rawKey.trim();
-
-  if (trimmed.includes("-----BEGIN")) {
-    return trimmed.replace(/\\n/g, "\n");
-  }
-
-  const decoded = Buffer.from(trimmed, "base64").toString("utf8").trim();
-  if (decoded.includes("-----BEGIN")) {
-    return decoded.replace(/\\n/g, "\n");
-  }
-
-  throw new GitHubAppAuthError(
-    "GITHUB_APP_PRIVATE_KEY is not a valid PEM key",
-    500,
-    "INVALID_GITHUB_APP_PRIVATE_KEY",
-  );
+function mapJwtError(error: GitHubAppJwtError): GitHubAppAuthError {
+  return new GitHubAppAuthError(error.message, error.status, error.code);
 }
 
-/** Import PEM private key — accepts PKCS#1 (`RSA PRIVATE KEY`) and PKCS#8 (`PRIVATE KEY`). */
-function importSigningKey(rawKey: string): KeyObject {
-  let pem: string;
+/** @see {@link normalizePrivateKeyShared} — maps shared JWT errors to {@link GitHubAppAuthError}. */
+export function normalizePrivateKey(rawKey: string): string {
   try {
-    pem = normalizePrivateKey(rawKey);
+    return normalizePrivateKeyShared(rawKey);
   } catch (error) {
-    if (error instanceof GitHubAppAuthError) {
-      throw error;
+    if (error instanceof GitHubAppJwtError) {
+      throw mapJwtError(error);
     }
 
-    throw new GitHubAppAuthError(
-      "GITHUB_APP_PRIVATE_KEY is not a valid PEM key",
-      500,
-      "INVALID_GITHUB_APP_PRIVATE_KEY",
-    );
-  }
-
-  try {
-    return createPrivateKey(pem);
-  } catch {
-    throw new GitHubAppAuthError(
-      "GITHUB_APP_PRIVATE_KEY is not a valid PEM key",
-      500,
-      "INVALID_GITHUB_APP_PRIVATE_KEY",
-    );
+    throw error;
   }
 }
 
-/** Sign a short-lived RS256 JWT for GitHub App authentication (PRD §4.4). */
+/** @see {@link createAppJwtShared} — maps shared JWT errors to {@link GitHubAppAuthError}. */
 export async function createAppJwt(config: GitHubAppConfig): Promise<string> {
-  const privateKey = importSigningKey(config.privateKey);
-
   try {
-    return await new SignJWT({})
-      .setProtectedHeader({ alg: "RS256" })
-      .setIssuedAt()
-      .setIssuer(config.appId)
-      .setExpirationTime(`${String(APP_JWT_TTL_SECONDS)}s`)
-      .sign(privateKey);
-  } catch {
-    throw new GitHubAppAuthError(
-      "Failed to sign GitHub App JWT with private key",
-      500,
-      "INVALID_GITHUB_APP_PRIVATE_KEY",
-    );
+    return await createAppJwtShared({
+      appId: config.appId,
+      privateKey: config.privateKey,
+    });
+  } catch (error) {
+    if (error instanceof GitHubAppJwtError) {
+      throw mapJwtError(error);
+    }
+
+    throw error;
   }
 }
 

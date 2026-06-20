@@ -57,6 +57,7 @@
   "dependencies": {
     "@pipewatch/config": "workspace:*",
     "@pipewatch/db": "workspace:*",
+    "@pipewatch/github-app-auth": "workspace:*",
     "@pipewatch/types": "workspace:*",
     "@pipewatch/utils": "workspace:*",
     "@sentry/node": "^10.58.0",

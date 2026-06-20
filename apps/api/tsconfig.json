@@ -17,6 +17,7 @@
   "references": [
     { "path": "../../packages/config" },
     { "path": "../../packages/db" },
+    { "path": "../../packages/github-app-auth" },
     { "path": "../../packages/types" },
     { "path": "../../packages/utils" },
     { "path": "../worker" }

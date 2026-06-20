@@ -1,20 +1,16 @@
 import { generateKeyPairSync } from "node:crypto";
 
-import { decodeJwt } from "jose";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { Db } from "@pipewatch/db";
 import { decrypt, encrypt } from "@pipewatch/utils";
 
 import {
-  GitHubAppAuthError,
   TOKEN_REFRESH_BUFFER_MS,
-  createAppJwt,
   exchangeInstallationToken,
   getInstallationToken,
   gitHubAppConfigFromEnv,
   isInstallationTokenExpired,
-  normalizePrivateKey,
   type GitHubAppConfig,
   type IntegrationRecord,
 } from "./app-auth.js";
@@ -74,72 +70,6 @@ function createMockDb(
     }),
   } as unknown as Db;
 }
-
-describe("normalizePrivateKey", () => {
-  it("accepts PEM with escaped newlines", () => {
-    const escaped = privateKeyPem.replace(/\n/g, "\\n");
-    expect(normalizePrivateKey(escaped)).toBe(privateKeyPem);
-  });
-
-  it("decodes base64-encoded PEM", () => {
-    const encoded = Buffer.from(privateKeyPem, "utf8").toString("base64");
-    expect(normalizePrivateKey(encoded).trim()).toBe(privateKeyPem.trim());
-  });
-});
-
-describe("createAppJwt", () => {
-  it("signs an RS256 JWT with the GitHub App ID as issuer", async () => {
-    const jwt = await createAppJwt(appConfig);
-    const payload = decodeJwt(jwt);
-
-    expect(payload.iss).toBe(appConfig.appId);
-    expect(typeof payload.iat).toBe("number");
-    expect(typeof payload.exp).toBe("number");
-    expect((payload.exp ?? 0) - (payload.iat ?? 0)).toBeLessThanOrEqual(9 * 60);
-  });
-
-  it("signs JWT with PKCS#1 RSA PEM (GitHub download format)", async () => {
-    const { privateKey } = generateKeyPairSync("rsa", {
-      modulusLength: 2048,
-      privateKeyEncoding: { type: "pkcs1", format: "pem" },
-      publicKeyEncoding: { type: "spki", format: "pem" },
-    });
-
-    expect(privateKey).toContain("BEGIN RSA PRIVATE KEY");
-
-    const jwt = await createAppJwt({
-      appId: "123456",
-      privateKey,
-      encryptionKey,
-    });
-    const payload = decodeJwt(jwt);
-
-    expect(payload.iss).toBe("123456");
-    expect(typeof payload.iat).toBe("number");
-    expect(typeof payload.exp).toBe("number");
-  });
-
-  it("throws INVALID_GITHUB_APP_PRIVATE_KEY for malformed PEM", async () => {
-    await expect(
-      createAppJwt({
-        appId: "123456",
-        privateKey: "-----BEGIN RSA PRIVATE KEY-----\nnot-valid\n-----END RSA PRIVATE KEY-----",
-        encryptionKey,
-      }),
-    ).rejects.toBeInstanceOf(GitHubAppAuthError);
-
-    await expect(
-      createAppJwt({
-        appId: "123456",
-        privateKey: "-----BEGIN RSA PRIVATE KEY-----\nnot-valid\n-----END RSA PRIVATE KEY-----",
-        encryptionKey,
-      }),
-    ).rejects.toMatchObject({
-      code: "INVALID_GITHUB_APP_PRIVATE_KEY",
-      status: 500,
-    });
-  });
-});
 
 describe("exchangeInstallationToken", () => {
   it("posts to GitHub with a Bearer App JWT and returns the token payload", async () => {

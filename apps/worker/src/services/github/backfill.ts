@@ -1,13 +1,14 @@
-import { createPrivateKey, type KeyObject } from "node:crypto";
-
 import * as Sentry from "@sentry/node";
-import { SignJWT } from "jose";
 import { and, eq } from "drizzle-orm";
 
 import { flags } from "@pipewatch/config/edition";
 import type { WorkerEnv } from "@pipewatch/config/env";
 import type { Db } from "@pipewatch/db";
 import { integrations, pipelineJobs, repositories, workspaces } from "@pipewatch/db/schema";
+import {
+  createAppJwt as createAppJwtShared,
+  GitHubAppJwtError,
+} from "@pipewatch/github-app-auth";
 import type { WorkspacePlan } from "@pipewatch/types";
 import {
   createGuardedGitHubFetch,
@@ -31,7 +32,6 @@ type PipelineJobRow = typeof pipelineJobs.$inferSelect;
 export type { PipelineJobRow };
 
 const GITHUB_API_BASE = "https://api.github.com";
-const APP_JWT_TTL_SECONDS = 9 * 60;
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_BACKOFF_MS = 1_000;
@@ -144,68 +144,18 @@ export function gitHubAppConfigFromWorkerEnv(env: WorkerEnv): GitHubAppConfig {
   };
 }
 
-function normalizePrivateKey(rawKey: string): string {
-  const trimmed = rawKey.trim();
-
-  if (trimmed.includes("-----BEGIN")) {
-    return trimmed.replace(/\\n/g, "\n");
-  }
-
-  const decoded = Buffer.from(trimmed, "base64").toString("utf8").trim();
-  if (decoded.includes("-----BEGIN")) {
-    return decoded.replace(/\\n/g, "\n");
-  }
-
-  throw new GitHubBackfillError(
-    "GITHUB_APP_PRIVATE_KEY is not a valid PEM key",
-    500,
-    "INVALID_GITHUB_APP_PRIVATE_KEY",
-  );
-}
-
-function importSigningKey(rawKey: string): KeyObject {
-  let pem: string;
+async function createAppJwt(config: GitHubAppConfig): Promise<string> {
   try {
-    pem = normalizePrivateKey(rawKey);
+    return await createAppJwtShared({
+      appId: config.appId,
+      privateKey: config.privateKey,
+    });
   } catch (error) {
-    if (error instanceof GitHubBackfillError) {
-      throw error;
+    if (error instanceof GitHubAppJwtError) {
+      throw new GitHubBackfillError(error.message, error.status, error.code);
     }
 
-    throw new GitHubBackfillError(
-      "GITHUB_APP_PRIVATE_KEY is not a valid PEM key",
-      500,
-      "INVALID_GITHUB_APP_PRIVATE_KEY",
-    );
-  }
-
-  try {
-    return createPrivateKey(pem);
-  } catch {
-    throw new GitHubBackfillError(
-      "GITHUB_APP_PRIVATE_KEY is not a valid PEM key",
-      500,
-      "INVALID_GITHUB_APP_PRIVATE_KEY",
-    );
-  }
-}
-
-async function createAppJwt(config: GitHubAppConfig): Promise<string> {
-  const privateKey = importSigningKey(config.privateKey);
-
-  try {
-    return await new SignJWT({})
-      .setProtectedHeader({ alg: "RS256" })
-      .setIssuedAt()
-      .setIssuer(config.appId)
-      .setExpirationTime(`${String(APP_JWT_TTL_SECONDS)}s`)
-      .sign(privateKey);
-  } catch {
-    throw new GitHubBackfillError(
-      "Failed to sign GitHub App JWT with private key",
-      500,
-      "INVALID_GITHUB_APP_PRIVATE_KEY",
-    );
+    throw error;
   }
 }
 
