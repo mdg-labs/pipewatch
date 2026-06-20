@@ -164,6 +164,24 @@ describe("createApiClient", () => {
     expect(url).toBe(`${API_URL}/api/v1/workspaces/ws_abc/integrations`);
   });
 
+  it("does not append a trailing slash for workspace root scoped paths", async () => {
+    setAccessToken(makeJwt({ sub: "user_1", exp: Math.floor(Date.now() / 1000) + 3600 }));
+
+    const fetchImpl = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "ws_abc", name: "Acme" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    const client = createApiClient({ apiUrl: API_URL, fetchImpl });
+    await client.workspace("ws_abc").get("");
+
+    const [url] = fetchImpl.mock.calls[0] as [string];
+    expect(url).toBe(`${API_URL}/api/v1/workspaces/ws_abc`);
+    expect(url).not.toMatch(/\/$/);
+  });
+
   it("post with body and access token sends Authorization and Content-Type", async () => {
     const token = makeJwt({ sub: "user_1", exp: Math.floor(Date.now() / 1000) + 3600 });
     setAccessToken(token);

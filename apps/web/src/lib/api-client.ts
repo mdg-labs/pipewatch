@@ -53,6 +53,10 @@ export type WorkspaceScopedClient = {
 };
 
 function normalizeApiPath(path: string): string {
+  if (path === "") {
+    return "";
+  }
+
   if (!path.startsWith("/")) {
     return `/${path}`;
   }
