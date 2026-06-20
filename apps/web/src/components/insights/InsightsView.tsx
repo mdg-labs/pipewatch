@@ -132,7 +132,7 @@ function InsightsRangeToggle({
 export function InsightsView({ workspaceSlug }: InsightsViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { workspace } = useApi();
+  const { workspace, workspaceId } = useApi();
 
   const filters = useMemo(
     () => parseInsightsFilters(new URLSearchParams(searchParams.toString())),
@@ -175,7 +175,7 @@ export function InsightsView({ workspaceSlug }: InsightsViewProps) {
     } finally {
       setLoading(false);
     }
-  }, [workspace, filters]);
+  }, [workspaceId, filters]);
 
   useEffect(() => {
     void loadInsights();

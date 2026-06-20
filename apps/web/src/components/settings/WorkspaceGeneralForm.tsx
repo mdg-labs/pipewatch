@@ -105,7 +105,7 @@ export function WorkspaceGeneralForm() {
     } finally {
       setLoading(false);
     }
-  }, [workspace]);
+  }, [workspaceId]);
 
   useEffect(() => {
     void loadWorkspace();
@@ -264,7 +264,7 @@ export function WorkspaceGeneralForm() {
     router,
     slug,
     toast,
-    workspace,
+    workspaceId,
     workspaceData,
     workspaceSlug,
   ]);
@@ -300,7 +300,7 @@ export function WorkspaceGeneralForm() {
     } finally {
       setDeleting(false);
     }
-  }, [canDelete, onlyWorkspaceOnCe, router, toast, workspace, workspaceData, workspaces]);
+  }, [canDelete, onlyWorkspaceOnCe, router, toast, workspaceId, workspaceData, workspaces]);
 
   if (loading) {
     return <CardSkeleton count={2} />;

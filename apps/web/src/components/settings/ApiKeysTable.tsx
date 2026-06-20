@@ -114,7 +114,7 @@ function resolveCreatorLabel(
 
 /** B11 API keys settings — list, create, revoke, show revoked toggle. */
 export function ApiKeysTable() {
-  const { workspace, claims } = useApi();
+  const { workspace, claims, workspaceId } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
   const apiDocsUrl = getApiDocsUrl();
@@ -165,7 +165,7 @@ export function ApiKeysTable() {
     } finally {
       setLoading(false);
     }
-  }, [workspace]);
+  }, [workspaceId]);
 
   useEffect(() => {
     void loadData();
@@ -192,7 +192,7 @@ export function ApiKeysTable() {
       setKeys((current) => [...current, summary]);
       return created;
     },
-    [claims?.sub, workspace],
+    [claims?.sub, workspaceId],
   );
 
   const handleCopyPrefix = useCallback(
@@ -238,7 +238,7 @@ export function ApiKeysTable() {
     } finally {
       setRevokeLoading(false);
     }
-  }, [revokeTarget, toast, workspace]);
+  }, [revokeTarget, toast, workspaceId]);
 
   if (loading) {
     return (

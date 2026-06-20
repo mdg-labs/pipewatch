@@ -119,7 +119,7 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
     } finally {
       setLoading(false);
     }
-  }, [workspace, repoId, filters]);
+  }, [workspaceId, repoId, filters]);
 
   useEffect(() => {
     void loadData();
@@ -205,7 +205,7 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
     } finally {
       setSyncing(false);
     }
-  }, [canMutate, repoId, toast, workspace]);
+  }, [canMutate, repoId, toast, workspaceId]);
 
   if (loading) {
     return (

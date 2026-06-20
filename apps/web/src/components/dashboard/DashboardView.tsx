@@ -48,7 +48,7 @@ export type DashboardViewProps = {
 };
 
 export function DashboardView({ workspaceSlug }: DashboardViewProps) {
-  const { workspace } = useApi();
+  const { workspace, workspaceId } = useApi();
   const setLiveStreamOverride = useSetLiveStreamOverride();
 
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null);
@@ -92,7 +92,7 @@ export function DashboardView({ workspaceSlug }: DashboardViewProps) {
     } finally {
       setLoading(false);
     }
-  }, [workspace]);
+  }, [workspaceId]);
 
   useEffect(() => {
     void loadDashboard();

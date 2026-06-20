@@ -32,7 +32,7 @@ export type IntegrationsSettingsViewProps = {
 };
 
 export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettingsViewProps) {
-  const { workspace } = useApi();
+  const { workspace, workspaceId } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
 
@@ -80,7 +80,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
     } finally {
       setLoading(false);
     }
-  }, [workspace]);
+  }, [workspaceId]);
 
   useEffect(() => {
     void loadData();
@@ -108,7 +108,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
         return null;
       }
     },
-    [workspace],
+    [workspaceId],
   );
 
   const isIntegrationSyncing = useCallback(
@@ -144,7 +144,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
     return () => {
       window.clearInterval(handle);
     };
-  }, [expandedId, pollSyncStatus, workspace]);
+  }, [expandedId, pollSyncStatus, workspaceId]);
 
   useEffect(() => {
     if (!workspace || resyncingIds.size === 0) {
@@ -172,7 +172,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
     return () => {
       window.clearInterval(handle);
     };
-  }, [isIntegrationSyncing, pollSyncStatus, resyncingIds, workspace]);
+  }, [isIntegrationSyncing, pollSyncStatus, resyncingIds, workspaceId]);
 
   const reposByIntegration = useMemo(() => {
     const grouped = new Map<string, RepositorySummary[]>();
@@ -230,7 +230,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
         setTogglingRepoId(null);
       }
     },
-    [readOnly, toast, workspace],
+    [readOnly, toast, workspaceId],
   );
 
   const handleResync = useCallback(
@@ -275,7 +275,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
         });
       }
     },
-    [pollSyncStatus, readOnly, reposByIntegration, toast, workspace],
+    [pollSyncStatus, readOnly, reposByIntegration, toast, workspaceId],
   );
 
   const handleRemove = useCallback(async () => {
@@ -313,7 +313,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
     } finally {
       setRemoveLoading(false);
     }
-  }, [expandedId, removeTarget, toast, workspace]);
+  }, [expandedId, removeTarget, toast, workspaceId]);
 
   const handleManualConnect = useCallback(() => {
     const trimmed = manualId.trim();

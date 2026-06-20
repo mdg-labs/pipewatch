@@ -66,7 +66,7 @@ async function loadJobSteps(
 }
 
 export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewProps) {
-  const { workspace } = useApi();
+  const { workspace, workspaceId } = useApi();
   const setLiveStreamOverride = useSetLiveStreamOverride();
 
   const [repository, setRepository] = useState<RepositorySummary | null>(null);
@@ -107,7 +107,7 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
     } finally {
       setLoading(false);
     }
-  }, [workspace, repoId, runId]);
+  }, [workspaceId, repoId, runId]);
 
   useEffect(() => {
     void loadData();

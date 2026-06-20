@@ -127,7 +127,7 @@ export function MembersTable() {
     } finally {
       setLoading(false);
     }
-  }, [canMutate, workspace]);
+  }, [canMutate, workspaceId]);
 
   useEffect(() => {
     void loadData();
@@ -143,7 +143,7 @@ export function MembersTable() {
       setInvites((current) => [invite, ...current]);
       return invite;
     },
-    [workspace],
+    [workspaceId],
   );
 
   const openRoleDialog = useCallback((member: WorkspaceMember) => {
@@ -183,7 +183,7 @@ export function MembersTable() {
     } finally {
       setRoleSaving(false);
     }
-  }, [roleTarget, roleValue, toast, workspace]);
+  }, [roleTarget, roleValue, toast, workspaceId]);
 
   const handleConfirm = useCallback(async () => {
     if (!workspace || !confirmAction) {
@@ -231,7 +231,7 @@ export function MembersTable() {
     } finally {
       setConfirmLoading(false);
     }
-  }, [confirmAction, currentUserId, router, toast, workspace, workspaceId, workspaces]);
+  }, [confirmAction, currentUserId, router, toast, workspaceId, workspaces]);
 
   const handleResend = useCallback(
     async (invite: WorkspaceInvite) => {
@@ -261,7 +261,7 @@ export function MembersTable() {
         setResendingId(null);
       }
     },
-    [toast, workspace],
+    [toast, workspaceId],
   );
 
   if (loading) {

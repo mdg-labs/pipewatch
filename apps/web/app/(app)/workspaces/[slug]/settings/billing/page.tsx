@@ -106,7 +106,7 @@ function formatInvoiceStatus(status: string): string {
 
 /** Workspace billing settings — plan, usage, checkout, portal, invoices (B12). */
 export default function WorkspaceBillingSettingsPage() {
-  const { workspace } = useApi();
+  const { workspace, workspaceId } = useApi();
   const { toast } = useToast();
   const searchParams = useSearchParams();
   const planOptionsRef = useRef<HTMLDivElement>(null);
@@ -134,7 +134,7 @@ export default function WorkspaceBillingSettingsPage() {
     } finally {
       setLoading(false);
     }
-  }, [workspace]);
+  }, [workspaceId]);
 
   useEffect(() => {
     void loadBilling();
@@ -177,7 +177,7 @@ export default function WorkspaceBillingSettingsPage() {
     } finally {
       setPortalLoading(false);
     }
-  }, [workspace, toast]);
+  }, [workspaceId, toast]);
 
   const startCheckout = useCallback(
     async (plan: WorkspacePlan) => {
@@ -200,7 +200,7 @@ export default function WorkspaceBillingSettingsPage() {
         setLoadingPlan(null);
       }
     },
-    [workspace, toast],
+    [workspaceId, toast],
   );
 
   const handleSelectPlan = useCallback(

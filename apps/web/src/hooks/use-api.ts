@@ -100,7 +100,10 @@ export function useApi(): UseApiResult {
   const workspaceId = resolveWorkspaceId(workspaceSlug, workspaces);
   const claims = getAccessTokenClaims();
 
-  const workspace = workspaceId ? api.workspace(workspaceId) : null;
+  const workspace = useMemo(
+    () => (workspaceId ? api.workspace(workspaceId) : null),
+    [api, workspaceId],
+  );
 
   return {
     api,
