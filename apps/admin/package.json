@@ -1,0 +1,35 @@
+{
+  "name": "@pipewatch/admin",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "pnpm run build:web && pnpm run build:server",
+    "build:server": "tsc --build",
+    "build:web": "vite build --config web/vite.config.ts",
+    "dev": "vite --config web/vite.config.ts",
+    "dev:server": "pnpm run build:server && node --watch dist/index.js",
+    "lint": "eslint .",
+    "start": "node dist/index.js",
+    "test:unit": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc --build && tsc --noEmit -p web/tsconfig.json",
+    "deploy:admin": "node -e \"process.exit(0)\""
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.14.0",
+    "@pipewatch/config": "workspace:*",
+    "hono": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "^6.2.0",
+    "vitest": "^3.0.5"
+  }
+}

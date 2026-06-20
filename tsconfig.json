@@ -10,6 +10,7 @@
     { "path": "./apps/api" },
     { "path": "./apps/worker" },
     { "path": "./apps/web" },
-    { "path": "./apps/marketing" }
+    { "path": "./apps/marketing" },
+    { "path": "./apps/admin" }
   ]
 }

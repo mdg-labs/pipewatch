@@ -3,6 +3,7 @@ import { ZodError } from "zod";
 
 import {
   launchModeSchema,
+  parseAdminEnv,
   parseApiEnv,
   parseMarketingEnv,
   parseSharedEnv,
@@ -52,6 +53,17 @@ const baseMarketingEnv = {
   NODE_ENV: "production",
   PIPEWATCH_EDITION: "ce",
   LAUNCH_MODE: "waitlist",
+} as const;
+
+const baseAdminEnv = {
+  NODE_ENV: "production",
+  PIPEWATCH_EDITION: "cloud",
+  DATABASE_URL: "postgresql://pipewatch:pipewatch@localhost:5432/pipewatch",
+  REDIS_URL: "redis://localhost:6379",
+  GITHUB_APP_ID: "123456",
+  GITHUB_APP_PRIVATE_KEY: pemKey,
+  ADMIN_SESSION_SECRET: secret,
+  ADMIN_URL: "https://admin.pipewatch.app",
 } as const;
 
 const cloudStripeEnv = {
@@ -230,6 +242,49 @@ describe("parseWebEnv", () => {
     expect(() => parseWebEnv({ NODE_ENV: "production" }, "ce")).toThrow(
       /NEXT_PUBLIC_API_URL is required in production and staging/,
     );
+  });
+});
+
+describe("parseAdminEnv", () => {
+  it("accepts valid cloud production env", () => {
+    const env = parseAdminEnv({ ...baseAdminEnv });
+    expect(env.PORT).toBe(3002);
+    expect(env.ADMIN_ALERT_FAILURE_RATE_THRESHOLD).toBe(0.05);
+    expect(env.ADMIN_POLL_INTERVAL_CRON).toBe("*/2 * * * *");
+  });
+
+  it("allows missing secrets in development when edition is cloud", () => {
+    expect(
+      parseAdminEnv({ NODE_ENV: "development", PIPEWATCH_EDITION: "cloud" }),
+    ).toMatchObject({
+      NODE_ENV: "development",
+      PORT: 3002,
+    });
+  });
+
+  it("rejects CE edition", () => {
+    expect(() =>
+      parseAdminEnv({ NODE_ENV: "development", PIPEWATCH_EDITION: "ce" }),
+    ).toThrow(/requires PIPEWATCH_EDITION=cloud/);
+  });
+
+  it("rejects missing required fields in production", () => {
+    expect(() =>
+      parseAdminEnv({ NODE_ENV: "production", PIPEWATCH_EDITION: "cloud" }),
+    ).toThrow(/DATABASE_URL is required in production and staging/);
+  });
+
+  it("accepts optional bootstrap and SMTP stubs without values", () => {
+    expect(
+      parseAdminEnv({
+        ...baseAdminEnv,
+        ADMIN_BOOTSTRAP_EMAIL: "ops@pipewatch.app",
+        SMTP_HOST: "smtp.example.com",
+      }),
+    ).toMatchObject({
+      ADMIN_BOOTSTRAP_EMAIL: "ops@pipewatch.app",
+      SMTP_HOST: "smtp.example.com",
+    });
   });
 });
 

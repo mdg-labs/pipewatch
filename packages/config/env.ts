@@ -2,6 +2,7 @@ import { z, type ZodError, type ZodTypeAny } from "zod";
 
 import { parseEdition, type PipeWatchEdition } from "./edition.js";
 import {
+  ADMIN_STRICT_FIELDS,
   API_CLOUD_STRICT_FIELDS,
   API_STRICT_FIELDS,
   MARKETING_CLOUD_STRICT_FIELDS,
@@ -10,6 +11,7 @@ import {
 } from "./strict-env-fields.js";
 
 export {
+  ADMIN_STRICT_FIELDS,
   API_CLOUD_STRICT_FIELDS,
   API_STRICT_FIELDS,
   MARKETING_CLOUD_STRICT_FIELDS,
@@ -115,10 +117,35 @@ const marketingEnvSchema = z.object({
   UMAMI_WEBSITE_ID: z.string().min(1).optional(),
 });
 
+const adminEnvSchema = z.object({
+  NODE_ENV: nodeEnvSchema.default("development"),
+  PIPEWATCH_EDITION: z.literal("cloud").optional(),
+  DATABASE_URL: z.string().url().optional(),
+  REDIS_URL: z.string().url().optional(),
+  GITHUB_APP_ID: z.string().min(1).optional(),
+  GITHUB_APP_PRIVATE_KEY: z.string().min(1).optional(),
+  ADMIN_SESSION_SECRET: secretMin32.optional(),
+  SENTRY_DSN: z.string().optional(),
+  ADMIN_URL: z.string().url().optional(),
+  ADMIN_ALERT_FAILURE_RATE_THRESHOLD: z.coerce.number().positive().default(0.05),
+  ADMIN_ALERT_UNREACHABLE_COUNT: z.coerce.number().int().positive().default(3),
+  ADMIN_ALERT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
+  ADMIN_POLL_INTERVAL_CRON: z.string().min(1).default("*/2 * * * *"),
+  ADMIN_BOOTSTRAP_EMAIL: z.string().email().optional(),
+  ADMIN_BOOTSTRAP_PASSWORD: z.string().min(1).optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().email().optional(),
+  PORT: z.coerce.number().int().positive().default(3002),
+});
+
 export type ApiEnv = z.infer<typeof apiEnvSchema>;
 export type WorkerEnv = z.infer<typeof workerEnvSchema>;
 export type WebEnv = z.infer<typeof webEnvSchema>;
 export type MarketingEnv = z.infer<typeof marketingEnvSchema>;
+export type AdminEnv = z.infer<typeof adminEnvSchema>;
 
 function isStrictNodeEnv(nodeEnv: NodeEnv): boolean {
   return nodeEnv === "production" || nodeEnv === "staging";
@@ -314,6 +341,51 @@ export function parseWebEnv(
     edition,
     (data, issues) => {
       validateRequiredFields(data, WEB_STRICT_FIELDS, issues);
+    },
+  );
+}
+
+/** Parse and validate admin portal environment variables — cloud edition only. */
+export function parseAdminEnv(
+  raw: Record<string, string | undefined> = process.env,
+): AdminEnv {
+  const edition = parseEdition(raw.PIPEWATCH_EDITION);
+
+  if (edition !== "cloud") {
+    throw new Error(
+      "Admin portal requires PIPEWATCH_EDITION=cloud — this service is not available in CE.",
+    );
+  }
+
+  return parseAppEnv<AdminEnv>(
+    adminEnvSchema,
+    pickRaw(raw, [
+      "NODE_ENV",
+      "PIPEWATCH_EDITION",
+      "DATABASE_URL",
+      "REDIS_URL",
+      "GITHUB_APP_ID",
+      "GITHUB_APP_PRIVATE_KEY",
+      "ADMIN_SESSION_SECRET",
+      "SENTRY_DSN",
+      "ADMIN_URL",
+      "ADMIN_ALERT_FAILURE_RATE_THRESHOLD",
+      "ADMIN_ALERT_UNREACHABLE_COUNT",
+      "ADMIN_ALERT_WINDOW_MINUTES",
+      "ADMIN_POLL_INTERVAL_CRON",
+      "ADMIN_BOOTSTRAP_EMAIL",
+      "ADMIN_BOOTSTRAP_PASSWORD",
+      "SMTP_HOST",
+      "SMTP_PORT",
+      "SMTP_USER",
+      "SMTP_PASS",
+      "SMTP_FROM",
+      "PORT",
+    ]),
+    "admin",
+    "cloud",
+    (data, issues) => {
+      validateRequiredFields(data, ADMIN_STRICT_FIELDS, issues);
     },
   );
 }
