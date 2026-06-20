@@ -51,7 +51,7 @@ Issues on `mdg-labs/pipewatch`. Project board: **PipeWatch Roadmap (#5)**.
 
 | Field | Purpose |
 |---|---|
-| Issue number | Commit suffix `[#12]`, session memory |
+| Issue number | Commit suffix `[#12]` (subtasks: `[#12][#8]` + body `refs #8`); session memory |
 | Labels | Domain routing (`domain:frontend`, etc.) |
 | Board Status | Execution/verification lifecycle |
 

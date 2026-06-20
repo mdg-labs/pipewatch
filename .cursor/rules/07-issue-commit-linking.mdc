@@ -30,32 +30,48 @@ Place on its own line in the commit body. Multiple issues: one per line.
 
 ## Epic (parent Feature) issues
 
+When a task is a **child of an epic** (orchestrator passes `PARENT: #<epic>`):
+
 | Commit | Subject | Body |
 |---|---|---|
-| Any subtask | `[#<leaf>]` | `fixes #<leaf>` |
-| **Final** child of parent P | `[#<leaf>]` | `fixes #<leaf>` + `fixes #<P>` per parent in `CLOSE_PARENTS` |
-| Atomic leaf | `[#<leaf>]` | `fixes #<leaf>` |
+| Any subtask under epic P | `[#<leaf>][#<P>]` | `fixes #<leaf>` + `refs #<P>` |
+| **Final** child of epic P | `[#<leaf>][#<P>]` | `fixes #<leaf>` + `refs #<P>` + `fixes #<P>` when P is in `CLOSE_PARENTS` |
+| Atomic leaf (no parent) | `[#<leaf>]` | `fixes #<leaf>` |
 
-**Do not** put `fixes #<epic>` on intermediate subtasks.
+**Epic linkage vs epic close:**
 
-Orchestrator passes `CLOSE_PARENTS: [#P, …]` or `none` in execution prompts. Execution agents **must not guess**.
+- **`[#<epic>]` in subject** and **`refs #<epic>` in body** on **every** subtask commit — links all child commits to the epic in the Development panel without auto-closing the epic on merge to `main`.
+- **`fixes #<epic>`** only on the **final** in-scope child — orchestrator supplies parent(s) in `CLOSE_PARENTS`; execution agents must not guess.
+
+**Do not** put `fixes #<epic>` on intermediate subtasks — that auto-closes the epic when the first subtask lands on `main`.
+
+Subject ≤72 chars: include both `[#<leaf>]` and `[#<epic>]`; shorten the summary if needed.
+
+Orchestrator passes `PARENT: #P`, `CLOSE_PARENTS: [#P, …]` or `none` in execution prompts. Execution agents **must not guess**.
 
 ## Examples
 
 ```bash
 # GOOD — intermediate subtask under epic #8
+feat(auth)[#11][#8]: add GitHub OAuth callback handler
+
+fixes #11
+refs #8
+
+# GOOD — last in-scope child of epic #8
+feat(auth)[#12][#8]: add refresh token rotation
+
+fixes #12
+refs #8
+fixes #8
+
+# BAD — subtask missing epic linkage
 feat(auth)[#11]: add GitHub OAuth callback handler
 
 fixes #11
 
-# GOOD — last in-scope child of epic #8
-feat(auth)[#12]: add refresh token rotation
-
-fixes #12
-fixes #8
-
-# BAD — premature epic close
-feat(auth)[#11]: add OAuth callback
+# BAD — premature epic close on intermediate subtask
+feat(auth)[#11][#8]: add OAuth callback
 
 fixes #11
 fixes #8

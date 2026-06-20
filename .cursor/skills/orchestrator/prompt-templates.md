@@ -58,7 +58,7 @@ EPIC example:
 | 1 | S | #31 |
 | 2 | S | #32 |
 | 3 | S | #33, #34, #35 |  # serialized if shared index.ts
-| 4 | S | #36 | CLOSE_PARENTS: [#5]
+| 4 | S | #36 | CLOSE_PARENTS: [#5] — subject `[#36][#5]`; body `refs #5` + `fixes #5`
 
 SINGLE LEAF example:
 | Batch | Lane | Issues |
@@ -213,13 +213,14 @@ Pre-handoff (after CI gate, before returning): repeat Steps 1–2 with In Review
 ### BAD vs GOOD (orchestrator — do not dispatch the BAD prompt)
 
 ```text
-# ❌ BAD — agents skip board updates
+# ❌ BAD — agents skip board updates; subtask commit omits epic linkage
 MODE: GitHub | Lane S | TASK #143 | PARENT #141
 GITHUB SYNC: In Progress #143+#141 → In Review → commit feat(runs)[#143] …
 CI: required_permissions ["all"]; pnpm ci:gate
 ACCEPTANCE CRITERIA: …
 
-# ✅ GOOD — STATUS FIRST block pasted verbatim with #143 and #141 filled in, then full GITHUB SYNC — EXECUTION block, then rest
+# ✅ GOOD — STATUS FIRST block pasted verbatim with #143 and #141 filled in, then full GITHUB SYNC — EXECUTION block
+# Commit example for subtask: feat(runs)[#143][#141]: … / body: fixes #143 + refs #141
 ```
 
 ---
@@ -237,7 +238,7 @@ GITHUB SYNC — EXECUTION:
 - FIRST ACTION: GraphQL Status → In Progress (all listed) — BEFORE session memory or code
 - LAST ACTIONS: session ended → Status → In Review (leaf only) → single commit
 - FORBIDDEN: Status → Done; verification comments; committing session memory
-- COMMIT: [#<N>] in subject; fixes #<N> in body; fixes parents per CLOSE_PARENTS
+- COMMIT: `[#<N>]` in subject (+ `[#<parent>]` when subtask); `fixes #<N>` in body; `refs #<parent>` on every subtask; `fixes #<parent>` per CLOSE_PARENTS (final child only)
 
 GITHUB TOOLS — MANDATORY:
 (paste GITHUB TOOLS block from top of this file)
@@ -276,7 +277,7 @@ WORK:
 2. Session memory start + pnpm install if needed
 3. Implement per AC
 4. Full CI gate: WORK_ROOT=<repo> CI_PREFLIGHT_MODE=<local|global> pnpm ci:gate
-5. Pre-handoff: In Review (leaf) → single commit with [#N] + fixes lines
+5. Pre-handoff: In Review (leaf) → single commit with `[#N]` (+ `[#parent]` when subtask) + `fixes` / `refs` lines per 07-issue-commit-linking.mdc
 
 REQUIRED OUTPUT (all fields mandatory):
 - BOARD STATUS: In Progress on #<N> [and parent] — set at start
@@ -318,7 +319,7 @@ VERIFY:
 - Layer 1: scope audit
 - Layer 2: WORK_ROOT=<repo-or-worktree> TURBO_FILTER=<filter> pnpm ci:verify-scoped (scoped; do NOT rerun full monorepo)
 - Layer 3: AC, PRD contract, security, env vars, commit linking, migration policy (`15-db-migrations-schema.mdc`)
-- Layer 3c3 (mandatory): `git log staging --grep='fixes #<N>'` must return at least one commit for task #<N> (combined commits must list every covered issue on separate `fixes #N` lines)
+- Layer 3c3 (mandatory): `git log staging --grep='fixes #<N>'` must return at least one commit for task #<N> (combined commits must list every covered issue on separate `fixes #N` lines). When `PARENT` is set: subject includes `[#<parent>]` and body includes `refs #<parent>` (final child may use `fixes #<parent>` per CLOSE_PARENTS instead of or in addition to `refs`)
 
 AFTER PASS (mandatory before returning):
 1. add_issue_comment with PASS summary

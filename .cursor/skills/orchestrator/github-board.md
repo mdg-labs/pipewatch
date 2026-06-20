@@ -373,7 +373,7 @@ GITHUB SYNC — EXECUTION:
 - FIRST ACTION: GraphQL Status → In Progress (all listed) BEFORE session memory or any code
 - LAST ACTIONS: session ended → GraphQL Status → In Review (leaf only) → commit
 - FORBIDDEN: Status → Done; verification comments; committing session memory; skipping In Progress
-- COMMIT: [#<LEAF>] in subject; fixes #<LEAF> in body; fixes parents per CLOSE_PARENTS
+- COMMIT: `[#<LEAF>]` in subject (+ `[#<PARENT>]` when subtask); `fixes #<LEAF>` in body; `refs #<PARENT>` on every subtask; `fixes #<PARENT>` per CLOSE_PARENTS (final child only)
 - OUTPUT: must include BOARD STATUS lines (In Progress at start, In Review at handoff)
 ```
 
@@ -397,5 +397,6 @@ Feature parent → sub-issues (Tasks/Bugs). Implement **leaves** only.
 - **Orchestrator epic invocation** → present Lane S/P **batch plan**, then run **all** not-Done leaves (unless user said wait).
 - Parent **In Progress** when any child starts.
 - Parent **Done** when last in-scope child verifies PASS **and** orchestrator confirms board Status.
-- `fixes #<parent>` in commit body only on final child (orchestrator supplies `CLOSE_PARENTS`).
+- **Every** subtask commit: subject `[#<leaf>][#<parent>]` + body `refs #<parent>` — links all child commits to the epic in the Development panel.
+- `fixes #<parent>` in commit body only on final child (orchestrator supplies `CLOSE_PARENTS`); never `fixes #<parent>` on intermediate subtasks.
 - Default execution: **Lane S serial** unless orchestrator parallelism rules allow Lane P for a tier.

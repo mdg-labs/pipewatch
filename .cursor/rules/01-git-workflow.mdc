@@ -32,7 +32,7 @@ build(<scope>)[#123]: <summary>
 perf(<scope>)[#123]: <summary>
 ```
 
-Use `[#N]` when the task is on GitHub Issues. The commit body must include `fixes #N` to auto-close the issue on merge to `main`. Subtasks under an epic also close parent Features via `fixes #<parent>` on the **final in-scope child** only — see `07-issue-commit-linking.mdc`.
+Use `[#N]` when the task is on GitHub Issues. The commit body must include `fixes #N` to auto-close the issue on merge to `main`. Subtasks under an epic include `[#<epic>]` in the subject and `refs #<epic>` in the body on **every** child commit; parent Features close via `fixes #<parent>` on the **final in-scope child** only — see `07-issue-commit-linking.mdc`.
 
 **Allowed scopes**: `repo`, `ci`, `api`, `worker`, `web`, `marketing`, `db`, `types`, `utils`, `config`, `docs`, `workspaces`, `integrations`, `repositories`, `pipelines`, `runs`, `webhooks`, `auth`, `billing`, `sse`, `insights`, `onboarding`, `ce`, `infra`, `deps`
 
@@ -61,6 +61,12 @@ git add apps/api/src/routes/webhooks/github.ts \
 git commit -m "feat(webhooks)[#12]: verify GitHub HMAC signature on ingest
 
 fixes #12"
+
+# GOOD — subtask under epic #8
+git commit -m "feat(auth)[#11][#8]: add GitHub OAuth callback handler
+
+fixes #11
+refs #8"
 
 # BAD — blanket staging
 git add .

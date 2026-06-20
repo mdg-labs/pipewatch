@@ -83,7 +83,8 @@ Do **not** ask “go?” or wait for confirmation. The plan **is** the heads-up;
 
 **Skipped (Done):** #25  
 **Blocked:** —  
-**CLOSE_PARENTS:** `fixes #5` on final child #36 only
+**Epic linkage:** every child commit includes `[#<epic>]` in subject + `refs #<epic>` in body  
+**CLOSE_PARENTS:** `fixes #5` on final child #36 only (in addition to `refs #5`)
 
 → Starting batch 1…
 ```
@@ -148,7 +149,7 @@ When target is one **Task** (no sub-issues): present one-batch plan → dispatch
 
 **Root cause (P3/P4 run):** #41 was board **Done** but `6080f19` never landed on `staging`; P2-05 schema arrived later via #47's fix commit with only `fixes #47` — no `fixes #41` anywhere in `staging` history.
 
-**Rule:** Board **Done** is insufficient. Every issue marked **Done** in a run must have `fixes #N` (or `fixes #<parent>` when appropriate) in **at least one commit on `staging`** that is part of the run's commit range (the task commit, a combined commit, or an explicit linkage commit).
+**Rule:** Board **Done** is insufficient. Every issue marked **Done** in a run must have `fixes #N` (or `fixes #<parent>` when appropriate) in **at least one commit on `staging`** that is part of the run's commit range (the task commit, a combined commit, or an explicit linkage commit). Epic children must also link the epic via subject `[#<parent>]` and body `refs #<parent>` (or `fixes #<parent>` on the final child).
 
 **After every verifier PASS** and **before epic close**, the orchestrator **must** audit linkage:
 
@@ -156,6 +157,8 @@ When target is one **Task** (no sub-issues): present one-batch plan → dispatch
 # For each issue N marked Done in this run (leaves + parents per CLOSE_PARENTS):
 git log <base>..staging --grep='fixes #N'
 # base = commit before the orchestrator run started, or merge-base with origin/staging
+# For each epic child with PARENT P, also confirm epic linkage:
+git log <base>..staging --grep='refs #P'   # or --grep='\[#P\]' in subject
 ```
 
 | Result | Action |
@@ -180,7 +183,7 @@ Each prompt includes (execution: **STATUS FIRST block must be the first lines** 
 5. READ / WRITE scope with absolute paths
 6. Session ID: `<TASK-ID>-<YYYYMMDD>-<4hex>`
 7. Lane (`S` or `P`) and git context
-8. Epic context: `PARENT`, `CLOSE_PARENTS`
+8. Epic context: `PARENT` (always mention in commits), `CLOSE_PARENTS` (final-child `fixes` only)
 9. **GITHUB TOOLS** + **GITHUB SYNC** blocks — **full blocks, never one-line shorthand** ([prompt-templates.md](prompt-templates.md#prompt-compression-policy-mandatory))
 10. **CI GATE (SHELL)** block in every execution and verifier prompt — include `WORK_ROOT`, `TURBO_FILTER` (verifier), `CI_PREFLIGHT_MODE`; `required_permissions: ["all"]` on first Shell attempt
 11. **DB MIGRATIONS** block in every execution prompt
@@ -304,7 +307,7 @@ Keep under ~500 words; link GitHub issues as `https://github.com/mdg-labs/pipewa
 4. **CI gate** — `WORK_ROOT=<path> CI_PREFLIGHT_MODE=<local|global> pnpm ci:gate` via Shell with `required_permissions: ["all"]` (see [CI GATE block](prompt-templates.md#ci-gate-shell--mandatory-in-every-execution-and-verifier-prompt))
 5. **Pre-handoff:** Status → **In Review** (leaf); confirm `BOARD STATUS: In Review`; one implementation commit
 
-Commit format: `[#N]` in subject; `fixes #N` in body; `fixes #<parent>` per `CLOSE_PARENTS`.
+Commit format: `[#N]` in subject (+ `[#<parent>]` when subtask); `fixes #N` in body; `refs #<parent>` on every subtask; `fixes #<parent>` per `CLOSE_PARENTS` (final child only).
 
 ## Verification agents (fresh thread per batch)
 
@@ -326,7 +329,7 @@ Orchestrator supplies `TURBO_FILTER` from primary WRITE SCOPE (see [prompt-templ
 - 3b. PRD `§` deviations with file:line + fix hint
 - 3c. Security baseline (`03-security-baseline.mdc`)
 - 3c2. Env vars fully registered (`05-env-vars.mdc`)
-- 3c3. Commit linking (`07-issue-commit-linking.mdc`); `CLOSE_PARENTS` alignment; **`git log staging --grep='fixes #N'` must hit** for the task issue (and combined commits must list every covered `#N`)
+- 3c3. Commit linking (`07-issue-commit-linking.mdc`); when `PARENT` is set, subject includes `[#<parent>]` and body includes `refs #<parent>`; `CLOSE_PARENTS` alignment for `fixes #<parent>`; **`git log staging --grep='fixes #N'` must hit** for the task issue (and combined commits must list every covered `#N`)
 - 3c4. Board Status only — never GitHub issue state changes
 - 3d. Migration policy violations (`15-db-migrations-schema.mdc`) — hand-written, edited, or deleted committed migrations; schema change without generated migration → **FAIL**
 - 3e. Stubs, scattered edition checks → **FAIL**
@@ -370,7 +373,8 @@ _task: #<N> | started: <ISO> | ended: <ISO> | duration: <human> | agent: executi
 - Dispatching Lane P and Lane S in the same wave
 - Blanket `git add .`
 - Task commits without `[#N]` when GitHub sync in scope
-- `fixes #<epic>` on non-final subtask
+- Subtask commit missing `[#<epic>]` in subject or `refs #<epic>` in body when `PARENT` is set
+- `fixes #<epic>` on non-final subtask (use `refs #<epic>` instead)
 - Hand-written or edited committed DB migrations (`15-db-migrations-schema.mdc`)
 - Checking "is issue on project" — see rule `12-github-project-board.mdc`
 - Marking **Done** without `fixes #N` in `staging` git history for that issue
