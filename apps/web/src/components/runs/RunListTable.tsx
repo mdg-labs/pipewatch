@@ -9,14 +9,14 @@ import {
 } from "@pipewatch/ui";
 import { ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 
-import { formatRelativeTime } from "@/lib/dashboard-utils";
-import { formatDuration } from "@/lib/format-duration";
+import { formatTriggerLabel } from "@/i18n/trigger-labels";
+import { useTimeFormatters } from "@/i18n/use-time-formatters";
 import {
   formatBranchDisplay,
   formatPipelineNameDisplay,
-  formatTriggerLabel,
   githubActorAvatarUrl,
   mapPipelineRunToBadgeStatus,
 } from "@/lib/run-utils";
@@ -31,56 +31,64 @@ export type RunListTableProps = {
 
 export function RunListTable({ runs, workspaceSlug, repoId }: RunListTableProps) {
   const router = useRouter();
+  const t = useTranslations("runs.table");
+  const tTriggers = useTranslations("runs.triggers");
+  const tRuns = useTranslations("runs");
+  const { formatDuration, formatRelativeTime, emDash } = useTimeFormatters();
 
   const columns = useMemo<DataTableColumn<PipelineRun>[]>(
     () => [
       {
         id: "workflow",
-        header: "Workflow",
+        header: t("workflow"),
         render: (run) => (
-          <span className="pw-run-list-workflow">{formatPipelineNameDisplay(run.pipeline_name)}</span>
+          <span className="pw-run-list-workflow">
+            {formatPipelineNameDisplay(run.pipeline_name, emDash)}
+          </span>
         ),
       },
       {
         id: "branch",
-        header: "Branch",
+        header: t("branch"),
         render: (run) => (
-          <span className="pw-run-list-branch">{formatBranchDisplay(run.branch)}</span>
+          <span className="pw-run-list-branch">{formatBranchDisplay(run.branch, emDash)}</span>
         ),
       },
       {
         id: "trigger",
-        header: "Trigger",
+        header: t("trigger"),
         render: (run) => (
-          <span className="pw-run-list-trigger">{formatTriggerLabel(run.trigger_type)}</span>
+          <span className="pw-run-list-trigger">
+            {formatTriggerLabel(run.trigger_type, tTriggers)}
+          </span>
         ),
       },
       {
         id: "actor",
-        header: "Actor",
+        header: t("actor"),
         render: (run) => {
           const avatarUrl = githubActorAvatarUrl(run.actor_login);
           return (
             <span className="pw-run-list-actor">
               <Avatar
                 {...(avatarUrl ? { src: avatarUrl } : {})}
-                name={run.actor_login ?? "Unknown"}
+                name={run.actor_login ?? tRuns("unknownActor")}
                 size="xs"
                 rounded
               />
-              <span className="pw-run-list-actor-login">{run.actor_login ?? "—"}</span>
+              <span className="pw-run-list-actor-login">{run.actor_login ?? emDash}</span>
             </span>
           );
         },
       },
       {
         id: "status",
-        header: "Status",
+        header: t("status"),
         render: (run) => <StatusBadge status={mapPipelineRunToBadgeStatus(run)} />,
       },
       {
         id: "duration",
-        header: "Duration",
+        header: t("duration"),
         align: "right",
         mono: true,
         render: (run) =>
@@ -90,7 +98,7 @@ export function RunListTable({ runs, workspaceSlug, repoId }: RunListTableProps)
       },
       {
         id: "started",
-        header: "Started",
+        header: t("started"),
         render: (run) => formatRelativeTime(run.started_at),
       },
       {
@@ -99,7 +107,7 @@ export function RunListTable({ runs, workspaceSlug, repoId }: RunListTableProps)
         render: () => <ChevronRight size={14} className="pw-run-list-chevron" aria-hidden />,
       },
     ],
-    [],
+    [emDash, formatDuration, formatRelativeTime, t, tRuns, tTriggers],
   );
 
   return (

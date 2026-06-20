@@ -3,7 +3,7 @@
 import type { PipelineStep } from "@pipewatch/types";
 import { StatusBadge } from "@pipewatch/ui";
 
-import { formatDuration } from "@/lib/format-duration";
+import { useTimeFormatters } from "@/i18n/use-time-formatters";
 import {
   isFailedStep,
   mapPipelineJobToBadgeStatus,
@@ -14,6 +14,7 @@ export type StepRowProps = {
 };
 
 export function StepRow({ step }: StepRowProps) {
+  const { formatDuration } = useTimeFormatters();
   const failed = isFailedStep(step);
 
   return (

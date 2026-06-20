@@ -1,6 +1,7 @@
 "use client";
 
 import { classNames } from "@pipewatch/ui";
+import { useTranslations } from "next-intl";
 
 import "./repo-detail.css";
 
@@ -15,8 +16,10 @@ export function WorkflowTabs({
   activeWorkflow,
   onWorkflowChange,
 }: WorkflowTabsProps) {
+  const t = useTranslations("repos.workflowTabs");
+
   return (
-    <div className="pw-repo-workflow-tabs" role="tablist" aria-label="Workflow filters">
+    <div className="pw-repo-workflow-tabs" role="tablist" aria-label={t("ariaLabel")}>
       <button
         type="button"
         role="tab"
@@ -27,7 +30,7 @@ export function WorkflowTabs({
         aria-selected={!activeWorkflow}
         onClick={() => onWorkflowChange(undefined)}
       >
-        All
+        {t("all")}
       </button>
       {workflows.map((workflow) => (
         <button

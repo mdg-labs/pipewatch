@@ -8,6 +8,8 @@ import {
   classNames,
 } from "@pipewatch/ui";
 import { LayoutGrid, List } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useMemo } from "react";
 
 import type {
   DashboardSortKey,
@@ -16,19 +18,6 @@ import type {
 } from "@/lib/dashboard-types";
 
 import "./dashboard.css";
-
-const SORT_OPTIONS: { value: DashboardSortKey; label: string }[] = [
-  { value: "last_run", label: "Last run" },
-  { value: "name", label: "Name" },
-  { value: "failure_rate", label: "Failure rate" },
-];
-
-const STATUS_FILTERS: { value: DashboardStatusFilter; label: string; tone: "default" | "failure" | "running" | "success" }[] = [
-  { value: "all", label: "All", tone: "default" },
-  { value: "failing", label: "Failing", tone: "failure" },
-  { value: "running", label: "Running", tone: "running" },
-  { value: "healthy", label: "Healthy", tone: "success" },
-];
 
 export type DashboardControlsProps = {
   sortKey: DashboardSortKey;
@@ -55,22 +44,42 @@ export function DashboardControls({
   onViewModeChange,
   resultsLabel,
 }: DashboardControlsProps) {
+  const t = useTranslations("dashboard.controls");
   const showIntegrationFilter = integrations.length > 1;
+
+  const sortOptions = useMemo(
+    () => [
+      { value: "last_run" as const, label: t("sortLastRun") },
+      { value: "name" as const, label: t("sortName") },
+      { value: "failure_rate" as const, label: t("sortFailureRate") },
+    ],
+    [t],
+  );
+
+  const statusFilters = useMemo(
+    () => [
+      { value: "all" as const, label: t("filterAll"), tone: "default" as const },
+      { value: "failing" as const, label: t("filterFailing"), tone: "failure" as const },
+      { value: "running" as const, label: t("filterRunning"), tone: "running" as const },
+      { value: "healthy" as const, label: t("filterHealthy"), tone: "success" as const },
+    ],
+    [t],
+  );
 
   return (
     <div className="pw-dashboard-controls">
       <FilterBar className="pw-dashboard-controls-row">
         <Select
-          label="Sort"
+          label={t("sort")}
           size="sm"
           value={sortKey}
-          options={SORT_OPTIONS}
+          options={sortOptions}
           onChange={(value) => onSortChange(value as DashboardSortKey)}
           className="pw-dashboard-sort"
         />
 
-        <div className="pw-dashboard-filter-chips" role="group" aria-label="Status filters">
-          {STATUS_FILTERS.map((filter) => (
+        <div className="pw-dashboard-filter-chips" role="group" aria-label={t("statusFiltersAriaLabel")}>
+          {statusFilters.map((filter) => (
             <FilterChip
               key={filter.value}
               label={filter.label}
@@ -83,11 +92,11 @@ export function DashboardControls({
 
         {showIntegrationFilter ? (
           <Select
-            label="Integration"
+            label={t("integration")}
             size="sm"
             value={integrationId ?? "all"}
             options={[
-              { value: "all", label: "All orgs" },
+              { value: "all", label: t("allOrgs") },
               ...integrations.map((integration) => ({
                 value: integration.id,
                 label: integration.account_login,
@@ -101,7 +110,7 @@ export function DashboardControls({
           />
         ) : null}
 
-        <div className="pw-dashboard-view-toggle" role="group" aria-label="View mode">
+        <div className="pw-dashboard-view-toggle" role="group" aria-label={t("viewModeAriaLabel")}>
           <button
             type="button"
             className={classNames(
@@ -109,7 +118,7 @@ export function DashboardControls({
               viewMode === "cards" && "pw-dashboard-view-toggle-btn-active",
             )}
             aria-pressed={viewMode === "cards"}
-            aria-label="Card view"
+            aria-label={t("cardViewAriaLabel")}
             onClick={() => onViewModeChange("cards")}
           >
             <LayoutGrid size={14} aria-hidden />
@@ -121,7 +130,7 @@ export function DashboardControls({
               viewMode === "table" && "pw-dashboard-view-toggle-btn-active",
             )}
             aria-pressed={viewMode === "table"}
-            aria-label="Table view"
+            aria-label={t("tableViewAriaLabel")}
             onClick={() => onViewModeChange("table")}
           >
             <List size={14} aria-hidden />

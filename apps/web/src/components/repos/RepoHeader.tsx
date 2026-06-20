@@ -4,6 +4,7 @@ import type { RepositorySummary } from "@pipewatch/types";
 import { Badge, Button, buttonClassName } from "@pipewatch/ui";
 import { GitBranch, Github, Settings } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 
 import { githubRepoUrl, parseRepoFullName } from "@/lib/dashboard-utils";
 
@@ -17,16 +18,19 @@ export type RepoHeaderProps = {
   canResync?: boolean;
 };
 
-function syncModeLabel(repository: RepositorySummary): { label: string; live: boolean } {
+function syncModeLabel(
+  repository: RepositorySummary,
+  t: (key: "polling" | "webhookLive", values?: { seconds: number }) => string,
+): { label: string; live: boolean } {
   if (repository.polling_interval_seconds !== null) {
     return {
-      label: `Polling · ${repository.polling_interval_seconds}s`,
+      label: t("polling", { seconds: repository.polling_interval_seconds }),
       live: false,
     };
   }
 
   return {
-    label: "Webhook · Live",
+    label: t("webhookLive"),
     live: true,
   };
 }
@@ -38,8 +42,9 @@ export function RepoHeader({
   onResync,
   canResync = false,
 }: RepoHeaderProps) {
+  const t = useTranslations("repos.header");
   const { org, name } = parseRepoFullName(repository.full_name);
-  const syncMode = syncModeLabel(repository);
+  const syncMode = syncModeLabel(repository, t);
   const settingsHref = `/workspaces/${workspaceSlug}/repos/${repository.id}/settings`;
 
   return (
@@ -53,7 +58,7 @@ export function RepoHeader({
         </div>
 
         <Badge variant="outline" mono pill>
-          {repository.private ? "private" : "public"}
+          {repository.private ? t("private") : t("public")}
         </Badge>
 
         <Badge
@@ -70,7 +75,7 @@ export function RepoHeader({
           target="_blank"
           rel="noopener noreferrer"
           className="pw-repo-github-link"
-          aria-label={`Open ${repository.full_name} on GitHub`}
+          aria-label={t("openOnGithubAriaLabel", { fullName: repository.full_name })}
         >
           <Github size={15} aria-hidden />
         </a>
@@ -79,7 +84,7 @@ export function RepoHeader({
       <div className="pw-repo-header-actions">
         <Link href={settingsHref} className={buttonClassName({ variant: "ghost", size: "sm" })}>
           <Settings size={14} aria-hidden />
-          Settings
+          {t("settings")}
         </Link>
         <Button
           type="button"
@@ -88,7 +93,7 @@ export function RepoHeader({
           disabled={!canResync || syncing}
           onClick={onResync}
         >
-          {syncing ? "Re-syncing…" : "Re-sync"}
+          {syncing ? t("resyncing") : t("resync")}
         </Button>
       </div>
     </header>

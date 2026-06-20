@@ -70,6 +70,7 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
   const { canMutate } = useWorkspaceRole();
   const { toast } = useToast();
   const setLiveStreamOverride = useSetLiveStreamOverride();
+  const t = useTranslations("repos");
   const tPagination = useTranslations("ui.pagination");
 
   const filters = useMemo(
@@ -216,22 +217,22 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
     try {
       await workspace.post(`/repositories/${repoId}/sync`);
       toast({
-        title: "Re-sync started",
-        description: "Fetching the latest runs from GitHub.",
+        title: t("resync.startedTitle"),
+        description: t("resync.startedDescription"),
         variant: "success",
       });
     } catch (error) {
       const message =
-        error instanceof ApiClientError ? error.message : "Could not start re-sync.";
+        error instanceof ApiClientError ? error.message : t("resync.failedDescription");
       toast({
-        title: "Re-sync failed",
+        title: t("resync.failedTitle"),
         description: message,
         variant: "error",
       });
     } finally {
       setSyncing(false);
     }
-  }, [canMutate, repoId, toast, workspaceId]);
+  }, [canMutate, repoId, t, toast, workspaceId]);
 
   if (loading) {
     return (
@@ -244,7 +245,7 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
   if (loadError || !repository) {
     return (
       <div className="pw-repo-detail">
-        <ErrorRetry message="We could not load this repository." onRetry={() => void loadData()} />
+        <ErrorRetry message={t("loadError")} onRetry={() => void loadData()} />
       </div>
     );
   }
@@ -276,8 +277,8 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
 
       {runs.length === 0 ? (
         <EmptyState
-          title="No runs yet for this repo"
-          description="Runs appear here once GitHub Actions workflows execute on this repository."
+          title={t("empty.title")}
+          description={t("empty.description")}
         />
       ) : (
         <>

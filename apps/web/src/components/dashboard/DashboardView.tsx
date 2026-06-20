@@ -4,6 +4,7 @@ import type { IntegrationSummary } from "@pipewatch/types";
 import { EmptyState, buttonClassName } from "@pipewatch/ui";
 import { Github } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CardSkeleton } from "@/components/CardSkeleton";
@@ -21,7 +22,6 @@ import type {
 import {
   applySseEventToDashboard,
   filterDashboardRepos,
-  resultsCountLabel,
   sortDashboardRepos,
 } from "@/lib/dashboard-utils";
 
@@ -48,6 +48,7 @@ export type DashboardViewProps = {
 };
 
 export function DashboardView({ workspaceSlug }: DashboardViewProps) {
+  const t = useTranslations("dashboard");
   const { workspace, workspaceId } = useApi();
   const setLiveStreamOverride = useSetLiveStreamOverride();
 
@@ -138,13 +139,14 @@ export function DashboardView({ workspaceSlug }: DashboardViewProps) {
     );
   }, [dashboard, integrationId, sortKey, statusFilter]);
 
+  const resultsLabel = t("resultsCount", { count: filteredRepos.length });
   const onboardingHref = `/onboarding?step=2&workspace=${encodeURIComponent(workspaceSlug)}`;
 
   if (loading) {
     return (
       <div className="pw-dashboard" aria-busy="true">
         <div className="pw-dashboard-header">
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Dashboard</h1>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{t("title")}</h1>
         </div>
         {viewMode === "table" ? (
           <TableSkeleton columns={7} rows={6} />
@@ -159,9 +161,9 @@ export function DashboardView({ workspaceSlug }: DashboardViewProps) {
     return (
       <div className="pw-dashboard">
         <div className="pw-dashboard-header">
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Dashboard</h1>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{t("title")}</h1>
         </div>
-        <ErrorRetry message="We could not load the dashboard." onRetry={() => void loadDashboard()} />
+        <ErrorRetry message={t("loadError")} onRetry={() => void loadDashboard()} />
       </div>
     );
   }
@@ -170,15 +172,15 @@ export function DashboardView({ workspaceSlug }: DashboardViewProps) {
     return (
       <div className="pw-dashboard">
         <div className="pw-dashboard-header">
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Dashboard</h1>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{t("title")}</h1>
         </div>
         <EmptyState
-          title="No repos connected yet"
-          description="Connect GitHub and select repositories to monitor pipeline runs from one place."
+          title={t("empty.title")}
+          description={t("empty.description")}
           actions={
             <Link href={onboardingHref} className={buttonClassName({ variant: "primary" })}>
               <Github size={16} aria-hidden />
-              Connect GitHub
+              {t("empty.connectGithub")}
             </Link>
           }
         />
@@ -189,13 +191,13 @@ export function DashboardView({ workspaceSlug }: DashboardViewProps) {
   return (
     <div className="pw-dashboard">
       <div className="pw-dashboard-header">
-        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>Dashboard</h1>
+        <h1 style={{ margin: 0, fontSize: 20, fontWeight: 600 }}>{t("title")}</h1>
         <div className="pw-dashboard-header-actions">
           <Link
             href={onboardingHref}
             className={buttonClassName({ variant: "secondary", size: "sm" })}
           >
-            Connect another org
+            {t("connectAnotherOrg")}
           </Link>
         </div>
       </div>
@@ -212,7 +214,7 @@ export function DashboardView({ workspaceSlug }: DashboardViewProps) {
         integrations={integrations}
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
-        resultsLabel={resultsCountLabel(filteredRepos.length)}
+        resultsLabel={resultsLabel}
       />
 
       {viewMode === "table" ? (

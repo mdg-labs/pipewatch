@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { formatElapsedSince } from "@/lib/dashboard-utils";
+import { useTimeFormatters } from "@/i18n/use-time-formatters";
 
 export type ElapsedTickerProps = {
   startedAt: string;
@@ -11,6 +11,7 @@ export type ElapsedTickerProps = {
 
 /** Live elapsed-time display for in-progress jobs (page B6, SSE). */
 export function ElapsedTicker({ startedAt, className }: ElapsedTickerProps) {
+  const { formatElapsedSince } = useTimeFormatters();
   const [elapsed, setElapsed] = useState(() => formatElapsedSince(startedAt));
 
   useEffect(() => {
@@ -23,7 +24,7 @@ export function ElapsedTicker({ startedAt, className }: ElapsedTickerProps) {
     return () => {
       window.clearInterval(timer);
     };
-  }, [startedAt]);
+  }, [formatElapsedSince, startedAt]);
 
   return (
     <span className={className} aria-live="polite">

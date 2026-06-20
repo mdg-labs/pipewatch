@@ -81,40 +81,6 @@ export function averageFailureRate(sparkline: number[]): number {
   return Math.round(sum / sparkline.length);
 }
 
-export function formatRelativeTime(iso: string | null | undefined): string {
-  if (!iso) {
-    return "—";
-  }
-
-  const deltaMs = Date.now() - new Date(iso).getTime();
-  const deltaSeconds = Math.round(deltaMs / 1_000);
-
-  if (deltaSeconds < 60) {
-    return deltaSeconds <= 5 ? "just now" : `${deltaSeconds}s ago`;
-  }
-
-  const deltaMinutes = Math.round(deltaSeconds / 60);
-  if (deltaMinutes < 60) {
-    return `${deltaMinutes} min ago`;
-  }
-
-  const deltaHours = Math.round(deltaMinutes / 60);
-  if (deltaHours < 24) {
-    return `${deltaHours} hour${deltaHours === 1 ? "" : "s"} ago`;
-  }
-
-  const deltaDays = Math.round(deltaHours / 24);
-  return `${deltaDays} day${deltaDays === 1 ? "" : "s"} ago`;
-}
-
-export function formatElapsedSince(iso: string): string {
-  const deltaMs = Math.max(0, Date.now() - new Date(iso).getTime());
-  const totalSeconds = Math.floor(deltaMs / 1_000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}m ${seconds.toString().padStart(2, "0")}s`;
-}
-
 export function filterDashboardRepos(
   repos: DashboardRepoCard[],
   statusFilter: DashboardStatusFilter,
@@ -231,10 +197,3 @@ export function applySseEventToDashboard(
   };
 }
 
-export function resultsCountLabel(count: number): string {
-  if (count === 1) {
-    return "1 repository";
-  }
-
-  return `${count} repositories`;
-}

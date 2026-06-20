@@ -7,15 +7,15 @@ import {
   StatusBadge,
   type DataTableColumn,
 } from "@pipewatch/ui";
-import { formatDuration } from "@/lib/format-duration";
 import { ExternalLink } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useMemo } from "react";
 
+import { useTimeFormatters } from "@/i18n/use-time-formatters";
 import type { DashboardRepoCard } from "@/lib/dashboard-types";
 import {
   averageFailureRate,
-  formatRelativeTime,
   githubRepoUrl,
   mapRunToBadgeStatus,
   parseRepoFullName,
@@ -30,12 +30,14 @@ export type DashboardRepoTableProps = {
 
 export function DashboardRepoTable({ repos, workspaceSlug }: DashboardRepoTableProps) {
   const router = useRouter();
+  const t = useTranslations("dashboard.table");
+  const { formatDuration, formatRelativeTime, emDash } = useTimeFormatters();
 
   const columns = useMemo<DataTableColumn<DashboardRepoCard>[]>(
     () => [
       {
         id: "repo",
-        header: "Repository",
+        header: t("repository"),
         render: (repo) => {
           const { org, name } = parseRepoFullName(repo.full_name);
           return (
@@ -47,7 +49,7 @@ export function DashboardRepoTable({ repos, workspaceSlug }: DashboardRepoTableP
                 target="_blank"
                 rel="noopener noreferrer"
                 className="pw-dashboard-repo-github-link"
-                aria-label={`Open ${repo.full_name} on GitHub`}
+                aria-label={t("openOnGithubAriaLabel", { fullName: repo.full_name })}
                 onClick={(event) => event.stopPropagation()}
               >
                 <ExternalLink size={14} aria-hidden />
@@ -58,18 +60,18 @@ export function DashboardRepoTable({ repos, workspaceSlug }: DashboardRepoTableP
       },
       {
         id: "workflow",
-        header: "Last workflow",
-        render: (repo) => repo.last_run?.pipeline_name ?? "—",
+        header: t("lastWorkflow"),
+        render: (repo) => repo.last_run?.pipeline_name ?? emDash,
       },
       {
         id: "branch",
-        header: "Branch",
+        header: t("branch"),
         mono: true,
-        render: (repo) => repo.last_run?.branch ?? "—",
+        render: (repo) => repo.last_run?.branch ?? emDash,
       },
       {
         id: "status",
-        header: "Status",
+        header: t("status"),
         render: (repo) => (
           <div className="pw-dashboard-table-status">
             {repo.is_running ? <RunPulse size={6} ring /> : null}
@@ -79,13 +81,13 @@ export function DashboardRepoTable({ repos, workspaceSlug }: DashboardRepoTableP
       },
       {
         id: "last_run",
-        header: "Last run",
+        header: t("lastRun"),
         render: (repo) =>
-          repo.last_run ? formatRelativeTime(repo.last_run.started_at) : "—",
+          repo.last_run ? formatRelativeTime(repo.last_run.started_at) : emDash,
       },
       {
         id: "duration",
-        header: "Duration",
+        header: t("duration"),
         mono: true,
         render: (repo) =>
           formatDuration(
@@ -96,7 +98,7 @@ export function DashboardRepoTable({ repos, workspaceSlug }: DashboardRepoTableP
       },
       {
         id: "failure_rate",
-        header: "7d failure",
+        header: t("sevenDayFailure"),
         align: "right",
         render: (repo) => {
           const rate = averageFailureRate(repo.sparkline);
@@ -116,7 +118,7 @@ export function DashboardRepoTable({ repos, workspaceSlug }: DashboardRepoTableP
         },
       },
     ],
-    [],
+    [emDash, formatDuration, formatRelativeTime, t],
   );
 
   return (
@@ -128,7 +130,7 @@ export function DashboardRepoTable({ repos, workspaceSlug }: DashboardRepoTableP
         router.push(`/workspaces/${workspaceSlug}/repos/${repo.id}`);
       }}
       emptyState={
-        <p className="pw-dashboard-table-empty">No repositories match the current filters.</p>
+        <p className="pw-dashboard-table-empty">{t("empty")}</p>
       }
     />
   );

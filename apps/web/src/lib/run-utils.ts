@@ -3,17 +3,20 @@ import type { PipelineStatus } from "@pipewatch/ui";
 
 const ACTIVE_STATUSES = new Set(["queued", "in_progress"]);
 
-export function formatPipelineNameDisplay(name: string | null | undefined): string {
+export function formatPipelineNameDisplay(
+  name: string | null | undefined,
+  emDash = "—",
+): string {
   if (name === null || name === undefined || name.trim() === "") {
-    return "—";
+    return emDash;
   }
 
   return name;
 }
 
-export function formatBranchDisplay(branch: string | null | undefined): string {
+export function formatBranchDisplay(branch: string | null | undefined, emDash = "—"): string {
   if (branch === null || branch === undefined || branch.trim() === "") {
-    return "—";
+    return emDash;
   }
 
   return branch;
@@ -38,13 +41,6 @@ export function mapPipelineRunToBadgeStatus(run: PipelineRun): PipelineStatus {
   }
 
   return "queued";
-}
-
-export function formatTriggerLabel(triggerType: string): string {
-  return triggerType
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
 }
 
 export function githubActorAvatarUrl(login: string | null): string | undefined {

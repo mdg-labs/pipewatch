@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from "react";
 
 import type { PipelineJob } from "@pipewatch/types";
 import { StatusBadge, classNames } from "@pipewatch/ui";
+import { useTranslations } from "next-intl";
 
-import { formatDuration } from "@/lib/format-duration";
+import { useTimeFormatters } from "@/i18n/use-time-formatters";
 import {
   layoutJobDag,
   type DagNodeLayout,
@@ -45,6 +46,8 @@ function JobGraphNode({
   canvasHeight,
   selected,
   onSelect,
+  formatDuration,
+  jobAriaLabel,
 }: {
   job: PipelineJob;
   layout: DagNodeLayout;
@@ -54,6 +57,8 @@ function JobGraphNode({
   canvasHeight: number;
   selected: boolean;
   onSelect: () => void;
+  formatDuration: (totalSeconds: number | null | undefined) => string;
+  jobAriaLabel: (name: string) => string;
 }) {
   const active = isActiveJob(job);
   const badgeStatus = mapPipelineJobToBadgeStatus(job);
@@ -87,7 +92,7 @@ function JobGraphNode({
         scrollToJobPanel(job.id);
       }}
       aria-pressed={selected}
-      aria-label={`${job.name} job`}
+      aria-label={jobAriaLabel(job.name)}
     >
       <div className="pw-job-graph-node-header">
         <span className="pw-job-graph-node-name">{job.name}</span>
@@ -102,6 +107,8 @@ function JobGraphNode({
 }
 
 export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
+  const t = useTranslations("runs.jobGraph");
+  const { formatDuration } = useTimeFormatters();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState<number | undefined>(undefined);
 
@@ -138,7 +145,7 @@ export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
 
   return (
     <div className="pw-job-graph">
-      <h2 className="pw-run-section-title">Job execution graph</h2>
+      <h2 className="pw-run-section-title">{t("title")}</h2>
       <div ref={wrapRef} className="pw-job-graph-canvas-wrap">
         <div
           className="pw-job-graph-canvas"
@@ -209,6 +216,8 @@ export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
                 canvasHeight={layout.height}
                 selected={selectedJobId === job.id}
                 onSelect={() => onJobSelect(job.id)}
+                formatDuration={formatDuration}
+                jobAriaLabel={(name) => t("jobAriaLabel", { name })}
               />
             );
           })}

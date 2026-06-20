@@ -10,6 +10,7 @@ import type {
 import { Avatar, StatusBadge } from "@pipewatch/ui";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CardSkeleton } from "@/components/CardSkeleton";
@@ -17,8 +18,8 @@ import { ErrorRetry } from "@/components/ErrorRetry";
 import { useSetLiveStreamOverride } from "@/contexts/live-stream-override-context";
 import { useApi } from "@/hooks/use-api";
 import { useRepoStream } from "@/hooks/use-repo-stream";
-import { formatRelativeTime } from "@/lib/dashboard-utils";
-import { formatDuration } from "@/lib/format-duration";
+import { formatTriggerLabel } from "@/i18n/trigger-labels";
+import { useTimeFormatters } from "@/i18n/use-time-formatters";
 import {
   applySseEventToRunDetail,
   collectAutoExpandedJobIds,
@@ -27,7 +28,6 @@ import {
 import {
   formatBranchDisplay,
   formatPipelineNameDisplay,
-  formatTriggerLabel,
   githubActorAvatarUrl,
   isActiveRun,
   mapPipelineRunToBadgeStatus,
@@ -66,6 +66,10 @@ async function loadJobSteps(
 }
 
 export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewProps) {
+  const t = useTranslations("runs");
+  const tTriggers = useTranslations("runs.triggers");
+  const tBreadcrumb = useTranslations("runs.breadcrumb");
+  const { formatDuration, formatRelativeTime, emDash } = useTimeFormatters();
   const { workspace, workspaceId } = useApi();
   const setLiveStreamOverride = useSetLiveStreamOverride();
 
@@ -174,7 +178,7 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
 
   const headerDuration = useMemo(() => {
     if (!run) {
-      return "—";
+      return emDash;
     }
 
     if (isActiveRun(run)) {
@@ -184,7 +188,7 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
     return formatDuration(
       run.duration_ms !== null ? Math.round(run.duration_ms / 1_000) : null,
     );
-  }, [run]);
+  }, [emDash, formatDuration, run]);
 
   if (loading) {
     return (
@@ -197,7 +201,7 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
   if (loadError || !run || !repository) {
     return (
       <div className="pw-run-detail">
-        <ErrorRetry message="We could not load this workflow run." onRetry={() => void loadData()} />
+        <ErrorRetry message={t("loadError")} onRetry={() => void loadData()} />
       </div>
     );
   }
@@ -205,14 +209,14 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
   const commitHref = run.commit_sha
     ? githubCommitUrl(repository.full_name, run.commit_sha)
     : undefined;
-  const shortSha = run.commit_sha ? run.commit_sha.slice(0, 7) : "—";
+  const shortSha = run.commit_sha ? run.commit_sha.slice(0, 7) : emDash;
   const avatarUrl = githubActorAvatarUrl(run.actor_login);
 
   return (
     <div className="pw-run-detail">
-      <nav className="pw-run-detail-breadcrumb" aria-label="Run context">
+      <nav className="pw-run-detail-breadcrumb" aria-label={tBreadcrumb("ariaLabel")}>
         <Link href={`/workspaces/${workspaceSlug}`} className="pw-run-detail-breadcrumb-link">
-          Dashboard
+          {tBreadcrumb("dashboard")}
         </Link>
         <span aria-hidden>/</span>
         <Link
@@ -223,14 +227,14 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
         </Link>
         <span aria-hidden>/</span>
         <span className="pw-run-detail-breadcrumb-current">
-          {formatPipelineNameDisplay(run.pipeline_name)}
+          {formatPipelineNameDisplay(run.pipeline_name, emDash)}
         </span>
       </nav>
 
       <header className="pw-run-detail-header">
         <div className="pw-run-detail-header-top">
           <div className="pw-run-detail-title-row">
-            <h1 className="pw-run-detail-title">{formatPipelineNameDisplay(run.pipeline_name)}</h1>
+            <h1 className="pw-run-detail-title">{formatPipelineNameDisplay(run.pipeline_name, emDash)}</h1>
             <StatusBadge status={mapPipelineRunToBadgeStatus(run)} size="lg" />
           </div>
           {run.source_url ? (
@@ -241,35 +245,35 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
               className="pw-run-detail-github-link"
             >
               <ExternalLink size={13} aria-hidden />
-              View on GitHub
+              {t("viewOnGithub")}
             </a>
           ) : null}
         </div>
 
         <div className="pw-run-detail-stats">
           <div className="pw-run-detail-stat">
-            <span className="pw-run-detail-stat-label">Duration</span>
+            <span className="pw-run-detail-stat-label">{t("stats.duration")}</span>
             <span className="pw-run-detail-stat-value">{headerDuration}</span>
           </div>
           <div className="pw-run-detail-stat">
-            <span className="pw-run-detail-stat-label">Started</span>
+            <span className="pw-run-detail-stat-label">{t("stats.started")}</span>
             <span className="pw-run-detail-stat-value">{formatRelativeTime(run.started_at)}</span>
           </div>
           <div className="pw-run-detail-stat">
-            <span className="pw-run-detail-stat-label">Completed</span>
+            <span className="pw-run-detail-stat-label">{t("stats.completed")}</span>
             <span className="pw-run-detail-stat-value">
-              {run.completed_at ? formatRelativeTime(run.completed_at) : "—"}
+              {run.completed_at ? formatRelativeTime(run.completed_at) : emDash}
             </span>
           </div>
           <div className="pw-run-detail-stat">
-            <span className="pw-run-detail-stat-label">Trigger</span>
-            <span className="pw-run-detail-trigger">{formatTriggerLabel(run.trigger_type)}</span>
+            <span className="pw-run-detail-stat-label">{t("stats.trigger")}</span>
+            <span className="pw-run-detail-trigger">{formatTriggerLabel(run.trigger_type, tTriggers)}</span>
           </div>
         </div>
 
         <div className="pw-run-detail-meta">
           <div className="pw-run-detail-commit-row">
-            <span className="pw-run-detail-branch">{formatBranchDisplay(run.branch)}</span>
+            <span className="pw-run-detail-branch">{formatBranchDisplay(run.branch, emDash)}</span>
             {commitHref ? (
               <a
                 href={commitHref}
@@ -289,11 +293,11 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
           <div className="pw-run-detail-actor">
             <Avatar
               {...(avatarUrl ? { src: avatarUrl } : {})}
-              name={run.actor_login ?? "Unknown"}
+              name={run.actor_login ?? t("unknownActor")}
               size="xs"
               rounded
             />
-            <span>{run.actor_login ?? "—"}</span>
+            <span>{run.actor_login ?? emDash}</span>
           </div>
         </div>
       </header>
@@ -301,10 +305,10 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
       <JobGraph jobs={jobs} selectedJobId={highlightedJobId} onJobSelect={handleJobSelect} />
 
       <section className="pw-run-detail-jobs">
-        <h2 className="pw-run-section-title">Jobs</h2>
+        <h2 className="pw-run-section-title">{t("jobs.title")}</h2>
         <div className="pw-run-detail-job-panels">
           {jobs.length === 0 ? (
-            <p className="pw-run-detail-empty">No jobs recorded for this run yet.</p>
+            <p className="pw-run-detail-empty">{t("jobs.empty")}</p>
           ) : (
             jobs.map((job) => (
               <JobPanel

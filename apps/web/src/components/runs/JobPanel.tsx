@@ -3,9 +3,10 @@
 import type { PipelineJob, PipelineStep } from "@pipewatch/types";
 import { StatusBadge, classNames } from "@pipewatch/ui";
 import { ChevronDown } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef } from "react";
 
-import { formatDuration } from "@/lib/format-duration";
+import { useTimeFormatters } from "@/i18n/use-time-formatters";
 import {
   isActiveJob,
   isFailedJob,
@@ -30,6 +31,8 @@ export function JobPanel({
   highlighted = false,
   onToggle,
 }: JobPanelProps) {
+  const t = useTranslations("runs.jobPanel");
+  const { formatDuration } = useTimeFormatters();
   const panelRef = useRef<HTMLElement>(null);
   const contentId = useId();
   const failed = isFailedJob(job);
@@ -85,7 +88,7 @@ export function JobPanel({
       {expanded ? (
         <div id={contentId} className="pw-job-panel-steps">
           {steps.length === 0 ? (
-            <p className="pw-job-panel-empty">No steps recorded for this job.</p>
+            <p className="pw-job-panel-empty">{t("empty")}</p>
           ) : (
             steps.map((step) => <StepRow key={step.id} step={step} />)
           )}
