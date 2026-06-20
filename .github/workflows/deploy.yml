@@ -177,6 +177,46 @@ jobs:
           FLY_APP: pipewatch-${{ inputs.environment == 'production' && 'prod' || 'staging' }}-worker
         run: bash .github/scripts/deploy-fly.sh worker
 
+  deploy-admin:
+    name: ${{ inputs.environment == 'production' && 'Production' || 'Staging' }} · 3 · Deploy admin
+    if: inputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    needs: [migrate, derive-sentry-release]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ inputs.ref != '' && inputs.ref || github.sha }}
+
+      - name: Setup workspace
+        uses: ./.github/actions/setup
+        with:
+          skip-checkout: "true"
+
+      - name: Build admin
+        env:
+          NODE_ENV: production
+        run: pnpm exec turbo run build --filter=@pipewatch/admin...
+
+      - name: Create Sentry release and upload admin source maps
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+          SENTRY_PROJECT: pipewatch-admin
+        run: >-
+          bash .github/scripts/sentry-release.sh admin apps/admin/dist
+          "${{ needs.derive-sentry-release.outputs.release }}" ${{ inputs.environment }}
+
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # master
+
+      - name: Deploy admin to Fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_APP: pipewatch-${{ inputs.environment == 'production' && 'prod' || 'staging' }}-admin
+        run: bash .github/scripts/deploy-fly.sh admin
+
   deploy-web:
     name: ${{ inputs.environment == 'production' && 'Production' || 'Staging' }} · 3 · Deploy web
     if: inputs.should_deploy == 'true'
@@ -256,7 +296,7 @@ jobs:
     if: inputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
-    needs: [deploy-api, deploy-worker, deploy-web, deploy-marketing]
+    needs: [deploy-api, deploy-worker, deploy-admin, deploy-web, deploy-marketing]
     env:
       NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
       APP_URL: ${{ secrets.APP_URL }}

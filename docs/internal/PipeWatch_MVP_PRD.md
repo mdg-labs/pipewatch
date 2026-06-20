@@ -1664,7 +1664,7 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 
 **Sync-secrets manifest:** `packages/config/sync-secrets-manifest.ts` is the single source of truth for which secrets each hosted service receives, Phase/GHA storage key names (`GH_*` vs runtime `GITHUB_*`), and derived values. `scripts/validate-sync-secrets-manifest.ts` runs in CI to assert the manifest stays aligned with `env.ts` strict fields, `.github/workflows/sync-secrets.yml`, and `.github/scripts/sync-secrets.sh`. `sync-secrets.sh` fails preflight with named missing keys when a required GHA secret is empty — no silent skip.
 
-**Derived `REDIS_URL` (hosted cloud):** Not stored in Phase or GitHub Actions. `sync-secrets.sh` auto-derives `redis://pipewatch-{staging|prod}-redis.internal:6379` from the Fly Redis app name (internal 6PN DNS). The manifest marks `REDIS_URL` as `derived` for api/worker; remove `REDIS_URL` from Phase Staging/Production if still present.
+**Derived `REDIS_URL` (hosted cloud):** Not stored in Phase or GitHub Actions. `sync-secrets.sh` auto-derives `redis://pipewatch-{staging|prod}-redis.internal:6379` from the Fly Redis app name (internal 6PN DNS). The manifest marks `REDIS_URL` as `derived` for api, worker, and admin; remove `REDIS_URL` from Phase Staging/Production if still present.
 
 | Phase / GHA storage | Fly / runtime |
 |---|---|
@@ -1677,6 +1677,7 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `SENTRY_DSN_API` | `SENTRY_DSN` (api Fly app) |
 | `SENTRY_DSN_WORKER` | `SENTRY_DSN` (worker Fly app) |
 | `SENTRY_DSN_WEB` | `SENTRY_DSN` (web Cloudflare Worker) |
+| `SENTRY_DSN_ADMIN` | `SENTRY_DSN` (admin Fly app) |
 
 **Operator migration (Sentry DSN):** Retire the legacy single `SENTRY_DSN` key from Phase Staging/Production. Create one Sentry project per hosted service (api, worker, web), copy each project's DSN into `SENTRY_DSN_API`, `SENTRY_DSN_WORKER`, and `SENTRY_DSN_WEB` respectively, then remove `SENTRY_DSN` from Phase and GitHub Actions environments. CE Docker Compose and local dev use the per-service storage keys in `.env`; Compose maps each to runtime `SENTRY_DSN` per container. Marketing is not synced to Sentry in hosted deploys (no `SENTRY_DSN_*` key).
 
@@ -1685,14 +1686,14 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | Variable | GHA environment | Services | Notes |
 |---|---|---|---|
 | `PIPEWATCH_EDITION` | staging, production | all | `ce` \| `cloud` — drives all feature flags (see Section 25) |
-| `DATABASE_URL` | staging, production | api, worker | Neon PostgreSQL pooled connection string (runtime) |
-| `DATABASE_URL_UNPOOLED` | staging, production | deploy migrations | Neon direct connection — required for Drizzle Kit DDL at deploy time; not used in CI |
-| `REDIS_URL` | — (derived) | api, worker | **Derived at sync** — `redis://pipewatch-{staging\|prod}-redis.internal:6379`; not in Phase/GHA |
+| `DATABASE_URL` | staging, production | api, worker, admin | Neon PostgreSQL pooled connection string (runtime) |
+| `DATABASE_URL_UNPOOLED` | staging, production | deploy migrations | Neon direct connection — required for Drizzle Kit DDL at deploy time (`@pipewatch/db` and `@pipewatch/db-admin`); not used in CI |
+| `REDIS_URL` | — (derived) | api, worker, admin | **Derived at sync** — `redis://pipewatch-{staging\|prod}-redis.internal:6379`; not in Phase/GHA |
 | `JWT_SECRET` | staging, production | api | HS256 signing secret for access tokens |
 | `JWT_REFRESH_SECRET` | staging, production | api | Separate secret for refresh tokens |
 | `ENCRYPTION_KEY` | staging, production | api, worker | AES-256-GCM key for encrypting sensitive values at rest (e.g. integration tokens); min 32 chars |
-| `GH_APP_ID` | staging, production | api, worker | GitHub App numeric ID — runtime: `GITHUB_APP_ID` |
-| `GH_APP_PRIVATE_KEY` | staging, production | api, worker | PEM key (base64 encoded in Phase) — runtime: `GITHUB_APP_PRIVATE_KEY` |
+| `GH_APP_ID` | staging, production | api, worker, admin | GitHub App numeric ID — runtime: `GITHUB_APP_ID` |
+| `GH_APP_PRIVATE_KEY` | staging, production | api, worker, admin | PEM key (base64 encoded in Phase) — runtime: `GITHUB_APP_PRIVATE_KEY` |
 | `GH_WEBHOOK_SECRET` | staging, production | api | For HMAC-SHA256 signature validation — runtime: `GITHUB_WEBHOOK_SECRET` |
 | `GH_CLIENT_ID` | staging, production | api | For OAuth flow — runtime: `GITHUB_CLIENT_ID` |
 | `GH_CLIENT_SECRET` | staging, production | api | For OAuth flow — runtime: `GITHUB_CLIENT_SECRET` |
@@ -1736,6 +1737,19 @@ All secrets are authored in Phase Cloud (EU). Phase Console syncs **Staging**, *
 | `RETENTION_DAYS` | staging, production | worker | Self-hosted default retention override (default: 30) |
 | `LAUNCH_MODE` | staging, production | marketing | `waitlist` \| `live` — controls CTA behaviour |
 | `NEXT_PUBLIC_APP_URL` | staging, production | marketing | Cloud app origin for Sign in / Get started CTA links (`https://cloud.pipewatch.app`; staging: `https://staging-cloud.pipewatch.app`) |
+
+### Admin portal — Cloudflare Access (operator)
+
+The admin portal (`admin.pipewatch.app` / `staging-admin.pipewatch.app`) is a Fly.io app protected by **Cloudflare Access** from day one (Admin PRD §6). Operators configure a Zero Trust application in front of the admin origin before the first deploy. App-level session auth (`pw_admin_session`) is still required behind the edge gate.
+
+| Step | Action |
+|---|---|
+| 1 | Create a Cloudflare Access application for `admin.pipewatch.app` (production) and `staging-admin.pipewatch.app` (staging) |
+| 2 | Point DNS to the Fly admin app; restrict origin access via Access policy (e.g. email domain or IdP group) |
+| 3 | Issue a **service token** for CI smoke tests — store as `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` in the matching GHA environment |
+| 4 | Set `ADMIN_URL`, `ADMIN_SESSION_SECRET`, `SENTRY_DSN_ADMIN`, and one-time `ADMIN_BOOTSTRAP_*` in Phase before first deploy; remove bootstrap keys after the first `platform_admin` exists |
+
+Admin is **cloud-only** — it is not in the CE Docker image build matrix and is never provisioned when `PIPEWATCH_EDITION=ce`.
 
 ---
 

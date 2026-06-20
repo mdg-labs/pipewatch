@@ -10,7 +10,7 @@ SERVICE="${1:-}"
 FLY_APP="${FLY_APP:-}"
 
 if [[ -z "$SERVICE" || -z "$FLY_APP" ]]; then
-  echo "deploy-fly: usage: FLY_APP=<name> deploy-fly.sh <api|worker>" >&2
+  echo "deploy-fly: usage: FLY_APP=<name> deploy-fly.sh <api|worker|admin>" >&2
   exit 1
 fi
 
@@ -25,6 +25,9 @@ case "$SERVICE" in
     ;;
   worker)
     FLY_CONFIG="${ROOT}/.github/infra/worker/fly.toml"
+    ;;
+  admin)
+    FLY_CONFIG="${ROOT}/apps/admin/fly.toml"
     ;;
   *)
     echo "deploy-fly: unsupported service: ${SERVICE}" >&2

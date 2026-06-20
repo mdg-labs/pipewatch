@@ -16,7 +16,7 @@ usage() {
   cat <<'EOF'
 Usage: provision-fly-apps.sh <staging|production>
 
-Creates pipewatch-{staging|prod}-{api|worker} when missing.
+Creates pipewatch-{staging|prod}-{api|worker|admin} when missing.
 Requires FLY_ORG. Does not deploy Machines.
 EOF
 }
@@ -38,9 +38,11 @@ INFRA_SLUG="$("$SCRIPT_DIR/infra-slug.sh" "$GHA_ENV")"
 
 API_APP="$(canonical_fly_app_name "$INFRA_SLUG" api)"
 WORKER_APP="$(canonical_fly_app_name "$INFRA_SLUG" worker)"
+ADMIN_APP="$(canonical_fly_app_name "$INFRA_SLUG" admin)"
 
 warn_legacy_fly_app api "$INFRA_SLUG"
 warn_legacy_fly_app worker "$INFRA_SLUG"
+warn_legacy_fly_app admin "$INFRA_SLUG"
 
 ensure_fly_app() {
   local app="$1"
@@ -69,13 +71,14 @@ ensure_fly_app() {
 
 ensure_fly_app "$API_APP"
 ensure_fly_app "$WORKER_APP"
+ensure_fly_app "$ADMIN_APP"
 
-for app in "$API_APP" "$WORKER_APP"; do
+for app in "$API_APP" "$WORKER_APP" "$ADMIN_APP"; do
   if ! fly_app_exists "$app"; then
     echo "provision-fly-apps: verification failed — ${app} not found in org ${FLY_ORG}" >&2
     exit 1
   fi
 done
 
-echo "provision-fly-apps: verified ${API_APP} and ${WORKER_APP} in org ${FLY_ORG}"
+echo "provision-fly-apps: verified ${API_APP}, ${WORKER_APP}, and ${ADMIN_APP} in org ${FLY_ORG}"
 echo "provision-fly-apps: complete (${GHA_ENV} → ${INFRA_SLUG})"

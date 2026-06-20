@@ -67,8 +67,8 @@ describe("sync-secrets-manifest", () => {
     expect(Object.keys(GITHUB_STORAGE_TO_RUNTIME)).toHaveLength(6);
   });
 
-  it("marks REDIS_URL as derived for api and worker", () => {
-    for (const service of ["api", "worker"] as const) {
+  it("marks REDIS_URL as derived for api, worker, and admin", () => {
+    for (const service of ["api", "worker", "admin"] as const) {
       const entry = SYNC_SECRETS_MANIFEST.find((m) => m.service === service)
         ?.secrets.find((s) => s.runtimeKey === "REDIS_URL");
       expect(entry?.source).toBe("derived");

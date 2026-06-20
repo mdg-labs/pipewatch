@@ -26,12 +26,13 @@ export const SENTRY_STORAGE_BY_SERVICE = {
   api: { storageKey: "SENTRY_DSN_API", runtimeKey: "SENTRY_DSN" },
   worker: { storageKey: "SENTRY_DSN_WORKER", runtimeKey: "SENTRY_DSN" },
   web: { storageKey: "SENTRY_DSN_WEB", runtimeKey: "SENTRY_DSN" },
+  admin: { storageKey: "SENTRY_DSN_ADMIN", runtimeKey: "SENTRY_DSN" },
 } as const satisfies Record<
-  "api" | "worker" | "web",
+  "api" | "worker" | "web" | "admin",
   { storageKey: string; runtimeKey: string }
 >;
 
-export type SyncService = "api" | "worker" | "web" | "marketing";
+export type SyncService = "api" | "worker" | "web" | "marketing" | "admin";
 export type SyncDeployTarget = "fly" | "wrangler";
 
 export type SecretSource = "gha" | "derived";
@@ -165,6 +166,28 @@ export const SYNC_SECRETS_MANIFEST: readonly ServiceSyncManifest[] = [
       gha("NEXT_PUBLIC_APP_URL"),
       gha("UMAMI_SCRIPT_URL", { required: true, cloudOnly: true }),
       gha("UMAMI_WEBSITE_ID", { required: true, cloudOnly: true }),
+    ],
+  },
+  {
+    service: "admin",
+    deployTarget: "fly",
+    secrets: [
+      gha("NODE_ENV"),
+      gha("PIPEWATCH_EDITION"),
+      gha("DATABASE_URL", { required: true }),
+      derived("REDIS_URL", true),
+      github("GH_APP_ID", { required: true }),
+      github("GH_APP_PRIVATE_KEY", { required: true }),
+      gha("ADMIN_SESSION_SECRET", { required: true }),
+      gha("SENTRY_DSN", { ghaStorageKey: "SENTRY_DSN_ADMIN" }),
+      gha("ADMIN_URL", { required: true }),
+      gha("ADMIN_BOOTSTRAP_EMAIL"),
+      gha("ADMIN_BOOTSTRAP_PASSWORD"),
+      gha("SMTP_HOST"),
+      gha("SMTP_PORT"),
+      gha("SMTP_USER"),
+      gha("SMTP_PASS"),
+      gha("SMTP_FROM"),
     ],
   },
 ] as const;

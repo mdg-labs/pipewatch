@@ -16,7 +16,7 @@ usage() {
   cat <<'EOF'
 Usage: sync-secrets.sh <staging|production> [services]
 
-services: all (default) | api | worker | web | marketing | comma-separated list
+services: all (default) | api | worker | web | marketing | admin | comma-separated list
 
 FLY_SECRETS_MODE env:
   stage-only       — stage Fly secrets only (default for deploy pipeline)
@@ -180,6 +180,15 @@ preflight_required_gha_keys() {
         keys=(UMAMI_SCRIPT_URL UMAMI_WEBSITE_ID)
       fi
       ;;
+    admin)
+      keys=(
+        DATABASE_URL
+        GH_APP_ID
+        GH_APP_PRIVATE_KEY
+        ADMIN_SESSION_SECRET
+        ADMIN_URL
+      )
+      ;;
     *)
       echo "sync-secrets: unknown service for preflight: ${service}" >&2
       exit 1
@@ -207,6 +216,7 @@ run_service_preflight() {
 
 API_APP="pipewatch-${INFRA_SLUG}-api"
 WORKER_APP="pipewatch-${INFRA_SLUG}-worker"
+ADMIN_APP="pipewatch-${INFRA_SLUG}-admin"
 REDIS_APP="pipewatch-${INFRA_SLUG}-redis"
 WEB_WORKER="pipewatch-${INFRA_SLUG}-web"
 MARKETING_WORKER="pipewatch-${INFRA_SLUG}-marketing"
@@ -277,12 +287,32 @@ MARKETING_WRANGLER_KEYS=(
   UMAMI_WEBSITE_ID
 )
 
+ADMIN_FLY_KEYS=(
+  NODE_ENV
+  PIPEWATCH_EDITION
+  DATABASE_URL
+  REDIS_URL
+  GITHUB_APP_ID
+  GITHUB_APP_PRIVATE_KEY
+  ADMIN_SESSION_SECRET
+  SENTRY_DSN
+  ADMIN_URL
+  ADMIN_BOOTSTRAP_EMAIL
+  ADMIN_BOOTSTRAP_PASSWORD
+  SMTP_HOST
+  SMTP_PORT
+  SMTP_USER
+  SMTP_PASS
+  SMTP_FROM
+)
+
 echo "sync-secrets: Fly mode ${FLY_SECRETS_MODE}"
 
 run_service_preflight api
 run_service_preflight worker
 run_service_preflight web
 run_service_preflight marketing
+run_service_preflight admin
 
 if service_selected api; then
   map_sentry_storage_to_runtime api
@@ -305,6 +335,11 @@ if service_selected marketing; then
   for key in "${MARKETING_WRANGLER_KEYS[@]}"; do
     sync_wrangler_secret "$MARKETING_WORKER" "$key"
   done
+fi
+
+if service_selected admin; then
+  map_sentry_storage_to_runtime admin
+  sync_fly_secrets "$ADMIN_APP" "${ADMIN_FLY_KEYS[@]}"
 fi
 
 echo "sync-secrets: complete (${GHA_ENV} → ${INFRA_SLUG})"

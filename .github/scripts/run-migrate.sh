@@ -18,4 +18,7 @@ echo "run-migrate: applying Drizzle migrations (unpooled)"
 pnpm install --frozen-lockfile
 pnpm db:migrate
 
+echo "run-migrate: applying admin schema migrations"
+pnpm --filter @pipewatch/db-admin db:migrate
+
 echo "run-migrate: done"

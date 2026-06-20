@@ -9,6 +9,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import {
+  ADMIN_STRICT_FIELDS,
   API_CLOUD_STRICT_FIELDS,
   API_STRICT_FIELDS,
   MARKETING_CLOUD_STRICT_FIELDS,
@@ -36,6 +37,7 @@ const SERVICE_SHELL_ARRAYS: Record<
   worker: ["WORKER_FLY_KEYS"],
   web: ["WEB_WRANGLER_KEYS"],
   marketing: ["MARKETING_WRANGLER_KEYS"],
+  admin: ["ADMIN_FLY_KEYS"],
 };
 
 export type ValidationIssue = {
@@ -90,7 +92,7 @@ export function parseSentryStorageMapServices(content: string): Map<string, stri
   }
 
   for (const match of fnMatch[1]!.matchAll(
-    /^\s*(api|worker|web)\)\s*[\s\S]*?SENTRY_DSN="?\$\{([^}]+)\}/gm,
+    /^\s*(api|worker|web|admin)\)\s*[\s\S]*?SENTRY_DSN="?\$\{([^}]+)\}/gm,
   )) {
     pairs.set(match[1]!, match[2]!);
   }
@@ -120,6 +122,8 @@ function strictFieldsForService(service: SyncService): {
       return { base: WEB_STRICT_FIELDS, cloud: [] };
     case "marketing":
       return { base: [], cloud: MARKETING_CLOUD_STRICT_FIELDS };
+    case "admin":
+      return { base: ADMIN_STRICT_FIELDS, cloud: [] };
   }
 }
 
@@ -183,7 +187,7 @@ function validatePreflightKeys(
   }
 
   for (const edition of ["ce", "cloud"] as const) {
-    for (const service of ["api", "worker", "web", "marketing"] as const) {
+    for (const service of ["api", "worker", "web", "marketing", "admin"] as const) {
       for (const key of requiredGhaStorageKeys(service, edition)) {
         if (!preflightListsKey(preflightBody, key)) {
           issues.push({
