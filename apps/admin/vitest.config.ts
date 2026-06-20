@@ -6,8 +6,9 @@ export default defineConfig(
   withReportPortal("unit", "@pipewatch/admin", {
     test: {
       environment: "node",
-      include: ["src/**/*.test.ts"],
+      include: ["src/**/*.test.ts", "web/src/**/*.test.tsx"],
       exclude: ["src/**/*.integration.test.ts"],
+      environmentMatchGlobs: [["web/src/**", "happy-dom"]],
       testTimeout: 15_000,
     },
   }),
