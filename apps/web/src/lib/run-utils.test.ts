@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import type { PipelineRun, PipelineRunSummary } from "@pipewatch/types";
 
-import { applySseEventToRuns } from "./run-utils";
+import {
+  applySseEventToRuns,
+  formatBranchDisplay,
+  formatPipelineNameDisplay,
+} from "./run-utils";
 
 const context = { repoId: "repo-1", workspaceId: "ws-1" };
 
@@ -43,6 +47,28 @@ function makeSummary(overrides: Partial<PipelineRunSummary> = {}): PipelineRunSu
     ...overrides,
   };
 }
+
+describe("formatPipelineNameDisplay", () => {
+  it("returns the pipeline name when present", () => {
+    expect(formatPipelineNameDisplay("CI")).toBe("CI");
+  });
+
+  it("uses the locale em dash for empty values", () => {
+    expect(formatPipelineNameDisplay(null)).toBe("—");
+    expect(formatPipelineNameDisplay("  ", "–")).toBe("–");
+  });
+});
+
+describe("formatBranchDisplay", () => {
+  it("returns the branch when present", () => {
+    expect(formatBranchDisplay("main")).toBe("main");
+  });
+
+  it("uses the locale em dash for empty values", () => {
+    expect(formatBranchDisplay(undefined)).toBe("—");
+    expect(formatBranchDisplay("", "–")).toBe("–");
+  });
+});
 
 describe("applySseEventToRuns", () => {
   it("sets completed_at from summary.completedAt on run:completed", () => {
