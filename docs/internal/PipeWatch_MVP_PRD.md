@@ -694,6 +694,18 @@ Hosted **staging** and **production** remain on separate Neon projects (Decision
 
 PR status checks gate on lint + unit + integration (CI, required on PRs). E2E runs on staging→main PRs after CI succeeds (required merge check on `main`). Manual E2E via `e2e.yml` workflow_dispatch.
 
+### i18n validation (CI + local)
+
+The unit-test job in CI (§22) runs three i18n checks after `pnpm test:unit`:
+
+| Command | Purpose |
+|---|---|
+| `pnpm test:scripts` | Unit tests for `scripts/i18n-*.ts` |
+| `pnpm i18n:validate` | Locale catalog parity, non-empty values, `supported-locales.json` alignment |
+| `pnpm i18n:check:hardcoded` | Fail on user-facing English literals in `apps/web` and `packages/ui` |
+
+Run the same commands locally before committing frontend copy changes. See §17 (Internationalization) for catalog conventions.
+
 ---
 
 ## 12. MVP Feature Scope
@@ -984,6 +996,84 @@ pipewatch/
 - `apps/worker` → `packages/db`, `packages/types`, `packages/utils`
 - `apps/web` → `packages/types`, `packages/utils`
 - `apps/marketing` → `packages/utils`
+
+### Internationalization (i18n)
+
+Epic [#197](https://github.com/mdg-labs/pipewatch/issues/197). Agent policy: `.cursor/rules/16-i18n.mdc`.
+
+**Scope:** `apps/web` dashboard (B-series app UI). Marketing site (`apps/marketing`) is English-only for MVP. API error messages remain English.
+
+**Stack:** [next-intl](https://next-intl.dev/) with a **repo-local JSON catalog** — no external translation service in MVP.
+
+| Path | Role |
+|---|---|
+| `apps/web/src/i18n/supported-locales.json` | Authoritative locale list, `defaultLocale`, `fallbackLocale` |
+| `apps/web/src/i18n/locales/{locale}.json` | Message catalog per locale (one file per locale code) |
+| `apps/web/src/i18n/request.ts` | next-intl request config — loads messages for the active locale |
+| `apps/web/src/i18n/config.ts` | Typed exports (`locales`, `defaultLocale`, `isAppLocale`) |
+| `scripts/i18n-validate.ts` | CI/local catalog validator |
+| `scripts/i18n-check-hardcoded.ts` | CI/local hardcoded-English scanner |
+
+#### Supported locales (MVP)
+
+Defined in `supported-locales.json`:
+
+| Field | MVP value | Notes |
+|---|---|---|
+| `locales` | `["en"]` | BCP 47 language subtags; extend when adding translations |
+| `defaultLocale` | `"en"` | Active locale for all requests (no per-user negotiation yet) |
+| `fallbackLocale` | `"en"` | Reserved for future locale fallback chains |
+
+#### Message key naming
+
+- **Structure:** nested JSON objects grouped by feature domain — e.g. `app.sidebar.dashboard`, `runs.jobPanel.stepsHeading`, `settings.apiKeys.createDialog.title`.
+- **Segments:** camelCase at every level (`apiKeys`, not `api_keys` or `APIKeys`).
+- **Top-level namespaces:** `app` (shell, nav, metadata), `common` (shared labels, errors, formatters), plus page/feature roots matching Page Inventory areas (`dashboard`, `runs`, `repos`, `settings`, `onboarding`, `insights`, `billing`, etc.).
+- **Interpolation:** ICU message syntax — `{name}`, `{count, plural, one {# run} other {# runs}}`. Placeholder names match camelCase identifiers used in code.
+- **Accessibility copy:** aria-labels, placeholders, and alt text use the same catalog — keys often suffix `AriaLabel`, `Placeholder`, `alt`.
+- **Canonical source:** `defaultLocale` file (`en.json`) is the key master; all other locale files must match its key set exactly (`pnpm i18n:validate` enforces parity).
+
+#### Resolution order
+
+1. **Active locale:** `apps/web/src/i18n/request.ts` reads `defaultLocale` from `supported-locales.json` (MVP: always `en`).
+2. **Messages:** next-intl loads `./locales/{locale}.json` for that locale.
+3. **Lookup:** components call `useTranslations("namespace")` / `getTranslations("namespace")` and `t("key")` — full path is `namespace.key` (e.g. `t("dashboard")` inside `useTranslations("app.sidebar")` → `app.sidebar.dashboard`).
+4. **Missing key:** development logs `[i18n] Missing message: …` via `warnMissingMessage`; production is silent. Fallback string is `namespace.key` (or `key` when no namespace) from `missingMessageFallback` — never silently substitute English from code.
+5. **Future multi-locale:** add negotiation (cookie, `Accept-Language`, or user preference) in `request.ts`; non-default locales fall back through `fallbackLocale` before the missing-key handler.
+
+#### Adding a new locale
+
+1. Add the BCP 47 code to `locales` in `supported-locales.json`.
+2. Copy `locales/en.json` → `locales/{code}.json` and translate all leaf string values.
+3. Run `pnpm i18n:validate` — must pass with zero missing/extra keys vs `defaultLocale`.
+4. Wire locale selection in `request.ts` when product supports switching (post-MVP).
+5. Run `pnpm i18n:check:hardcoded` — no new hardcoded English in TSX.
+
+#### Forbidden patterns
+
+| Pattern | Why |
+|---|---|
+| User-facing English string literals in `apps/web/src/**/*.tsx` | Use `t()` + catalog keys; enforced by `pnpm i18n:check:hardcoded` |
+| User-facing English baked into `packages/ui` components | UI package is **prop-driven** — callers pass translated strings from `apps/web` |
+| Keys only in a non-default locale file | Validator requires exact parity with `defaultLocale` |
+| Empty string values in catalog | Validator fails on `empty-value` |
+| Duplicate copy across namespaces | Reuse `common.*` for shared strings |
+| Hardcoded formatters bypassing i18n helpers | Use `apps/web/src/i18n/format.ts`, `time-formatters.ts`, and related hooks for dates, numbers, relative time |
+
+**Grandfathered exceptions:** `scripts/i18n-check-hardcoded.ts` maintains an allowlist of `packages/ui` and `apps/web` files still being migrated. Remove entries as each file moves to prop-driven / catalog copy — do not add new allowlist entries for new features.
+
+#### `packages/ui` contract
+
+Shared components (`packages/ui`) must not embed product copy. Required pattern:
+
+```tsx
+// packages/ui — prop-driven
+export function StatusBadge({ label, ...props }: { label: string }) { ... }
+
+// apps/web — catalog-driven
+const t = useTranslations("runs.status");
+<StatusBadge label={t("success")} />
+```
 
 ---
 

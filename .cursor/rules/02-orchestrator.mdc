@@ -57,6 +57,7 @@ Even when not listed in an issue, the verifier applies:
 - Edition flags via `packages/config/edition.ts` — no scattered edition checks (`00-project.mdc`)
 - Vendor-neutral schema names in DB/API (`04-naming.mdc`)
 - Drizzle schema + migration workflow (`15-db-migrations-schema.mdc`)
+- i18n catalog + no hardcoded UI copy for frontend tasks (`16-i18n.mdc`) — `pnpm i18n:validate` and `pnpm i18n:check:hardcoded` when `apps/web` or `packages/ui` TSX/locale JSON changes
 
 ## Explicit non-goals (MVP out of scope — PRD §2)
 

@@ -28,6 +28,18 @@ pnpm dev
 | `pnpm test:unit` | Run unit tests |
 | `pnpm test:integration` | Run integration tests (requires Docker) |
 | `pnpm test:e2e` | Run Playwright end-to-end tests |
+| `pnpm i18n:validate` | Validate locale JSON catalogs (key parity, non-empty values) |
+| `pnpm i18n:check:hardcoded` | Fail on hardcoded English in `apps/web` and `packages/ui` TSX |
+
+## i18n (dashboard)
+
+User-facing copy for the web app lives in `apps/web/src/i18n/locales/`. Before committing frontend UI changes, run:
+
+```bash
+pnpm i18n:validate && pnpm i18n:check:hardcoded
+```
+
+Conventions: PRD §17 (Internationalization) · agent rule `.cursor/rules/16-i18n.mdc`.
 
 ## Integration tests
 

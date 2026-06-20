@@ -22,6 +22,7 @@ PipeWatch CE and PipeWatch Cloud share the same app codebase. Edition-specific b
 
 These apply to all authenticated app pages (B-series) unless stated otherwise.
 
+- **Copy / i18n:** all B-series user-visible strings (labels, empty states, errors, aria text) live in the repo JSON catalog (`apps/web/src/i18n/locales/en.json`) and render via next-intl — see PRD §17 and `.cursor/rules/16-i18n.mdc`.
 - **App shell:** persistent left sidebar (workspace switcher at top, nav items, user menu at bottom) + main content area. Top bar shows breadcrumbs + global actions.
 - **Workspace switcher:** dropdown at top of sidebar; lists all workspaces the user belongs to; "Create workspace" at the bottom. CE: hidden (single workspace).
 - **Sidebar nav (per workspace):** Dashboard, Insights, Settings (expandable: General, Members, Integrations, API Keys, Billing). Billing hidden in CE.

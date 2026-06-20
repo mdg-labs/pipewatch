@@ -1,0 +1,99 @@
+---
+description: Web app i18n — JSON catalog, next-intl t() usage, CI gates, packages/ui prop-driven copy
+alwaysApply: true
+globs:
+  - apps/web/**
+  - packages/ui/**
+---
+
+# Internationalization (i18n)
+
+PRD §17 (Internationalization) · Epic [#197](https://github.com/mdg-labs/pipewatch/issues/197)
+
+## Scope
+
+- **In scope:** `apps/web` B-series dashboard UI (all user-visible copy, aria-labels, placeholders, empty/loading/error states).
+- **Out of scope (MVP):** `apps/marketing` (English-only), API response bodies, worker logs.
+
+## Source of truth
+
+| Artifact | Path |
+|---|---|
+| Locale registry | `apps/web/src/i18n/supported-locales.json` |
+| Message catalog | `apps/web/src/i18n/locales/{locale}.json` |
+| Request config | `apps/web/src/i18n/request.ts` |
+
+**Repo-JSON catalog only** — no Crowdin/Lokalise/external TMS in MVP. All strings live in git.
+
+## Required pattern — `t()` for all user-facing copy
+
+```tsx
+import { useTranslations } from "next-intl";
+
+const t = useTranslations("settings.apiKeys");
+return <h1>{t("title")}</h1>;
+```
+
+Server components: `getTranslations` from `next-intl/server`.
+
+**Every** user-visible string in `apps/web` TSX must resolve through the catalog — no inline English in JSX text, `aria-label`, `placeholder`, `title`, `alt`, or `label` attributes.
+
+## Key naming
+
+- Nested JSON, camelCase segments: `app.sidebar.dashboard`, `common.error.retry`.
+- Group by feature/page namespace matching Page Inventory areas.
+- ICU placeholders for interpolation and plurals: `{count, plural, one {# hour ago} other {# hours ago}}`.
+- `defaultLocale` file (`en.json`) is canonical; other locales must have identical keys.
+
+## `packages/ui` — prop-driven, no embedded copy
+
+`packages/ui` is a **dumb presentation layer**. It accepts translated strings via props; it does not call `useTranslations` or ship English defaults for product copy.
+
+```tsx
+// ✅ packages/ui — caller supplies label
+<Button aria-label={ariaLabel}>{children}</Button>
+
+// ✅ apps/web — resolves copy
+const t = useTranslations("common");
+<Button aria-label={t("error.retry")}>{t("error.retry")}</Button>
+
+// ❌ packages/ui — hardcoded product copy
+<span>Loading...</span>
+```
+
+Grandfathered files listed in `I18N_HARDCODED_UI_ALLOWLISTED_FILES` (`scripts/i18n-check-hardcoded.ts`) are being migrated — **do not add new allowlist entries** for new work.
+
+## CI commands (run locally on frontend copy changes)
+
+```bash
+pnpm i18n:validate          # key parity, non-empty values, locale registry alignment
+pnpm i18n:check:hardcoded # scan apps/web + packages/ui for English literals
+pnpm test:scripts           # unit tests for i18n scripts
+```
+
+These run in CI after unit tests (`.github/workflows/ci.yml`). Failures block merge.
+
+## Adding strings
+
+1. Add key to `apps/web/src/i18n/locales/en.json` under the correct namespace.
+2. Use `t("key")` in component — never the English text directly.
+3. Run `pnpm i18n:validate && pnpm i18n:check:hardcoded` before commit.
+
+## Adding a locale
+
+1. Extend `supported-locales.json` → `locales` array.
+2. Add `locales/{code}.json` with full key parity to `en.json`.
+3. `pnpm i18n:validate` must pass.
+4. Wire locale selection in `request.ts` when product supports it.
+
+## Forbidden
+
+- Hardcoded user-facing English in new `apps/web` or `packages/ui` TSX (outside allowlist).
+- New English defaults inside `packages/ui` for labels, badges, empty states, or chart legends.
+- Keys in non-`defaultLocale` files that are missing from `en.json`.
+- Empty catalog values.
+- Scattered locale checks — use `isAppLocale` / `supported-locales.json`, not ad-hoc string compares.
+
+## Verifier note
+
+Frontend tasks (`domain:frontend`) must pass i18n CI commands when TSX or locale JSON changes. Docs-only tasks exempt.
