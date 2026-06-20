@@ -149,11 +149,36 @@ export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposSt
     [repoLimit],
   );
 
-  const handleSelectAll = useCallback(() => {
+  const inScopeRepos = useMemo(() => {
     const limit = repoLimit ?? filteredRepos.length;
-    const ids = filteredRepos.slice(0, limit).map((repo) => repo.id);
-    setSelected(new Set(ids));
+    return filteredRepos.slice(0, limit);
   }, [filteredRepos, repoLimit]);
+
+  const hasInScopeSelection = useMemo(
+    () => filteredRepos.some((repo) => selected.has(repo.id)),
+    [filteredRepos, selected],
+  );
+
+  const allInScopeSelected = useMemo(
+    () => inScopeRepos.length > 0 && inScopeRepos.every((repo) => selected.has(repo.id)),
+    [inScopeRepos, selected],
+  );
+
+  const handleSelectAll = useCallback(() => {
+    const ids = inScopeRepos.map((repo) => repo.id);
+    setSelected(new Set(ids));
+  }, [inScopeRepos]);
+
+  const handleDeselectAll = useCallback(() => {
+    const idsToRemove = new Set(filteredRepos.map((repo) => repo.id));
+    setSelected((current) => {
+      const next = new Set(current);
+      for (const id of idsToRemove) {
+        next.delete(id);
+      }
+      return next;
+    });
+  }, [filteredRepos]);
 
   const handleStartSync = useCallback(async () => {
     if (!scopedApi || selectedCount === 0) {
@@ -221,8 +246,21 @@ export function SelectReposStep({ workspace, onBack, onComplete }: SelectReposSt
                 {selectedCount} / {repoLimit} repos
               </Badge>
             ) : null}
-            <Button size="sm" variant="ghost" onClick={handleSelectAll}>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={allInScopeSelected}
+              onClick={handleSelectAll}
+            >
               Select all
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={!hasInScopeSelection}
+              onClick={handleDeselectAll}
+            >
+              Deselect all
             </Button>
           </div>
         </div>
