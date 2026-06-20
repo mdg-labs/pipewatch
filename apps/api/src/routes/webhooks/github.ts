@@ -214,17 +214,6 @@ export function registerGitHubWebhookRoute(
     const resolved = resolveDeps();
     const rawBody = await c.req.text();
     const signatureHeader = c.req.header("X-Hub-Signature-256");
-    const hasSignatureHeader = signatureHeader?.startsWith("sha256=") ?? false;
-
-    if (!hasSignatureHeader) {
-      const rateLimited = await enforceRateLimit(c, "webhook", {
-        env: resolved.env,
-        ...resolved.rateLimit,
-      });
-      if (rateLimited) {
-        return rateLimited;
-      }
-    }
 
     let webhookSecret: string;
     try {
@@ -233,7 +222,21 @@ export function registerGitHubWebhookRoute(
       return c.json(apiError("INTERNAL_ERROR", "Webhook receiver is not configured"), 500);
     }
 
-    if (!verifyGitHubWebhookSignature(rawBody, signatureHeader, webhookSecret)) {
+    const signatureValid = verifyGitHubWebhookSignature(rawBody, signatureHeader, webhookSecret);
+
+    if (!signatureValid) {
+      const hasSignatureHeader = signatureHeader?.startsWith("sha256=") ?? false;
+
+      if (!hasSignatureHeader) {
+        const rateLimited = await enforceRateLimit(c, "webhook", {
+          env: resolved.env,
+          ...resolved.rateLimit,
+        });
+        if (rateLimited) {
+          return rateLimited;
+        }
+      }
+
       return c.json(apiError("UNAUTHORIZED", "Invalid webhook signature"), 401);
     }
 

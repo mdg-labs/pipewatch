@@ -428,7 +428,7 @@ describe("GitHub webhook receiver integration", () => {
     expect(statuses.every((status) => status === 200)).toBe(true);
   });
 
-  it("rate-limits unsigned webhook bursts before HMAC verification", async () => {
+  it("rate-limits unsigned webhook bursts after failed HMAC verification", async () => {
     const fixture = loadFixture<Record<string, unknown>>("workflow-run-completed.json");
     const body = JSON.stringify(fixture);
     const app = createTestApp(database, redisUrl, {
@@ -450,6 +450,31 @@ describe("GitHub webhook receiver integration", () => {
 
     expect(statuses.filter((status) => status === 401)).toHaveLength(3);
     expect(statuses.filter((status) => status === 429)).toHaveLength(2);
+  });
+
+  it("does not exempt invalid signed webhooks from rate limiting via header presence alone", async () => {
+    const fixture = loadFixture<Record<string, unknown>>("workflow-run-completed.json");
+    const body = JSON.stringify(fixture);
+    const app = createTestApp(database, redisUrl, {
+      rateLimit: { config: { max: 3, windowSeconds: 60 } },
+    });
+
+    const statuses: number[] = [];
+    for (let index = 0; index < 5; index += 1) {
+      const response = await app.request("http://localhost/webhooks/github", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-GitHub-Event": "workflow_run",
+          "X-Hub-Signature-256": `sha256=deadbeef${String(index)}`,
+        },
+        body,
+      });
+      statuses.push(response.status);
+    }
+
+    expect(statuses.every((status) => status === 401)).toBe(true);
+    expect(statuses.filter((status) => status === 429)).toHaveLength(0);
   });
 
   it("accepts a valid signature for workflow_job and returns 200 without enqueue when repo is disabled", async () => {
