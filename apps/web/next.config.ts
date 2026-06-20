@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: rootDir,
   productionBrowserSourceMaps: true,
+  env: {
+    PIPEWATCH_EDITION: process.env.PIPEWATCH_EDITION ?? "ce",
+  },
 };
 
 export default withSentryConfig(nextConfig, {

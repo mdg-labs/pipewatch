@@ -8,6 +8,9 @@ const marketingRoot = path.dirname(fileURLToPath(import.meta.url));
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   transpilePackages: ["@pipewatch/config", "@pipewatch/ui"],
+  env: {
+    PIPEWATCH_EDITION: process.env.PIPEWATCH_EDITION ?? "ce",
+  },
   async redirects() {
     return [
       {
