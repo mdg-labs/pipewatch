@@ -198,12 +198,13 @@
   border: 1px solid var(--border-default);
   border-radius: 8px;
   padding: 24px;
-  overflow-x: auto;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .pw-job-graph-canvas {
   position: relative;
-  min-width: 240px;
+  margin: 0 auto;
 }
 
 .pw-job-graph-edges {

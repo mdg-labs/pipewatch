@@ -1,12 +1,12 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
+
 import type { PipelineJob } from "@pipewatch/types";
 import { StatusBadge, classNames } from "@pipewatch/ui";
 
 import { formatDuration } from "@/lib/format-duration";
 import {
-  DAG_NODE_HEIGHT,
-  DAG_NODE_WIDTH,
   layoutJobDag,
   type DagNodeLayout,
 } from "@/lib/job-dag-layout";
@@ -26,11 +26,15 @@ export type JobGraphProps = {
 function JobGraphNode({
   job,
   layout,
+  nodeWidth,
+  nodeHeight,
   selected,
   onSelect,
 }: {
   job: PipelineJob;
   layout: DagNodeLayout;
+  nodeWidth: number;
+  nodeHeight: number;
   selected: boolean;
   onSelect: () => void;
 }) {
@@ -58,8 +62,8 @@ function JobGraphNode({
       style={{
         left: layout.x,
         top: layout.y,
-        width: DAG_NODE_WIDTH,
-        height: DAG_NODE_HEIGHT,
+        width: nodeWidth,
+        height: nodeHeight,
       }}
       onClick={onSelect}
       aria-pressed={selected}
@@ -78,7 +82,34 @@ function JobGraphNode({
 }
 
 export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
-  const layout = layoutJobDag(jobs);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const element = wrapRef.current;
+    if (!element) {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (entry) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+
+    observer.observe(element);
+    setContainerWidth(element.getBoundingClientRect().width);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  const layout = layoutJobDag(
+    jobs,
+    containerWidth === undefined ? {} : { containerWidth },
+  );
   const jobById = new Map(jobs.map((job) => [job.id, job]));
 
   if (jobs.length === 0) {
@@ -88,7 +119,7 @@ export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
   return (
     <div className="pw-job-graph">
       <h2 className="pw-run-section-title">Job execution graph</h2>
-      <div className="pw-job-graph-canvas-wrap">
+      <div ref={wrapRef} className="pw-job-graph-canvas-wrap">
         <div
           className="pw-job-graph-canvas"
           style={{ width: layout.width, height: layout.height }}
@@ -151,6 +182,8 @@ export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
                 key={job.id}
                 job={job}
                 layout={node}
+                nodeWidth={layout.nodeWidth}
+                nodeHeight={layout.nodeHeight}
                 selected={selectedJobId === job.id}
                 onSelect={() => onJobSelect(job.id)}
               />

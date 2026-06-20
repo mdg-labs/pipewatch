@@ -25,6 +25,8 @@ function makeJob(
   };
 }
 
+const FIXED_NOW = Date.parse("2026-06-10T12:07:00.000Z");
+
 describe("groupJobsIntoWaves", () => {
   it("places sequential jobs in separate waves", () => {
     const jobs = [
@@ -32,7 +34,7 @@ describe("groupJobsIntoWaves", () => {
       makeJob("test", "test", "2026-06-10T12:02:00.000Z", "2026-06-10T12:04:00.000Z", 120_000),
     ];
 
-    const waves = groupJobsIntoWaves(jobs, Date.parse("2026-06-10T12:05:00.000Z"));
+    const waves = groupJobsIntoWaves(jobs, FIXED_NOW);
 
     expect(waves).toHaveLength(2);
     expect(waves[0]?.map((job) => job.id)).toEqual(["lint"]);
@@ -45,7 +47,7 @@ describe("groupJobsIntoWaves", () => {
       makeJob("typecheck", "typecheck", "2026-06-10T12:01:00.000Z", "2026-06-10T12:02:00.000Z", 60_000),
     ];
 
-    const waves = groupJobsIntoWaves(jobs, Date.parse("2026-06-10T12:05:00.000Z"));
+    const waves = groupJobsIntoWaves(jobs, FIXED_NOW);
 
     expect(waves).toHaveLength(1);
     expect(waves[0]?.map((job) => job.id)).toEqual(["lint", "typecheck"]);
@@ -53,14 +55,14 @@ describe("groupJobsIntoWaves", () => {
 });
 
 describe("layoutJobDag", () => {
-  it("returns positioned nodes and connector paths", () => {
-    const jobs = [
-      makeJob("lint", "lint", "2026-06-10T12:00:00.000Z", "2026-06-10T12:01:00.000Z", 60_000),
-      makeJob("test", "test", "2026-06-10T12:02:00.000Z", "2026-06-10T12:04:00.000Z", 120_000),
-      makeJob("deploy", "deploy", "2026-06-10T12:05:00.000Z", "2026-06-10T12:06:00.000Z", 60_000),
-    ];
+  const sequentialJobs = [
+    makeJob("lint", "lint", "2026-06-10T12:00:00.000Z", "2026-06-10T12:01:00.000Z", 60_000),
+    makeJob("test", "test", "2026-06-10T12:02:00.000Z", "2026-06-10T12:04:00.000Z", 120_000),
+    makeJob("deploy", "deploy", "2026-06-10T12:05:00.000Z", "2026-06-10T12:06:00.000Z", 60_000),
+  ];
 
-    const layout = layoutJobDag(jobs, Date.parse("2026-06-10T12:07:00.000Z"));
+  it("returns positioned nodes and connector paths", () => {
+    const layout = layoutJobDag(sequentialJobs, FIXED_NOW);
 
     expect(layout.nodes).toHaveLength(3);
     expect(layout.edges).toHaveLength(2);
@@ -79,5 +81,71 @@ describe("layoutJobDag", () => {
     expect(layout.edges).toEqual([]);
     expect(layout.width).toBe(0);
     expect(layout.height).toBe(0);
+  });
+
+  it("fills the requested container width", () => {
+    const layout = layoutJobDag(sequentialJobs, {
+      containerWidth: 640,
+      nowMs: FIXED_NOW,
+    });
+
+    expect(layout.width).toBe(640);
+    expect(layout.nodeWidth).toBeGreaterThan(0);
+    expect(layout.nodeHeight).toBeGreaterThan(0);
+  });
+
+  it("keeps stable relative node positions across container widths", () => {
+    const narrow = layoutJobDag(sequentialJobs, {
+      containerWidth: 480,
+      nowMs: FIXED_NOW,
+    });
+    const wide = layoutJobDag(sequentialJobs, {
+      containerWidth: 960,
+      nowMs: FIXED_NOW,
+    });
+
+    const relativeCenterX = (layout: ReturnType<typeof layoutJobDag>, jobId: string) => {
+      const node = layout.nodes.find((entry) => entry.jobId === jobId);
+      expect(node).toBeDefined();
+      return (node!.x + layout.nodeWidth / 2) / layout.width;
+    };
+
+    for (const jobId of ["lint", "test", "deploy"]) {
+      expect(relativeCenterX(narrow, jobId)).toBeCloseTo(relativeCenterX(wide, jobId), 2);
+    }
+  });
+
+  it("scales edge paths proportionally with container width", () => {
+    const narrow = layoutJobDag(sequentialJobs, {
+      containerWidth: 480,
+      nowMs: FIXED_NOW,
+    });
+    const wide = layoutJobDag(sequentialJobs, {
+      containerWidth: 960,
+      nowMs: FIXED_NOW,
+    });
+
+    expect(narrow.edges[0]?.path).not.toBe(wide.edges[0]?.path);
+    expect(narrow.edges).toHaveLength(wide.edges.length);
+  });
+
+  it("uses compact spacing for wide workflows before shrinking below minimum node size", () => {
+    const manyColumnJobs = Array.from({ length: 6 }, (_, index) =>
+      makeJob(
+        `job-${index}`,
+        `job-${index}`,
+        `2026-06-10T12:0${index}:00.000Z`,
+        `2026-06-10T12:0${index + 1}:00.000Z`,
+        60_000,
+      ),
+    );
+
+    const layout = layoutJobDag(manyColumnJobs, {
+      containerWidth: 720,
+      nowMs: FIXED_NOW,
+    });
+
+    expect(layout.width).toBe(720);
+    expect(layout.nodeWidth).toBeGreaterThanOrEqual(80);
   });
 });
