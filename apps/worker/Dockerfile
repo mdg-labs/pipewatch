@@ -9,6 +9,7 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/worker/package.json apps/worker/
 COPY packages/config/package.json packages/config/
 COPY packages/db/package.json packages/db/
+COPY packages/github-app-auth/package.json packages/github-app-auth/
 COPY packages/types/package.json packages/types/
 COPY packages/utils/package.json packages/utils/
 RUN pnpm install --frozen-lockfile
