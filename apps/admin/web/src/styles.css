@@ -77,7 +77,7 @@ body {
 
 .admin-main {
   padding: 1.5rem 2rem;
-  max-width: 1200px;
+  min-width: 0;
 }
 
 .admin-page {
