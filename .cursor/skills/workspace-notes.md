@@ -1,5 +1,48 @@
 # PipeWatch workspace notes
 
+## 2026-06-21 — P220 epic #220 orchestrator run (complete)
+
+**Lane:** S serial · **GitHub sync:** ON · **Base:** `d05d4ad`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #227 Full-width admin content layout | Done | `b28ef9d` |
+| #221 Webhook delivery outcome filters | Done | `c5478a3` |
+| #222 Workspace/installation detail APIs | Done | `9e81c8b` |
+| #223 Platform metrics API | Done | `f33828d` |
+| #224 Overview + detail pages UI | Done | `452110c` |
+| #225 Forgot-password flow + email | Done | `8438300` |
+| #226 Reset-password UI + login branding | Done | `e852ac8` |
+| #220 epic parent | Done | closes via #226 `fixes #220` |
+
+**Notes:**
+- Resumed mid-epic (#227+#221–#223 already Done); verified #224, executed #225+#226
+- #225: `admin_password_reset_tokens` migration in `packages/db-admin`; `ADMIN_PASSWORD_RESET_TTL_SECONDS` env var
+- #226: LoginPage LogoWordmark, ForgotPasswordPage, ResetPasswordPage
+- Operator follow-up: Phase sync `ADMIN_PASSWORD_RESET_TTL_SECONDS` if non-default; smoke forgot→reset on staging admin
+- `staging` 7 commits ahead of run base (not pushed)
+
+**Next suggested:** push `staging` to deploy admin V2; smoke overview/detail pages + password reset on staging admin
+
+## 2026-06-21 — #219 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** post-#218
+
+| Issue | Status | Commit |
+|---|---|---|
+| #219 SSE live connection badge stuck on reconnecting | Done | `f947be0` |
+
+**Notes:**
+- SSE client: exponential backoff (1s→30s cap), 3s grace before badge downgrade, `connecting` vs `reconnecting`, heartbeat liveness
+- Dashboard: 150ms stagger between repo connects; `aggregateLiveStatus` prefers connected
+- Override claiming via `useLayoutEffect` in Dashboard/Repo/Run views — AppShell defers duplicate `useRepoStream`
+- API: `sseToken` rate limit 60→120/min (scoped per-IP Redis)
+- New `live-stream-status.ts` + unit tests; i18n `connecting` label
+- No DB migrations
+- `staging` ahead of `origin/staging` (not pushed)
+
+**Next suggested:** push `staging` to deploy; smoke-test live badge on dashboard (multi-repo) and repo/run pages on staging-cloud
+
 ## 2026-06-20 — P208 epic #208 orchestrator run (complete)
 
 **Lane:** S serial · **GitHub sync:** ON · **Base:** `12435ba`
