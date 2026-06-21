@@ -176,7 +176,7 @@ afterAll(async () => {
 });
 
 describe("admin webhook delivery and health API", () => {
-  it("lists deliveries with unreachable and workspace filters", async () => {
+  it("lists deliveries with outcome and legacy unreachable filters", async () => {
     const suffix = randomBytes(4).toString("hex");
     const email = `viewer-${suffix}@pipewatch.app`;
     const password = "viewer-password-123";
@@ -204,7 +204,8 @@ describe("admin webhook delivery and health API", () => {
     const deliveredAt = new Date(Date.now() - 5 * 60 * 1000);
     const polledAt = new Date(Date.now() - 3 * 60 * 1000);
 
-    const [successDelivery, unreachableDelivery] = await database
+    const [successDelivery, httpFailureDelivery, unreachableDelivery] =
+      await database
       .insert(webhookDeliveries)
       .values([
         {
@@ -217,6 +218,19 @@ describe("admin webhook delivery and health API", () => {
           statusCode: 200,
           status: "OK",
           duration: 0.12,
+          deliveredAt,
+          polledAt,
+        },
+        {
+          githubDeliveryId: `gh-http-failure-${suffix}`,
+          githubGuid: `guid-http-failure-${suffix}`,
+          externalInstallationId: `install-${suffix}`,
+          workspaceId: workspace.id,
+          event: "push",
+          action: null,
+          statusCode: 500,
+          status: "Internal Server Error",
+          duration: 0.08,
           deliveredAt,
           polledAt,
         },
@@ -236,15 +250,71 @@ describe("admin webhook delivery and health API", () => {
       ])
       .returning();
 
-    if (!successDelivery || !unreachableDelivery) {
+    if (!successDelivery || !httpFailureDelivery || !unreachableDelivery) {
       throw new Error("Failed to seed webhook deliveries");
     }
 
     const app = createTestApp(database);
     const cookie = await login(app, email, password);
 
+    const workspaceQuery = `workspace_id=${workspace.id}`;
+
+    const successResponse = await app.request(
+      `http://localhost/api/webhook-deliveries?outcome=success&${workspaceQuery}`,
+      { headers: { cookie } },
+    );
+
+    expect(successResponse.status).toBe(200);
+    const successBody = (await successResponse.json()) as {
+      items: Array<{ id: string; outcome: string; statusCode: number }>;
+      total: number;
+    };
+
+    expect(successBody.total).toBe(1);
+    expect(successBody.items[0]).toMatchObject({
+      id: successDelivery.id,
+      outcome: "success",
+      statusCode: 200,
+    });
+
+    const httpFailureResponse = await app.request(
+      `http://localhost/api/webhook-deliveries?outcome=http_failure&${workspaceQuery}`,
+      { headers: { cookie } },
+    );
+
+    expect(httpFailureResponse.status).toBe(200);
+    const httpFailureBody = (await httpFailureResponse.json()) as {
+      items: Array<{ id: string; outcome: string; statusCode: number }>;
+      total: number;
+    };
+
+    expect(httpFailureBody.total).toBe(1);
+    expect(httpFailureBody.items[0]).toMatchObject({
+      id: httpFailureDelivery.id,
+      outcome: "http_failure",
+      statusCode: 500,
+    });
+
+    const unreachableOutcomeResponse = await app.request(
+      `http://localhost/api/webhook-deliveries?outcome=unreachable&${workspaceQuery}`,
+      { headers: { cookie } },
+    );
+
+    expect(unreachableOutcomeResponse.status).toBe(200);
+    const unreachableOutcomeBody = (await unreachableOutcomeResponse.json()) as {
+      items: Array<{ id: string; outcome: string; statusCode: number }>;
+      total: number;
+    };
+
+    expect(unreachableOutcomeBody.total).toBe(1);
+    expect(unreachableOutcomeBody.items[0]).toMatchObject({
+      id: unreachableDelivery.id,
+      outcome: "unreachable",
+      statusCode: 0,
+    });
+
     const unreachableResponse = await app.request(
-      `http://localhost/api/webhook-deliveries?unreachable=true&workspace_id=${workspace.id}`,
+      `http://localhost/api/webhook-deliveries?unreachable=true&${workspaceQuery}`,
       { headers: { cookie } },
     );
 

@@ -104,6 +104,7 @@ export type AdminInvite = {
 export type DeliveryListQuery = {
   page?: number;
   page_size?: number;
+  outcome?: DeliveryOutcome;
   status_code?: number;
   unreachable?: boolean;
   workspace_id?: string;

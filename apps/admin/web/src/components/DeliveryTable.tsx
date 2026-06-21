@@ -13,6 +13,7 @@ import {
 import { apiFetch, buildQueryString } from "../api/client.js";
 import type {
   DeliveryListQuery,
+  DeliveryOutcome,
   PaginatedResult,
   WebhookDeliveryItem,
 } from "../api/types.js";
@@ -35,8 +36,9 @@ export function DeliveryTable({ initialQuery = {} }: DeliveryTableProps) {
   const [installationFilter, setInstallationFilter] = useState(
     initialQuery.installation_id ?? "",
   );
-  const [unreachableOnly, setUnreachableOnly] = useState(
-    initialQuery.unreachable ?? false,
+  const [outcomeFilter, setOutcomeFilter] = useState<DeliveryOutcome | "">(
+    initialQuery.outcome ??
+      (initialQuery.unreachable ? "unreachable" : ""),
   );
   const [rows, setRows] = useState<WebhookDeliveryItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -60,7 +62,7 @@ export function DeliveryTable({ initialQuery = {} }: DeliveryTableProps) {
           page_size: PAGE_SIZE,
           event: eventFilter || undefined,
           installation_id: installationFilter || undefined,
-          unreachable: unreachableOnly ? true : undefined,
+          outcome: outcomeFilter || undefined,
           workspace_id: initialQuery.workspace_id,
         });
 
@@ -94,7 +96,7 @@ export function DeliveryTable({ initialQuery = {} }: DeliveryTableProps) {
     page,
     eventFilter,
     installationFilter,
-    unreachableOnly,
+    outcomeFilter,
     reloadToken,
     initialQuery.workspace_id,
   ]);
@@ -195,15 +197,17 @@ export function DeliveryTable({ initialQuery = {} }: DeliveryTableProps) {
           placeholder="12345678"
         />
         <Select
-          label="Reachability"
-          value={unreachableOnly ? "unreachable" : "all"}
+          label="Outcome"
+          value={outcomeFilter || "all"}
           onChange={(value) => {
             setPage(1);
-            setUnreachableOnly(value === "unreachable");
+            setOutcomeFilter(value === "all" ? "" : (value as DeliveryOutcome));
           }}
           options={[
             { value: "all", label: "All deliveries" },
-            { value: "unreachable", label: "Unreachable only" },
+            { value: "success", label: "Success" },
+            { value: "http_failure", label: "HTTP failure" },
+            { value: "unreachable", label: "Unreachable" },
           ]}
         />
         <Button

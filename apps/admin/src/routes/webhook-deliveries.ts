@@ -30,7 +30,14 @@ const PaginationQuerySchema = z.object({
   page_size: z.coerce.number().int().min(1).max(100).default(25),
 });
 
+const DeliveryOutcomeFilterSchema = z.enum([
+  "success",
+  "http_failure",
+  "unreachable",
+]);
+
 const ListDeliveriesQuerySchema = PaginationQuerySchema.extend({
+  outcome: DeliveryOutcomeFilterSchema.optional(),
   status_code: z.coerce.number().int().optional(),
   unreachable: z
     .enum(["true", "false"])
@@ -107,12 +114,34 @@ function toDeliveryItem(row: {
   };
 }
 
+function outcomeStatusCodeFilter(
+  outcome: DeliveryOutcome,
+): SQL {
+  if (outcome === "unreachable") {
+    return eq(webhookDeliveries.statusCode, 0);
+  }
+
+  if (outcome === "success") {
+    return and(
+      gte(webhookDeliveries.statusCode, 200),
+      lte(webhookDeliveries.statusCode, 299),
+    )!;
+  }
+
+  return and(
+    gte(webhookDeliveries.statusCode, 300),
+    lte(webhookDeliveries.statusCode, 599),
+  )!;
+}
+
 function buildDeliveryFilters(
   query: z.infer<typeof ListDeliveriesQuerySchema>,
 ): SQL | undefined {
   const filters: SQL[] = [];
 
-  if (query.unreachable === true) {
+  if (query.outcome) {
+    filters.push(outcomeStatusCodeFilter(query.outcome));
+  } else if (query.unreachable === true) {
     filters.push(eq(webhookDeliveries.statusCode, 0));
   } else if (query.status_code !== undefined) {
     filters.push(eq(webhookDeliveries.statusCode, query.status_code));
