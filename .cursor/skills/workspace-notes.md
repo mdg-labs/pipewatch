@@ -1,5 +1,22 @@
 # PipeWatch workspace notes
 
+## 2026-06-21 — #229 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** post-#220
+
+| Issue | Status | Commit |
+|---|---|---|
+| #229 Dashboard: clarify admin poll coverage metrics and UI | Done | `5564856` |
+
+**Notes:**
+- Added `first_polled_at` on `admin.webhook_deliveries` (insert-only on upsert); migration `0002_moaning_sharon_carter` backfills from `polled_at`
+- Coverage API: `pollFreshnessSeconds` + `ingestLagSeconds`; removed misleading `pollLagSeconds`
+- `PollCoverageCard`: three rows + helper text; warn only freshness >3min or ingest lag >5min
+- Admin PRD §9.1 updated
+- `staging` 1 commit ahead of prior run base (not pushed)
+
+**Next suggested:** push `staging` to deploy admin; verify poll coverage card on staging (low-traffic should show no false warning)
+
 ## 2026-06-21 — P220 epic #220 orchestrator run (complete)
 
 **Lane:** S serial · **GitHub sync:** ON · **Base:** `d05d4ad`
