@@ -200,7 +200,8 @@ Reference PRD sections as `prd §N`. Reference page IDs as `pages B3`, `pages A1
 | `Sign In.dc.html` | B1 | `/sign-in` |
 | `Onboarding.dc.html` | B2 | `/onboarding`, `/workspaces/new` |
 | `Dashboard.dc.html` | B3 | `/workspaces/:slug/` |
-| `Repo Detail.dc.html` | B4 | `/workspaces/:slug/repos/:repoId` |
+| `Repo Detail.dc.html` | B4 | `/workspaces/:slug/repos/:repoId` (overview) |
+| — | B4-runs | `/workspaces/:slug/repos/:repoId/runs` |
 | `Repo Settings.dc.html` | B5 | `/workspaces/:slug/repos/:repoId/settings` |
 | `Run Detail.dc.html` | B6 | `/workspaces/:slug/repos/:repoId/runs/:runId` |
 | `Insights.dc.html` | B7 | `/workspaces/:slug/insights` |
@@ -248,7 +249,8 @@ Screens without a `.dc.html` mockup must follow `ds` tokens/components and `page
 | B1 | OAuth, `?next=`, redirect matrix, CE → `/setup` | P13-01, P4-01 |
 | B2 | 4-step wizard, resumption, re-entrant via dashboard | P13-03, P14-01 |
 | B3 | Sort/filter/toggle, SSE, connect org | P14-01, P12-06 |
-| B4 | Filters URL-encoded, pagination, re-sync, SSE | P14-02, P6-04, P12-06 |
+| B4 | Overview dashboard, insights widgets, SSE banner | P14-02, P6-04, P12-06 |
+| B4-runs | Filters URL-encoded, pagination, re-sync, SSE | P14-06, P6-04, P12-06 |
 | B5 | PATCH settings, disable/delete, toasts | P14-04, P6-04 |
 | B6 | DAG, panels, GitHub link, SSE, elapsed ticker | P14-03, P12-06 |
 | B7 | Range/filter, charts, deep-link, tables | P14-05, P8-04 |
@@ -299,7 +301,8 @@ Screens without a `.dc.html` mockup must follow `ds` tokens/components and `page
 | B1 | `/sign-in` | P13-01 | `Sign In.dc.html` |
 | B2 | `/onboarding`, `/workspaces/new` | P13-03 | `Onboarding.dc.html` |
 | B3 | `/workspaces/:slug/` | P14-01 | `Dashboard.dc.html` |
-| B4 | `.../repos/:repoId` | P14-02 | `Repo Detail.dc.html` |
+| B4 | `.../repos/:repoId` | P14-02 | `Repo Detail.dc.html` (overview) |
+| B4-runs | `.../repos/:repoId/runs` | P14-06 | DS inheritance → Repo Detail |
 | B5 | `.../settings` | P14-04 | `Repo Settings.dc.html` |
 | B6 | `.../runs/:runId` | P14-03 | `Run Detail.dc.html` |
 | B7 | `.../insights` | P14-05 | `Insights.dc.html` |
@@ -324,10 +327,10 @@ Screens without a `.dc.html` mockup must follow `ds` tokens/components and `page
 | Feature | Task(s) |
 |---|---|
 | §12.1 GitHub App installation | P6-01, P6-02, P6-03, P13-03, P15-03 |
-| §12.2 Multi-repo dashboard | P8-03, P14-01, P9-02 |
-| §12.3 Workflow run list | P8-01, P14-02 |
+| §12.2 Multi-repo dashboard | P8-03, P14-01, P14-02, P9-02 |
+| §12.3 Workflow run list | P8-01, P14-06 |
 | §12.4 Run detail drill-down | P8-02, P14-03 |
-| §12.5 Basic insights | P8-04, P14-05 |
+| §12.5 Basic insights | P8-04, P14-02, P14-05 |
 | §12.6 Webhook receiver | P10-01, P6-05, P7-02 |
 | §12.7 Auth | P4-01–P4-05, P13-01, P13-04 |
 | §13 Onboarding wizard | P13-03, P6-03, P6-04, P8-05 |
@@ -893,7 +896,7 @@ P21 + all ──► P19 E2E & launch hardening
 
 - [ ] **P8-01** — Pipeline runs API
   - **Domain:** `domain:backend` | **Deps:** P7-02, P3-02 | **Effort:** M
-  - **Doc ref:** `prd §7`, `pages B4`, `pages B6`
+  - **Doc ref:** `prd §7`, `pages B4-runs`, `pages B6`
   - **Endpoints:** `GET /repositories/:repoId/runs`, `GET .../runs/:runId`, `DELETE .../runs/:runId`
   - **Acceptance criteria:**
     - Pagination (default 20), filters: branch, workflow, status, trigger, date range
@@ -1198,12 +1201,26 @@ P21 + all ──► P19 E2E & launch hardening
     - "Connect another org" → onboarding (re-entrant B2)
   - **Tests:** component + E2E with fixture data
 
-- [ ] **P14-02** — Repository detail / run list (B4)
-  - **Domain:** `domain:frontend` | **Deps:** P8-01, P9-02, P12-02 | **Effort:** L
-  - **Doc ref:** `pages B4` | **Design ref:** `mockup/Repo Detail.dc.html`
+- [ ] **P14-02** — Repository overview dashboard (B4)
+  - **Domain:** `domain:frontend` | **Deps:** P8-04, P9-02, P12-02 | **Effort:** L
+  - **Doc ref:** `pages B4` | **Design ref:** `mockup/Repo Detail.dc.html` (overview layout)
   - **Route:** `/workspaces/:slug/repos/:repoId`
   - **Acceptance criteria:**
-    - Header: repo full name, visibility badge, GitHub link, sync-mode badge, settings, re-sync
+    - Header: repo `full_name`, visibility badge, GitHub link, sync-mode badge, settings, re-sync
+    - Breadcrumb: `Repositories` → B3 dashboard; repo segment label = `full_name`
+    - Active-run banner with SSE live updates
+    - 7d/30d toggle; summary `StatCard`s (total runs, success rate, avg duration) via `GET /insights?repoId=…&range=…`
+    - Most-failing-workflows table; row click → B4-runs pre-filtered by workflow
+    - "View all runs" CTA → B4-runs; empty state "No runs yet for this repo"
+  - **Tests:** component + fixture insights data
+
+- [ ] **P14-06** — Repository runs list (B4-runs)
+  - **Domain:** `domain:frontend` | **Deps:** P8-01, P9-02, P12-02 | **Effort:** L
+  - **Doc ref:** `pages B4-runs` | **Design ref:** DS inheritance → `Repo Detail.dc.html` (run-list layout)
+  - **Route:** `/workspaces/:slug/repos/:repoId/runs`
+  - **Acceptance criteria:**
+    - Header: repo `full_name`, visibility badge, GitHub link, sync-mode badge, settings, re-sync; link back to B4 overview
+    - Breadcrumb: `Repositories` → B3; repo segment → B4 overview; "Runs" current segment
     - Active-run banner; workflow tabs; filter row URL-encoded (branch, workflow, status, trigger, date range)
     - Paginated table (20/page): workflow, branch, trigger, actor avatar + login, status, duration, started-at
     - SSE live row updates; new runs prepend; empty state "No runs yet for this repo"
@@ -1220,7 +1237,7 @@ P21 + all ──► P19 E2E & launch hardening
     - Job graph (DAG) with runner name; running jobs show `ElapsedTicker`
     - Job graph node click → scroll to / expand matching job panel
     - Job panels expand/collapse; failed steps highlighted + auto-expanded
-    - Breadcrumb back to repo (B4) and dashboard (B3)
+    - Breadcrumb: repo segment (`full_name`) → B4 overview; optional "All runs" → B4-runs; `Repositories` → B3 dashboard
     - "View on GitHub" uses `source_url`; live SSE while in progress
   - **Tests:** component DAG layout smoke
 
@@ -1245,7 +1262,7 @@ P21 + all ──► P19 E2E & launch hardening
     - Summary `StatCard`s with trend indicators (total runs, success rate, avg duration, most active repo)
     - Line charts with hover tooltips; responsive grid
     - Tables: slowest workflows (avg, p50, p95, trend), most failing (rate %, count, trend)
-    - Deep-link workflow name → B4 pre-filtered
+    - Deep-link workflow name → B4-runs pre-filtered (`…/repos/:repoId/runs?workflow=…`)
     - Empty state: "Not enough data yet — insights appear once runs are recorded"
   - **Tests:** chart renders with fixture data
 
@@ -1580,13 +1597,13 @@ P21 + all ──► P19 E2E & launch hardening
 | Dialog / TypedConfirmDialog | `packages/ui` | P1-03, P1-06, P15 |
 | Toast / ToastStack | `packages/ui` | P1-03, P12-03 |
 | Tooltip | `packages/ui` | P1-03 |
-| Tabs | `packages/ui` | P1-03, P14-02 |
+| Tabs | `packages/ui` | P1-03, P14-06 |
 | Sparkline | `packages/ui` | P1-04, P14-01 |
 | RepoCard | `packages/ui` | P1-04, P14-01 |
 | RunPulse | `packages/ui` | P1-02, P14 |
-| Pagination / DataTable | `packages/ui` | P1-06, P14-02, P15 |
-| StatCard | `packages/ui` | P1-06, P14-01, P14-05 |
-| FilterBar | `packages/ui` | P1-06, P14-01, P14-02 |
+| Pagination / DataTable | `packages/ui` | P1-06, P14-02, P14-06, P15 |
+| StatCard | `packages/ui` | P1-06, P14-01, P14-02, P14-05 |
+| FilterBar | `packages/ui` | P1-06, P14-01, P14-06 |
 | DangerZone | `packages/ui` | P1-06, P14-04, P15-01, P15-06 |
 | WizardProgress | `packages/ui` | P1-06, P13-03 |
 | UsageMeter | `packages/ui` | P1-06, P15-05 |
@@ -1607,7 +1624,7 @@ P21 + all ──► P19 E2E & launch hardening
 | `CE Bootstrap.dc.html` | P13-02 |
 | `Onboarding.dc.html` | P13-03 |
 | `Dashboard.dc.html` | P14-01, P12-02 |
-| `Repo Detail.dc.html` | P14-02 |
+| `Repo Detail.dc.html` | P14-02, P14-06 |
 | `Repo Settings.dc.html` | P14-04 |
 | `Run Detail.dc.html` | P14-03 |
 | `Insights.dc.html` | P14-05 |

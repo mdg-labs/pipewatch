@@ -727,9 +727,11 @@ Implemented as part of the Onboarding Wizard (see Section 13). Summary:
 - Per-repo: last run status, workflow count, recent failure rate
 - Global health bar — how many repos are currently green / failing / running
 - Live updates via SSE — no page refresh needed
+- Clicking a repo opens the per-repo **overview dashboard** (Page Inventory B4 at `/workspaces/:slug/repos/:repoId`) — not the full run list
 
 ### 12.3 Workflow Run List
 
+- **Route:** `/workspaces/:slug/repos/:repoId/runs` (Page Inventory B4-runs)
 - Per-repo list of runs, paginated, filterable by branch / workflow / status / trigger
 - Columns: workflow name, branch, trigger, actor, status, duration, started at
 - Live status updates for in-progress runs

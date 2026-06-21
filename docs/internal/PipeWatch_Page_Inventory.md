@@ -31,8 +31,9 @@ These apply to all authenticated app pages (B-series) unless stated otherwise.
 - **Loading states:** skeleton loaders for data tables and cards; never a blank screen.
 - **Empty states:** every list/table has a designed empty state with a clear CTA.
 - **Error states:** inline error with retry for failed data loads; toast for failed mutations.
-- **Live data:** pages with live data (dashboard, run list, run detail) subscribe via SSE; a small "live" indicator shows connection status.
+- **Live data:** pages with live data (dashboard, repo overview, run list, run detail) subscribe via SSE; a small "live" indicator shows connection status.
 - **Toasts:** all mutations (save, delete, invite, etc.) produce a success/error toast.
+- **Breadcrumbs (repo-scoped pages):** the `Repositories` segment links to the workspace dashboard (B3, `/workspaces/:slug`) — never `/workspaces/:slug/repos`. The repo segment label is the API `full_name` (e.g. `mdg-labs/pipewatch`), not the internal UUID.
 
 ---
 
@@ -249,12 +250,37 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 
 ---
 
-## B4. Repository Detail `/workspaces/:slug/repos/:repoId`
+## B4. Repository Overview `/workspaces/:slug/repos/:repoId`
 
-**Purpose:** All workflow runs for a single repository.
+**Purpose:** Curated per-repo dashboard — summary health, failing workflows, and active runs. Primary landing when clicking a repo from B3.
 
 **Layout:**
-- **Header:** repo full name, visibility badge, GitHub link, sync-mode badge (Webhook/Polling), "Settings" button (→ B5), "Re-sync" action.
+- **Header:** repo `full_name`, visibility badge, GitHub link, sync-mode badge (Webhook/Polling), "Settings" button (→ B5), "Re-sync" action.
+- **Breadcrumb:** `Repositories` → B3 (`/workspaces/:slug`); repo segment label = `full_name`.
+- **Active-run banner:** prominent live banner when any run is in progress (links to B6 or B4-runs).
+- **Time-range toggle:** 7d / 30d for summary widgets.
+- **Summary cards row:** total runs, success rate, avg duration — sourced from `GET /insights?repoId=…&range=7d|30d` (PRD §12.5).
+- **Most failing workflows:** compact table (workflow name, failure rate %, failure count) for the selected range.
+- **CTA:** "View all runs" → B4-runs.
+- **Empty state:** "No runs yet for this repo" with re-sync CTA.
+
+**Functions:**
+- Time range toggle (7d/30d) refreshes summary cards and failing-workflows table
+- Click failing-workflow row → B4-runs pre-filtered by workflow
+- Active-run banner updates via SSE while runs are in progress
+- "View all runs" → B4-runs
+- "Re-sync" → manual GitHub re-fetch
+- "Settings" → B5
+
+---
+
+## B4-runs. Repository Runs List `/workspaces/:slug/repos/:repoId/runs`
+
+**Purpose:** Full filterable, paginated run history for a single repository.
+
+**Layout:**
+- **Header:** repo `full_name`, visibility badge, GitHub link, sync-mode badge (Webhook/Polling), "Settings" button (→ B5), "Re-sync" action; optional link back to B4 overview.
+- **Breadcrumb:** `Repositories` → B3; repo segment (`full_name`) → B4 overview; current segment "Runs".
 - **Active-run banner:** prominent live banner if any run in progress.
 - **Workflow tabs:** "All" + one tab per distinct workflow.
 - **Filters row:** branch, workflow, status, trigger event, date range.
@@ -301,7 +327,7 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 - **Job graph:** visual DAG of jobs (sequential + parallel lanes). Node: job name, status badge, duration, runner name; running jobs show live elapsed time.
 - **Job panels:** expandable list below the graph. Each job → its steps.
   - **Step row:** number, name, status badge, duration. Failed steps highlighted (red), auto-expanded.
-- **Breadcrumb:** back to repo (B4) and dashboard (B3).
+- **Breadcrumb:** repo segment (`full_name`) → B4 overview; optional "All runs" → B4-runs; `Repositories` → B3 dashboard.
 
 **Functions:**
 - Expand/collapse job panels (failed auto-expanded)
@@ -326,7 +352,7 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 **Functions:**
 - Switch time range (7d/30d)
 - Filter by repo / workflow (URL-encoded)
-- Click workflow name in tables → deep-link to B4 run list pre-filtered
+- Click workflow name in tables → deep-link to B4-runs pre-filtered (`…/repos/:repoId/runs?workflow=…`)
 - Charts: hover tooltips, responsive
 
 ---
@@ -501,7 +527,8 @@ Live run/job updates. Auth via one-time query token (`GET /api/v1/sse-token`). H
 | B1 | `/sign-in` | App | No | | ✓ |
 | B2 | `/onboarding` (`/workspaces/new`) | App | Yes | | ✓ |
 | B3 | `/workspaces/:slug/` | App | Yes | | ✓ |
-| B4 | `/workspaces/:slug/repos/:repoId` | App | Yes | | ✓ |
+| B4 | `/workspaces/:slug/repos/:repoId` | App | Yes | Per-repo overview dashboard | ✓ |
+| B4-runs | `/workspaces/:slug/repos/:repoId/runs` | App | Yes | Full filterable run list | ✓ |
 | B5 | `/workspaces/:slug/repos/:repoId/settings` | App | Yes | admin/owner | ✓ |
 | B6 | `/workspaces/:slug/repos/:repoId/runs/:runId` | App | Yes | | ✓ |
 | B7 | `/workspaces/:slug/insights` | App | Yes | | ✓ |
