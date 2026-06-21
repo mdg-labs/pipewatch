@@ -345,6 +345,8 @@ describe("admin workspace and integration overview API", () => {
         statusCode: 200,
         status: "OK",
         deliveredAt,
+        polledAt: deliveredAt,
+        firstPolledAt: deliveredAt,
       },
       {
         githubDeliveryId: `delivery-failure-${suffix}`,
@@ -356,6 +358,8 @@ describe("admin workspace and integration overview API", () => {
         statusCode: 500,
         status: "Internal Server Error",
         deliveredAt,
+        polledAt: deliveredAt,
+        firstPolledAt: deliveredAt,
       },
     ]);
 
@@ -526,6 +530,8 @@ describe("admin workspace and integration overview API", () => {
       statusCode: 0,
       status: "Failed to connect",
       deliveredAt,
+      polledAt: deliveredAt,
+      firstPolledAt: deliveredAt,
     });
 
     const app = createTestApp(database);

@@ -56,6 +56,8 @@ async function seedDelivery(
     statusCode: 200,
     status: "OK",
     deliveredAt,
+    polledAt: deliveredAt,
+    firstPolledAt: deliveredAt,
   });
 }
 

@@ -164,6 +164,7 @@ function toUpsertRow(
     redelivery: delivery.redelivery,
     deliveredAt: new Date(delivery.delivered_at),
     polledAt,
+    firstPolledAt: polledAt,
   };
 }
 
@@ -200,6 +201,7 @@ export async function upsertWebhookDeliveries(
           redelivery: values.redelivery,
           deliveredAt: values.deliveredAt,
           polledAt: values.polledAt,
+          // firstPolledAt intentionally omitted — set on insert only
         },
       });
   }

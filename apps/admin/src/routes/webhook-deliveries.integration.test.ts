@@ -203,6 +203,7 @@ describe("admin webhook delivery and health API", () => {
 
     const deliveredAt = new Date(Date.now() - 5 * 60 * 1000);
     const polledAt = new Date(Date.now() - 3 * 60 * 1000);
+    const firstPolledAt = new Date(deliveredAt.getTime() + 2 * 60 * 1000);
 
     const [successDelivery, httpFailureDelivery, unreachableDelivery] =
       await database
@@ -220,6 +221,7 @@ describe("admin webhook delivery and health API", () => {
           duration: 0.12,
           deliveredAt,
           polledAt,
+          firstPolledAt,
         },
         {
           githubDeliveryId: `gh-http-failure-${suffix}`,
@@ -233,6 +235,7 @@ describe("admin webhook delivery and health API", () => {
           duration: 0.08,
           deliveredAt,
           polledAt,
+          firstPolledAt,
         },
         {
           githubDeliveryId: `gh-unreachable-${suffix}`,
@@ -246,6 +249,7 @@ describe("admin webhook delivery and health API", () => {
           duration: null,
           deliveredAt,
           polledAt,
+          firstPolledAt,
         },
       ])
       .returning();
@@ -354,14 +358,20 @@ describe("admin webhook delivery and health API", () => {
 
     expect(coverageResponse.status).toBe(200);
     const coverageBody = (await coverageResponse.json()) as {
-      latestDeliveredAt: string | null;
-      latestPolledAt: string | null;
-      pollLagSeconds: number | null;
+      lastDeliveryAt: string | null;
+      lastPollAt: string | null;
+      pollFreshnessSeconds: number | null;
+      ingestLagSeconds: number | null;
+      pollFreshnessOk: boolean;
+      ingestLagOk: boolean;
     };
 
-    expect(coverageBody.latestDeliveredAt).toBeTruthy();
-    expect(coverageBody.latestPolledAt).toBeTruthy();
-    expect(coverageBody.pollLagSeconds).toBeGreaterThanOrEqual(0);
+    expect(coverageBody.lastDeliveryAt).toBeTruthy();
+    expect(coverageBody.lastPollAt).toBeTruthy();
+    expect(coverageBody.pollFreshnessSeconds).toBeGreaterThanOrEqual(0);
+    expect(coverageBody.ingestLagSeconds).toBe(120);
+    expect(coverageBody.pollFreshnessOk).toBe(true);
+    expect(coverageBody.ingestLagOk).toBe(true);
   });
 
   it("requires operator role and confirmation for redelivery", async () => {
@@ -391,6 +401,7 @@ describe("admin webhook delivery and health API", () => {
         status: "Internal Server Error",
         deliveredAt: new Date(),
         polledAt: new Date(),
+        firstPolledAt: new Date(),
       })
       .returning();
 
@@ -483,6 +494,7 @@ describe("admin webhook delivery and health API", () => {
         status: "Not Found",
         deliveredAt: new Date("2026-01-01T00:00:00.000Z"),
         polledAt: new Date("2026-01-01T00:02:00.000Z"),
+        firstPolledAt: new Date("2026-01-01T00:02:00.000Z"),
       })
       .returning();
 

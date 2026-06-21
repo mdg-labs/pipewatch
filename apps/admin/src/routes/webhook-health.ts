@@ -1,7 +1,7 @@
 import type { AdminEnv } from "@pipewatch/config/env";
 import type { Db } from "@pipewatch/db";
 import { webhookDeliveries } from "@pipewatch/db-admin/schema";
-import { gte, max } from "drizzle-orm";
+import { desc, gte, max } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
 
@@ -12,6 +12,9 @@ import type { AdminAppBindings } from "../types.js";
 const SummaryQuerySchema = z.object({
   window_minutes: z.coerce.number().int().min(1).max(24 * 60).optional(),
 });
+
+const POLL_FRESHNESS_WARN_SECONDS = 180;
+const INGEST_LAG_WARN_SECONDS = 300;
 
 export type WebhookHealthOverall = {
   total: number;
@@ -33,9 +36,12 @@ export type WebhookHealthSummary = {
 };
 
 export type WebhookPollCoverage = {
-  latestDeliveredAt: string | null;
-  latestPolledAt: string | null;
-  pollLagSeconds: number | null;
+  lastDeliveryAt: string | null;
+  lastPollAt: string | null;
+  pollFreshnessSeconds: number | null;
+  ingestLagSeconds: number | null;
+  pollFreshnessOk: boolean;
+  ingestLagOk: boolean;
 };
 
 function windowStart(now: Date, windowMinutes: number): Date {
@@ -139,29 +145,64 @@ async function getWebhookHealthSummary(
   };
 }
 
-async function getWebhookPollCoverage(database: Db): Promise<WebhookPollCoverage> {
-  const [row] = await database
+async function getWebhookPollCoverage(
+  database: Db,
+  now = new Date(),
+): Promise<WebhookPollCoverage> {
+  const [aggregateRow] = await database
     .select({
-      latestDeliveredAt: max(webhookDeliveries.deliveredAt),
-      latestPolledAt: max(webhookDeliveries.polledAt),
+      lastDeliveryAt: max(webhookDeliveries.deliveredAt),
+      lastPollAt: max(webhookDeliveries.polledAt),
     })
     .from(webhookDeliveries);
 
-  const latestDeliveredAt = row?.latestDeliveredAt ?? null;
-  const latestPolledAt = row?.latestPolledAt ?? null;
+  const lastDeliveryAt = aggregateRow?.lastDeliveryAt ?? null;
+  const lastPollAt = aggregateRow?.lastPollAt ?? null;
 
-  let pollLagSeconds: number | null = null;
-  if (latestDeliveredAt && latestPolledAt) {
-    pollLagSeconds = Math.max(
+  let pollFreshnessSeconds: number | null = null;
+  if (lastPollAt) {
+    pollFreshnessSeconds = Math.max(
       0,
-      Math.round((latestPolledAt.getTime() - latestDeliveredAt.getTime()) / 1000),
+      Math.round((now.getTime() - lastPollAt.getTime()) / 1000),
     );
   }
 
+  let ingestLagSeconds: number | null = null;
+  if (lastDeliveryAt) {
+    const [newestDelivery] = await database
+      .select({
+        deliveredAt: webhookDeliveries.deliveredAt,
+        firstPolledAt: webhookDeliveries.firstPolledAt,
+      })
+      .from(webhookDeliveries)
+      .orderBy(desc(webhookDeliveries.deliveredAt))
+      .limit(1);
+
+    if (newestDelivery) {
+      ingestLagSeconds = Math.max(
+        0,
+        Math.round(
+          (newestDelivery.firstPolledAt.getTime() -
+            newestDelivery.deliveredAt.getTime()) /
+            1000,
+        ),
+      );
+    }
+  }
+
+  const pollFreshnessOk =
+    pollFreshnessSeconds === null ||
+    pollFreshnessSeconds <= POLL_FRESHNESS_WARN_SECONDS;
+  const ingestLagOk =
+    ingestLagSeconds === null || ingestLagSeconds <= INGEST_LAG_WARN_SECONDS;
+
   return {
-    latestDeliveredAt: latestDeliveredAt?.toISOString() ?? null,
-    latestPolledAt: latestPolledAt?.toISOString() ?? null,
-    pollLagSeconds,
+    lastDeliveryAt: lastDeliveryAt?.toISOString() ?? null,
+    lastPollAt: lastPollAt?.toISOString() ?? null,
+    pollFreshnessSeconds,
+    ingestLagSeconds,
+    pollFreshnessOk,
+    ingestLagOk,
   };
 }
 

@@ -303,9 +303,12 @@ After bootstrap, **remove or rotate** bootstrap password in Phase. No CLI seed s
 1. **Auth:** Shared `createAppJwt` with `GITHUB_APP_ID` + `GITHUB_APP_PRIVATE_KEY` (Phase keys `GH_APP_ID`, `GH_APP_PRIVATE_KEY`)
 2. **Query:** `GET /app/hook/deliveries?per_page=100` — paginate via `link` response header / `cursor` until exhausted
 3. **Schedule:** Repeatable BullMQ job every **2 minutes** on queue `admin-webhook-poll`
-4. **Upsert:** Insert or update on `github_delivery_id`; refresh `polled_at`
+4. **Upsert:** Insert or update on `github_delivery_id`; refresh `polled_at`; set `first_polled_at` on insert only (never on conflict update)
 5. **Scope:** Map `installation_id` → `integrations.external_installation_id` → `workspace_id`
-6. **Coverage metric:** UI exposes lag between latest `delivered_at` in GitHub vs latest `polled_at` — surfaces missed deliveries before tuning interval
+6. **Coverage metrics:** UI exposes separate signals (Admin PRD §12.5):
+   - **Poll freshness** — `now() − max(polled_at)`; healthy when &lt; ~3 min (2-min cron + buffer)
+   - **Ingest lag** — `first_polled_at − delivered_at` on the newest delivery row; healthy when &lt; ~5 min at first ingest
+   - **Last delivery** — `max(delivered_at)`; informational only — idle periods are not ingest failures
 
 ### 9.2 Outcome classification
 
@@ -412,7 +415,7 @@ Follow `05-env-vars.mdc` when implementing. Admin-specific keys:
 ### 12.5 Admin API + UI
 
 - [ ] **Webhook delivery visualization (MVP-critical):** time-series failure rate chart, per-installation/workspace breakdown, filterable/sortable delivery table (status, event, delivered_at, installation, workspace), highlight unreachable (`status_code = 0`)
-- [ ] **Poll coverage indicator:** max `delivered_at` vs last `polled_at` — surfaces ingest gaps (§9.1, D6)
+- [ ] **Poll coverage indicator:** poll freshness, ingest lag on newest delivery, and last delivery timestamp — warn only on stale polls or slow ingest, not idle webhook volume (§9.1, D6)
 - [ ] **Workspace overview:** list workspaces with plan, integration count, member count
 - [ ] **Installation overview:** integrations with `account_login`, linked workspace, recent delivery health summary
 - [ ] **Manual redelivery:** operator-triggered, confirmation required, `audit_events` row on success

@@ -119,6 +119,12 @@ body {
   padding: 1rem;
 }
 
+.admin-coverage-helper {
+  margin: 0 0 1rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
 .admin-chart-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));

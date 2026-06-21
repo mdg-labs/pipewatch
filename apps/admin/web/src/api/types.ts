@@ -33,9 +33,12 @@ export type WebhookHealthSummary = {
 };
 
 export type WebhookPollCoverage = {
-  latestDeliveredAt: string | null;
-  latestPolledAt: string | null;
-  pollLagSeconds: number | null;
+  lastDeliveryAt: string | null;
+  lastPollAt: string | null;
+  pollFreshnessSeconds: number | null;
+  ingestLagSeconds: number | null;
+  pollFreshnessOk: boolean;
+  ingestLagOk: boolean;
 };
 
 export type DeliveryOutcome = "success" | "http_failure" | "unreachable";

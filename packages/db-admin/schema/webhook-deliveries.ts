@@ -34,6 +34,8 @@ export const webhookDeliveries = adminSchema.table(
     polledAt: timestamp("polled_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /** Set on insert only — never updated on upsert; used for ingest lag (Admin PRD §9.1). */
+    firstPolledAt: timestamp("first_polled_at", { withTimezone: true }).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
