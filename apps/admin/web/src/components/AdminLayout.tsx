@@ -7,6 +7,7 @@ import { formatAdminRole } from "../lib/roles.js";
 import { RequireRole } from "./RequireRole.js";
 
 const NAV_ITEMS = [
+  { to: "/overview", label: "Overview" },
   { to: "/webhooks", label: "Webhook health" },
   { to: "/workspaces", label: "Workspaces" },
   { to: "/installations", label: "Installations" },

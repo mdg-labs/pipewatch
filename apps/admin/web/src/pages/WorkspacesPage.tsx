@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import { Card, DataTable, Pagination } from "@pipewatch/ui";
 import { useState } from "react";
 
@@ -28,10 +30,10 @@ export function WorkspacesPage() {
       id: "name",
       header: "Workspace",
       render: (row: WorkspaceOverview) => (
-        <div>
+        <Link className="admin-detail-link" to={`/workspaces/${row.id}`}>
           <strong>{row.name}</strong>
           <div className="admin-muted">{row.slug}</div>
-        </div>
+        </Link>
       ),
     },
     {

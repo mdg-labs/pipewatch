@@ -2,6 +2,10 @@ export function formatPercent(rate: number): string {
   return `${(rate * 100).toFixed(1)}%`;
 }
 
+export function formatCount(value: number): string {
+  return value.toLocaleString("en-US");
+}
+
 export function formatDateTime(value: string | null): string {
   if (!value) {
     return "—";

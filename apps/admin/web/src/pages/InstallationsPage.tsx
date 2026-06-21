@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 
 import { Badge, Card, DataTable, Pagination } from "@pipewatch/ui";
 
@@ -49,20 +50,23 @@ export function InstallationsPage() {
       id: "account",
       header: "GitHub account",
       render: (row: IntegrationOverview) => (
-        <div>
+        <Link className="admin-detail-link" to={`/installations/${row.id}`}>
           <strong>{row.accountLogin}</strong>
           <div className="admin-muted">{row.accountType}</div>
-        </div>
+        </Link>
       ),
     },
     {
       id: "workspace",
       header: "Workspace",
       render: (row: IntegrationOverview) => (
-        <div>
+        <Link
+          className="admin-detail-link"
+          to={`/workspaces/${row.workspace.id}`}
+        >
           <strong>{row.workspace.name}</strong>
           <div className="admin-muted">{row.workspace.slug}</div>
-        </div>
+        </Link>
       ),
     },
     {

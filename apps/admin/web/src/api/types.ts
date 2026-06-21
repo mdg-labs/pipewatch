@@ -111,3 +111,71 @@ export type DeliveryListQuery = {
   installation_id?: string;
   event?: string;
 };
+
+export type WorkspacesByPlan = {
+  free: number;
+  pro: number;
+  business: number;
+};
+
+export type PlatformMetricsSummary = {
+  totalWorkspaces: number;
+  totalIntegrations: number;
+  totalProductUsers: number;
+  totalPipelineRuns: number;
+  pipelineRunsLast30Days: number;
+  workspacesByPlan: WorkspacesByPlan;
+};
+
+export type PlatformMetricsWorkspace = {
+  id: string;
+  slug: string;
+  name: string;
+  memberCount: number;
+  integrationCount: number;
+  pipelineRunCount: number;
+};
+
+export type RecentWebhookHealthSummary = {
+  windowMinutes: number;
+  total: number;
+  successCount: number;
+  failureCount: number;
+  unreachableCount: number;
+  failureRate: number;
+};
+
+export type WorkspaceIntegrationSummary = {
+  id: string;
+  externalInstallationId: string;
+  accountLogin: string;
+  accountType: string;
+  createdAt: string;
+};
+
+export type WorkspaceMemberSummary = {
+  userId: string;
+  email: string | null;
+  role: string;
+};
+
+export type WorkspaceDetail = WorkspaceOverview & {
+  integrations: WorkspaceIntegrationSummary[];
+  members: WorkspaceMemberSummary[];
+  recentWebhookHealth: RecentWebhookHealthSummary;
+};
+
+export type IntegrationDetail = {
+  id: string;
+  workspaceId: string;
+  externalInstallationId: string;
+  accountLogin: string;
+  accountType: string;
+  createdAt: string;
+  workspace: {
+    id: string;
+    slug: string;
+    name: string;
+  };
+  recentWebhookHealth: RecentWebhookHealthSummary;
+};
