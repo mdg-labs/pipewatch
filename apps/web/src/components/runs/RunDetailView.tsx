@@ -11,11 +11,11 @@ import { Avatar, StatusBadge } from "@pipewatch/ui";
 import { ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 import { CardSkeleton } from "@/components/CardSkeleton";
 import { ErrorRetry } from "@/components/ErrorRetry";
-import { useSetLiveStreamOverride } from "@/contexts/live-stream-override-context";
+import { useSetLiveStreamOverride, useLiveStreamOverrideClaim } from "@/contexts/live-stream-override-context";
 import { useApi } from "@/hooks/use-api";
 import { useRepoStream } from "@/hooks/use-repo-stream";
 import { formatTriggerLabel } from "@/i18n/trigger-labels";
@@ -72,6 +72,7 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
   const { formatDuration, formatRelativeTime, emDash } = useTimeFormatters();
   const { workspace, workspaceId } = useApi();
   const setLiveStreamOverride = useSetLiveStreamOverride();
+  const { claimOverride, releaseOverride } = useLiveStreamOverrideClaim();
 
   const [repository, setRepository] = useState<RepositorySummary | null>(null);
   const [runDetail, setRunDetail] = useState<{ run: PipelineRun; jobs: PipelineJob[] } | null>(
@@ -144,6 +145,13 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
     repoId,
     onEvent: handleSseEvent,
   });
+
+  useLayoutEffect(() => {
+    claimOverride();
+    return () => {
+      releaseOverride();
+    };
+  }, [claimOverride, releaseOverride]);
 
   useEffect(() => {
     setLiveStreamOverride(liveStatus);

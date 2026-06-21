@@ -6,7 +6,7 @@ import { createElement, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createRepoSseClient } from "@/lib/sse-client";
+import { createRepoSseClient, SSE_CONNECTED_GRACE_MS } from "@/lib/sse-client";
 
 import { extractRepoIdFromPath, useRepoStream } from "./use-repo-stream";
 
@@ -85,7 +85,7 @@ describe("createRepoSseClient", () => {
       `${API_URL}/api/v1/workspaces/${WORKSPACE_ID}/repos/${REPO_ID}/stream?token=sse-token-1`,
     );
     expect(instances).toHaveLength(1);
-    expect(client.getStatus()).toBe("reconnecting");
+    expect(client.getStatus()).toBe("connecting");
 
     act(() => {
       instances[0]?.onopen?.();
@@ -130,7 +130,7 @@ describe("createRepoSseClient", () => {
     expect(onEvent).toHaveBeenCalledWith(runEvent);
   });
 
-  it("reconnects with a fresh token after EventSource errors", async () => {
+  it("reconnects with exponential backoff and a fresh token after EventSource errors", async () => {
     const { EventSourceFactory, instances } = createMockEventSourceFactory();
     const fetchToken = vi
       .fn()
@@ -143,6 +143,7 @@ describe("createRepoSseClient", () => {
       repoId: REPO_ID,
       fetchToken,
       eventSourceFactory: EventSourceFactory,
+      connectedGraceMs: 0,
     });
 
     client.connect();
@@ -162,6 +163,64 @@ describe("createRepoSseClient", () => {
     expect(fetchToken).toHaveBeenCalledTimes(2);
     expect(instances).toHaveLength(2);
     expect(instances[1]?.url).toContain("token=sse-token-2");
+  });
+
+  it("keeps connected during the grace period after transient errors", async () => {
+    const { EventSourceFactory, instances } = createMockEventSourceFactory();
+    const fetchToken = vi
+      .fn()
+      .mockResolvedValueOnce({ token: "sse-token-1", expiresIn: 60 })
+      .mockResolvedValueOnce({ token: "sse-token-2", expiresIn: 60 });
+
+    const client = createRepoSseClient({
+      apiUrl: API_URL,
+      workspaceId: WORKSPACE_ID,
+      repoId: REPO_ID,
+      fetchToken,
+      eventSourceFactory: EventSourceFactory,
+      connectedGraceMs: SSE_CONNECTED_GRACE_MS,
+    });
+
+    client.connect();
+    await Promise.resolve();
+
+    act(() => {
+      instances[0]?.onopen?.();
+      instances[0]?.onerror?.();
+    });
+
+    expect(client.getStatus()).toBe("connected");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SSE_CONNECTED_GRACE_MS);
+    });
+
+    expect(client.getStatus()).toBe("reconnecting");
+  });
+
+  it("treats heartbeat events as connection liveness", async () => {
+    const { EventSourceFactory, instances } = createMockEventSourceFactory();
+
+    const client = createRepoSseClient({
+      apiUrl: API_URL,
+      workspaceId: WORKSPACE_ID,
+      repoId: REPO_ID,
+      fetchToken: vi.fn().mockResolvedValue({ token: "sse-token-1", expiresIn: 60 }),
+      eventSourceFactory: EventSourceFactory,
+      connectedGraceMs: SSE_CONNECTED_GRACE_MS,
+    });
+
+    client.connect();
+    await Promise.resolve();
+
+    act(() => {
+      instances[0]?.onopen?.();
+      instances[0]?.onmessage?.({
+        data: JSON.stringify({ type: "heartbeat", data: { ts: Date.now() } }),
+      } as MessageEvent<string>);
+    });
+
+    expect(client.getStatus()).toBe("connected");
   });
 
   it("disconnects and stays offline on cleanup", async () => {

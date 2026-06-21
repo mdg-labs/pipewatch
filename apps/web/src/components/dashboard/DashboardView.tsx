@@ -5,12 +5,12 @@ import { EmptyState, buttonClassName } from "@pipewatch/ui";
 import { Github } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 import { CardSkeleton } from "@/components/CardSkeleton";
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { TableSkeleton } from "@/components/TableSkeleton";
-import { useSetLiveStreamOverride } from "@/contexts/live-stream-override-context";
+import { useSetLiveStreamOverride, useLiveStreamOverrideClaim } from "@/contexts/live-stream-override-context";
 import { useApi } from "@/hooks/use-api";
 import { useDashboardStream } from "@/hooks/use-dashboard-stream";
 import type {
@@ -51,6 +51,7 @@ export function DashboardView({ workspaceSlug }: DashboardViewProps) {
   const t = useTranslations("dashboard");
   const { workspace, workspaceId } = useApi();
   const setLiveStreamOverride = useSetLiveStreamOverride();
+  const { claimOverride, releaseOverride } = useLiveStreamOverrideClaim();
 
   const [dashboard, setDashboard] = useState<WorkspaceDashboard | null>(null);
   const [integrations, setIntegrations] = useState<IntegrationSummary[]>([]);
@@ -115,6 +116,13 @@ export function DashboardView({ workspaceSlug }: DashboardViewProps) {
     enabled: Boolean(dashboard && dashboard.repos.length > 0),
     onEvent: handleSseEvent,
   });
+
+  useLayoutEffect(() => {
+    claimOverride();
+    return () => {
+      releaseOverride();
+    };
+  }, [claimOverride, releaseOverride]);
 
   useEffect(() => {
     if (!dashboard || dashboard.repos.length === 0) {

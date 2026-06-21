@@ -4,6 +4,7 @@ import type { SseDataEvent } from "@pipewatch/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { LiveConnectionStatus } from "@/components/app-shell/LiveIndicator";
+import { aggregateLiveStatus } from "@/lib/live-stream-status";
 import { createRepoSseClient } from "@/lib/sse-client";
 import { publicApiUrl } from "@/lib/env";
 
@@ -19,21 +20,7 @@ export type UseDashboardStreamResult = {
   status: LiveConnectionStatus;
 };
 
-function aggregateLiveStatus(statuses: readonly LiveConnectionStatus[]): LiveConnectionStatus {
-  if (statuses.length === 0) {
-    return "offline";
-  }
-
-  if (statuses.some((status) => status === "connected")) {
-    return "connected";
-  }
-
-  if (statuses.some((status) => status === "reconnecting")) {
-    return "reconnecting";
-  }
-
-  return "offline";
-}
+const DASHBOARD_CONNECT_STAGGER_MS = 150;
 
 /** Subscribe to live pipeline events for all dashboard repositories (PRD §19, B3). */
 export function useDashboardStream(
@@ -61,7 +48,11 @@ export function useDashboardStream(
       return;
     }
 
-    const clients = ids.map((repoId) => {
+    let disposed = false;
+    const clients: ReturnType<typeof createRepoSseClient>[] = [];
+    const staggerTimers: ReturnType<typeof setTimeout>[] = [];
+
+    for (const [index, repoId] of ids.entries()) {
       const client = createRepoSseClient({
         apiUrl: publicApiUrl,
         workspaceId,
@@ -78,11 +69,21 @@ export function useDashboardStream(
         },
       });
 
-      client.connect();
-      return client;
-    });
+      clients.push(client);
+
+      const timer = setTimeout(() => {
+        if (!disposed) {
+          client.connect();
+        }
+      }, index * DASHBOARD_CONNECT_STAGGER_MS);
+      staggerTimers.push(timer);
+    }
 
     return () => {
+      disposed = true;
+      for (const timer of staggerTimers) {
+        clearTimeout(timer);
+      }
       for (const client of clients) {
         client.disconnect();
       }

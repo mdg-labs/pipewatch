@@ -362,7 +362,8 @@
   color: var(--status-success);
 }
 
-.pw-app-live-indicator-reconnecting {
+.pw-app-live-indicator-reconnecting,
+.pw-app-live-indicator-connecting {
   color: var(--status-running);
 }
 
@@ -378,7 +379,8 @@
   flex-shrink: 0;
 }
 
-.pw-app-live-indicator-reconnecting .pw-app-live-dot {
+.pw-app-live-indicator-reconnecting .pw-app-live-dot,
+.pw-app-live-indicator-connecting .pw-app-live-dot {
   animation: pw-live-pulse 1.2s ease-in-out infinite;
 }
 

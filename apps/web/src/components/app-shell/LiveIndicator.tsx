@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 
 import { classNames } from "@pipewatch/ui";
 
-export type LiveConnectionStatus = "connected" | "reconnecting" | "offline";
+export type LiveConnectionStatus = "connected" | "connecting" | "reconnecting" | "offline";
 
 export type LiveIndicatorProps = {
   status?: LiveConnectionStatus;

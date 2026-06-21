@@ -18,7 +18,7 @@ export const RATE_LIMIT_DEFAULTS = {
   refresh: { max: 30, windowSeconds: 60 },
   waitlist: { max: 5, windowSeconds: 60 },
   invite: { max: 30, windowSeconds: 60 },
-  sseToken: { max: 60, windowSeconds: 60 },
+  sseToken: { max: 120, windowSeconds: 60 },
   webhook: { max: 300, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitConfig>;
 

@@ -4,7 +4,7 @@ import type { PipelineRun, RepositorySummary, SseDataEvent } from "@pipewatch/ty
 import { EmptyState, Pagination } from "@pipewatch/ui";
 import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { ErrorRetry } from "@/components/ErrorRetry";
 import { TableSkeleton } from "@/components/TableSkeleton";
@@ -13,7 +13,7 @@ import { RepoHeader } from "@/components/repos/RepoHeader";
 import { WorkflowTabs } from "@/components/repos/WorkflowTabs";
 import { RunFilters } from "@/components/runs/RunFilters";
 import { RunListTable } from "@/components/runs/RunListTable";
-import { useSetLiveStreamOverride } from "@/contexts/live-stream-override-context";
+import { useSetLiveStreamOverride, useLiveStreamOverrideClaim } from "@/contexts/live-stream-override-context";
 import { useApi } from "@/hooks/use-api";
 import {
   buildPaginationLabels,
@@ -70,6 +70,7 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
   const { canMutate } = useWorkspaceRole();
   const { toast } = useToast();
   const setLiveStreamOverride = useSetLiveStreamOverride();
+  const { claimOverride, releaseOverride } = useLiveStreamOverrideClaim();
   const t = useTranslations("repos");
   const tPagination = useTranslations("ui.pagination");
 
@@ -159,6 +160,13 @@ export function RepoDetailView({ workspaceSlug, repoId }: RepoDetailViewProps) {
     repoId,
     onEvent: handleSseEvent,
   });
+
+  useLayoutEffect(() => {
+    claimOverride();
+    return () => {
+      releaseOverride();
+    };
+  }, [claimOverride, releaseOverride]);
 
   useEffect(() => {
     setLiveStreamOverride(liveStatus);

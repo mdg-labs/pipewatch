@@ -46,6 +46,7 @@
     },
     "liveIndicator": {
       "connected": "Live",
+      "connecting": "Connecting",
       "reconnecting": "Reconnecting",
       "offline": "Offline"
     }
