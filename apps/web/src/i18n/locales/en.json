@@ -332,6 +332,9 @@
   },
   "repos": {
     "title": "Repository",
+    "runs": {
+      "title": "Runs"
+    },
     "loadError": "We could not load this repository.",
     "empty": {
       "title": "No runs yet for this repo",

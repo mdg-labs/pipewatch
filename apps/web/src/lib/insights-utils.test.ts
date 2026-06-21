@@ -147,7 +147,7 @@ describe("insights-utils", () => {
         "30d",
       ),
     ).toBe(
-      "/workspaces/acme/repos/11111111-1111-4111-8111-111111111111?workflow=CI",
+      "/workspaces/acme/repos/11111111-1111-4111-8111-111111111111/runs?workflow=CI",
     );
   });
 

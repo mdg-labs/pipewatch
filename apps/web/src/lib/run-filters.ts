@@ -102,6 +102,15 @@ export function runFiltersQueryString(filters: RunListFilters): string {
   return query.length > 0 ? `?${query}` : "";
 }
 
+/** Shareable repo runs list URL (Page Inventory B4-runs). */
+export function buildRepoRunsPath(
+  workspaceSlug: string,
+  repoId: string,
+  filters: RunListFilters,
+): string {
+  return `/workspaces/${workspaceSlug}/repos/${repoId}/runs${runFiltersQueryString(filters)}`;
+}
+
 function resolveStartedFrom(range: RunDateRange): string | undefined {
   if (range === "all") {
     return undefined;

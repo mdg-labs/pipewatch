@@ -43,6 +43,7 @@ function createMockEventSourceFactory() {
 describe("extractRepoIdFromPath", () => {
   it("returns repo id from repository routes", () => {
     expect(extractRepoIdFromPath("/workspaces/mdg-labs/repos/repo-1")).toBe("repo-1");
+    expect(extractRepoIdFromPath("/workspaces/mdg-labs/repos/repo-1/runs")).toBe("repo-1");
     expect(extractRepoIdFromPath("/workspaces/mdg-labs/repos/repo-1/runs/run-1")).toBe(
       "repo-1",
     );

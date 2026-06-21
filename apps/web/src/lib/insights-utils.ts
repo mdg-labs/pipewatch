@@ -6,7 +6,7 @@ import type {
 import type { TimeSeriesSeries } from "@pipewatch/ui";
 
 import { formatChartDateLabel } from "@/i18n/insights-formatters";
-import { runFiltersQueryString, type RunListFilters } from "@/lib/run-filters";
+import { buildRepoRunsPath, type RunListFilters } from "@/lib/run-filters";
 
 const MAX_CHART_SERIES = 5;
 
@@ -163,5 +163,5 @@ export function buildWorkflowRunsHref(
     cursor: undefined,
   };
 
-  return `/workspaces/${workspaceSlug}/repos/${repoId}${runFiltersQueryString(filters)}`;
+  return buildRepoRunsPath(workspaceSlug, repoId, filters);
 }

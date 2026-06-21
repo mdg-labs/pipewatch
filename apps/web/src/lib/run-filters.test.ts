@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildRepoRunsPath,
   parseRunFilters,
   runFiltersQueryString,
   runsApiQueryString,
@@ -72,6 +73,36 @@ describe("runFiltersQueryString", () => {
     ).toBe(
       "?branch=main&workflow=Deploy&status=running&trigger=push&range=90d&page=2&cursor=cursor-token",
     );
+  });
+});
+
+describe("buildRepoRunsPath", () => {
+  it("uses the /runs base path with encoded filters", () => {
+    expect(
+      buildRepoRunsPath("acme", "repo-1", {
+        branch: "main",
+        workflow: "CI",
+        status: "failed",
+        trigger: undefined,
+        range: "30d",
+        page: 1,
+        cursor: undefined,
+      }),
+    ).toBe("/workspaces/acme/repos/repo-1/runs?branch=main&workflow=CI&status=failed");
+  });
+
+  it("omits query string when filters are defaults", () => {
+    expect(
+      buildRepoRunsPath("acme", "repo-1", {
+        branch: undefined,
+        workflow: undefined,
+        status: "all",
+        trigger: undefined,
+        range: "30d",
+        page: 1,
+        cursor: undefined,
+      }),
+    ).toBe("/workspaces/acme/repos/repo-1/runs");
   });
 });
 

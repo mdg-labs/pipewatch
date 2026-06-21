@@ -21,9 +21,9 @@ export type UseRepoStreamResult = {
   status: LiveConnectionStatus;
 };
 
-/** Extract repo id from workspace repo routes (B4, B5, B6). */
+/** Extract repo id from workspace repo routes (B4, B4-runs, B5, B6). */
 export function extractRepoIdFromPath(pathname: string): string | null {
-  const match = pathname.match(/^\/workspaces\/[^/]+\/repos\/([^/]+)/);
+  const match = pathname.match(/^\/workspaces\/[^/]+\/repos\/([^/]+)(?:\/|$)/);
   return match?.[1] ?? null;
 }
 
