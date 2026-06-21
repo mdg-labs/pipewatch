@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import type { PipelineJob, PipelineRun, PipelineRunSummary } from "@pipewatch/types";
 
-import { applySseEventToRunDetail } from "./run-detail-utils";
+import {
+  applySseEventToRunDetail,
+  buildRunDetailBreadcrumbHrefs,
+} from "./run-detail-utils";
 
 function makeRun(overrides: Partial<PipelineRun> = {}): PipelineRun {
   return {
@@ -41,6 +44,18 @@ function makeSummary(overrides: Partial<PipelineRunSummary> = {}): PipelineRunSu
     ...overrides,
   };
 }
+
+describe("buildRunDetailBreadcrumbHrefs", () => {
+  it("links dashboard, repo overview, and all runs list", () => {
+    const repoId = "11111111-1111-4111-8111-111111111111";
+
+    expect(buildRunDetailBreadcrumbHrefs("acme", repoId)).toEqual({
+      dashboard: "/workspaces/acme",
+      repoOverview: `/workspaces/acme/repos/${repoId}`,
+      allRuns: `/workspaces/acme/repos/${repoId}/runs`,
+    });
+  });
+});
 
 describe("applySseEventToRunDetail", () => {
   it("sets completed_at from summary.completedAt on run:completed", () => {

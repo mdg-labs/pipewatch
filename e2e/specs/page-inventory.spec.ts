@@ -91,6 +91,7 @@ test.describe("page inventory — app smoke B0–B14 @local-only", () => {
 
     await expectPageHeading(page, `/workspaces/${slug}/`, "Dashboard");
     await expectRouteOk(page, `/workspaces/${slug}/repos/${fixture.repositoryId}`);
+    await expectRouteOk(page, `/workspaces/${slug}/repos/${fixture.repositoryId}/runs`);
     await expectPageHeading(
       page,
       `/workspaces/${slug}/repos/${fixture.repositoryId}/settings`,

@@ -48,6 +48,26 @@ export function githubCommitUrl(fullName: string, commitSha: string): string {
   return `https://github.com/${fullName}/commit/${shortSha}`;
 }
 
+export type RunDetailBreadcrumbHrefs = {
+  dashboard: string;
+  repoOverview: string;
+  allRuns: string;
+};
+
+/** B6 breadcrumb targets (Page Inventory: B3 → B4 overview → B4-runs). */
+export function buildRunDetailBreadcrumbHrefs(
+  workspaceSlug: string,
+  repoId: string,
+): RunDetailBreadcrumbHrefs {
+  const workspaceRoot = `/workspaces/${workspaceSlug}`;
+
+  return {
+    dashboard: workspaceRoot,
+    repoOverview: `${workspaceRoot}/repos/${repoId}`,
+    allRuns: `${workspaceRoot}/repos/${repoId}/runs`,
+  };
+}
+
 function summaryToRunPatch(
   summary: PipelineRunSummary,
   existing: PipelineRun,

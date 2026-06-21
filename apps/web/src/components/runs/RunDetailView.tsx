@@ -22,6 +22,7 @@ import { formatTriggerLabel } from "@/i18n/trigger-labels";
 import { useTimeFormatters } from "@/i18n/use-time-formatters";
 import {
   applySseEventToRunDetail,
+  buildRunDetailBreadcrumbHrefs,
   collectAutoExpandedJobIds,
   githubCommitUrl,
 } from "@/lib/run-detail-utils";
@@ -220,19 +221,21 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
     : undefined;
   const shortSha = run.commit_sha ? run.commit_sha.slice(0, 7) : emDash;
   const avatarUrl = githubActorAvatarUrl(run.actor_login);
+  const breadcrumbHrefs = buildRunDetailBreadcrumbHrefs(workspaceSlug, repoId);
 
   return (
     <div className="pw-run-detail">
       <nav className="pw-run-detail-breadcrumb" aria-label={tBreadcrumb("ariaLabel")}>
-        <Link href={`/workspaces/${workspaceSlug}`} className="pw-run-detail-breadcrumb-link">
+        <Link href={breadcrumbHrefs.dashboard} className="pw-run-detail-breadcrumb-link">
           {tAppBreadcrumbs("repos")}
         </Link>
         <span aria-hidden>/</span>
-        <Link
-          href={`/workspaces/${workspaceSlug}/repos/${repoId}`}
-          className="pw-run-detail-breadcrumb-link"
-        >
+        <Link href={breadcrumbHrefs.repoOverview} className="pw-run-detail-breadcrumb-link">
           {repository.full_name}
+        </Link>
+        <span aria-hidden>/</span>
+        <Link href={breadcrumbHrefs.allRuns} className="pw-run-detail-breadcrumb-link">
+          {tBreadcrumb("allRuns")}
         </Link>
         <span aria-hidden>/</span>
         <span className="pw-run-detail-breadcrumb-current">

@@ -430,7 +430,8 @@
     "loadError": "We could not load this workflow run.",
     "breadcrumb": {
       "ariaLabel": "Run context",
-      "dashboard": "Dashboard"
+      "dashboard": "Dashboard",
+      "allRuns": "All runs"
     },
     "viewOnGithub": "View on GitHub",
     "stats": {
