@@ -7,6 +7,7 @@ import { registerAdminInviteRoutes } from "./admin/invites.js";
 import { registerAcceptInviteRoute } from "./auth/accept-invite.js";
 import { registerLoginRoute, registerLogoutRoute } from "./auth/login.js";
 import { registerIntegrationRoutes } from "./integrations.js";
+import { registerPlatformMetricsRoutes } from "./platform-metrics.js";
 import { registerWebhookDeliveryRoutes } from "./webhook-deliveries.js";
 import { registerWebhookHealthRoutes } from "./webhook-health.js";
 import { registerWorkspaceRoutes } from "./workspaces.js";
@@ -37,6 +38,7 @@ export function registerApiRoutes(app: Hono, deps: AdminAppDeps): void {
   registerIntegrationRoutes(api);
   registerWebhookDeliveryRoutes(api);
   registerWebhookHealthRoutes(api);
+  registerPlatformMetricsRoutes(api);
 
   api.get("/v1/status", (c) =>
     c.json(
