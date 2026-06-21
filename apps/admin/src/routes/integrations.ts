@@ -1,9 +1,14 @@
 import { Hono } from "hono";
 import { z } from "zod";
 
+import { AdminHttpError } from "../lib/api-error.js";
 import { requireRole } from "../middleware/require-role.js";
-import { listIntegrations } from "../services/overview.js";
+import { getIntegrationById, listIntegrations } from "../services/overview.js";
 import type { AdminAppBindings } from "../types.js";
+
+const IntegrationParamsSchema = z.object({
+  id: z.string().uuid(),
+});
 
 const PaginationQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -24,6 +29,19 @@ export function registerIntegrationRoutes(api: Hono<AdminAppBindings>): void {
     });
 
     return c.json(result, 200);
+  });
+
+  integrations.get("/:id", async (c) => {
+    const params = IntegrationParamsSchema.parse(c.req.param());
+    const integration = await getIntegrationById(c.get("db"), params.id, {
+      windowMinutes: c.get("env").ADMIN_ALERT_WINDOW_MINUTES,
+    });
+
+    if (!integration) {
+      throw new AdminHttpError("Integration not found", 404, "NOT_FOUND");
+    }
+
+    return c.json(integration, 200);
   });
 
   api.route("/integrations", integrations);

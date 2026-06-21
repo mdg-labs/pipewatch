@@ -15,7 +15,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createApp } from "../app.js";
 import { hashPassword } from "../services/auth/password.js";
-import { adminUsers } from "@pipewatch/db-admin/schema";
+import { adminUsers, webhookDeliveries } from "@pipewatch/db-admin/schema";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -276,7 +276,7 @@ describe("admin workspace and integration overview API", () => {
     expect(item?.createdAt).toBeTruthy();
   });
 
-  it("returns workspace detail and 404 for unknown ids", async () => {
+  it("returns enriched workspace detail and 404 for unknown ids", async () => {
     const suffix = randomBytes(4).toString("hex");
     const email = `operator-${suffix}@pipewatch.app`;
     const password = "operator-password-123";
@@ -296,6 +296,69 @@ describe("admin workspace and integration overview API", () => {
       throw new Error("Failed to seed workspace");
     }
 
+    const githubId = BigInt(`0x${randomBytes(7).toString("hex")}`);
+    const [user] = await database
+      .insert(users)
+      .values({
+        githubId,
+        githubLogin: `detail-${suffix}`,
+        email: `detail-${suffix}@example.com`,
+        name: "Detail Member",
+      })
+      .returning();
+
+    if (!user) {
+      throw new Error("Failed to seed user");
+    }
+
+    await database.insert(workspaceMembers).values({
+      workspaceId: workspace.id,
+      userId: user.id,
+      role: "admin",
+    });
+
+    const [integration] = await database
+      .insert(integrations)
+      .values({
+        workspaceId: workspace.id,
+        provider: "github",
+        externalInstallationId: `install-detail-${suffix}`,
+        accountLogin: `org-detail-${suffix}`,
+        accountType: "Organization",
+        accessToken: secretAccessToken,
+      })
+      .returning();
+
+    if (!integration) {
+      throw new Error("Failed to seed integration");
+    }
+
+    const deliveredAt = new Date();
+    await database.insert(webhookDeliveries).values([
+      {
+        githubDeliveryId: `delivery-success-${suffix}`,
+        githubGuid: `guid-success-${suffix}`,
+        externalInstallationId: integration.externalInstallationId,
+        integrationId: integration.id,
+        workspaceId: workspace.id,
+        event: "workflow_run",
+        statusCode: 200,
+        status: "OK",
+        deliveredAt,
+      },
+      {
+        githubDeliveryId: `delivery-failure-${suffix}`,
+        githubGuid: `guid-failure-${suffix}`,
+        externalInstallationId: integration.externalInstallationId,
+        integrationId: integration.id,
+        workspaceId: workspace.id,
+        event: "workflow_run",
+        statusCode: 500,
+        status: "Internal Server Error",
+        deliveredAt,
+      },
+    ]);
+
     const app = createTestApp(database);
     const cookie = await login(app, email, password);
 
@@ -311,8 +374,30 @@ describe("admin workspace and integration overview API", () => {
       id: workspace.id,
       slug: workspace.slug,
       plan: "business",
-      integrationCount: 0,
-      memberCount: 0,
+      integrationCount: 1,
+      memberCount: 1,
+      integrations: [
+        {
+          id: integration.id,
+          externalInstallationId: integration.externalInstallationId,
+          accountLogin: `org-detail-${suffix}`,
+          accountType: "Organization",
+        },
+      ],
+      members: [
+        {
+          userId: user.id,
+          email: `detail-${suffix}@example.com`,
+          role: "admin",
+        },
+      ],
+      recentWebhookHealth: {
+        total: 2,
+        successCount: 1,
+        failureCount: 1,
+        unreachableCount: 0,
+        failureRate: 0.5,
+      },
     });
 
     const missingResponse = await app.request(
@@ -390,6 +475,98 @@ describe("admin workspace and integration overview API", () => {
       workspace: {
         slug: workspace.slug,
         name: workspace.name,
+      },
+    });
+  });
+
+  it("returns integration detail with workspace metadata and 404 for unknown ids", async () => {
+    const suffix = randomBytes(4).toString("hex");
+    const email = `integration-detail-${suffix}@pipewatch.app`;
+    const password = "integration-detail-password-123";
+
+    await seedAdminUser(database, { email, password, role: "viewer" });
+
+    const [workspace] = await database
+      .insert(workspaces)
+      .values({
+        name: "Integration Detail Workspace",
+        slug: `integration-detail-${suffix}`,
+        plan: "pro",
+      })
+      .returning();
+
+    if (!workspace) {
+      throw new Error("Failed to seed workspace");
+    }
+
+    const [integration] = await database
+      .insert(integrations)
+      .values({
+        workspaceId: workspace.id,
+        provider: "github",
+        externalInstallationId: `install-detail-api-${suffix}`,
+        accountLogin: `acct-detail-${suffix}`,
+        accountType: "User",
+        accessToken: secretAccessToken,
+      })
+      .returning();
+
+    if (!integration) {
+      throw new Error("Failed to seed integration");
+    }
+
+    const deliveredAt = new Date();
+    await database.insert(webhookDeliveries).values({
+      githubDeliveryId: `delivery-unreachable-${suffix}`,
+      githubGuid: `guid-unreachable-${suffix}`,
+      externalInstallationId: integration.externalInstallationId,
+      integrationId: integration.id,
+      workspaceId: workspace.id,
+      event: "push",
+      statusCode: 0,
+      status: "Failed to connect",
+      deliveredAt,
+    });
+
+    const app = createTestApp(database);
+    const cookie = await login(app, email, password);
+
+    const detailResponse = await app.request(
+      `http://localhost/api/integrations/${integration.id}`,
+      { headers: { cookie } },
+    );
+
+    expect(detailResponse.status).toBe(200);
+    const detailText = await detailResponse.text();
+    assertNoTokenLeakage(detailText);
+    await expect(JSON.parse(detailText)).toMatchObject({
+      id: integration.id,
+      externalInstallationId: integration.externalInstallationId,
+      accountLogin: `acct-detail-${suffix}`,
+      workspace: {
+        id: workspace.id,
+        slug: workspace.slug,
+        name: workspace.name,
+      },
+      recentWebhookHealth: {
+        total: 1,
+        successCount: 0,
+        failureCount: 1,
+        unreachableCount: 1,
+        failureRate: 1,
+      },
+    });
+
+    const missingResponse = await app.request(
+      "http://localhost/api/integrations/00000000-0000-4000-8000-000000000000",
+      { headers: { cookie } },
+    );
+
+    expect(missingResponse.status).toBe(404);
+    await expect(missingResponse.json()).resolves.toEqual({
+      error: {
+        code: "NOT_FOUND",
+        message: "Integration not found",
       },
     });
   });

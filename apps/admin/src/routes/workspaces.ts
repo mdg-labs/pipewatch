@@ -33,7 +33,9 @@ export function registerWorkspaceRoutes(api: Hono<AdminAppBindings>): void {
 
   workspaces.get("/:id", async (c) => {
     const params = WorkspaceParamsSchema.parse(c.req.param());
-    const workspace = await getWorkspaceById(c.get("db"), params.id);
+    const workspace = await getWorkspaceById(c.get("db"), params.id, {
+      windowMinutes: c.get("env").ADMIN_ALERT_WINDOW_MINUTES,
+    });
 
     if (!workspace) {
       throw new AdminHttpError("Workspace not found", 404, "NOT_FOUND");
