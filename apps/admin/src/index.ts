@@ -26,7 +26,7 @@ const db = createDb(env.DATABASE_URL);
 await bootstrapAdminUser(db, env);
 
 const staticRoot =
-  env.NODE_ENV === "production"
+  env.NODE_ENV !== "development"
     ? path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../web/dist")
     : null;
 
