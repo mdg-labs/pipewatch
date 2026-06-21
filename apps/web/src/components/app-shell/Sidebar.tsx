@@ -57,8 +57,12 @@ function workspacePath(slug: string, segment = ""): string {
   return `/workspaces/${slug}${segment}`;
 }
 
+function isWorkspaceRootPath(href: string): boolean {
+  return /^\/workspaces\/[^/]+$/.test(href);
+}
+
 function isActivePath(pathname: string, href: string): boolean {
-  if (href.endsWith("/settings")) {
+  if (href.endsWith("/settings") || isWorkspaceRootPath(href)) {
     return pathname === href;
   }
 
