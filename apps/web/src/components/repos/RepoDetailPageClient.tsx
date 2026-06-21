@@ -1,7 +1,7 @@
 "use client";
 
-import { TableSkeleton } from "@/components/TableSkeleton";
-import { RepoDetailView } from "@/components/repos/RepoDetailView";
+import { CardSkeleton } from "@/components/CardSkeleton";
+import { RepoOverviewView } from "@/components/repos/RepoOverviewView";
 
 export type RepoDetailPageClientProps = {
   workspaceSlug: string;
@@ -9,9 +9,9 @@ export type RepoDetailPageClientProps = {
 };
 
 export function RepoDetailPageClient({ workspaceSlug, repoId }: RepoDetailPageClientProps) {
-  return <RepoDetailView workspaceSlug={workspaceSlug} repoId={repoId} />;
+  return <RepoOverviewView workspaceSlug={workspaceSlug} repoId={repoId} />;
 }
 
 export function RepoDetailPageFallback() {
-  return <TableSkeleton columns={8} rows={8} />;
+  return <CardSkeleton count={3} />;
 }

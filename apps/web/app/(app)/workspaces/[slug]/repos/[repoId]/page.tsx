@@ -12,7 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("title") };
 }
 
-/** Repository run list and workflow tabs (pages B4). */
+/** Repository overview dashboard (pages B4). */
 export default async function RepoDetailPage({ params }: RepoDetailPageProps) {
   const { slug, repoId } = await params;
 

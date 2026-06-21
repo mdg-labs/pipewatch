@@ -332,6 +332,12 @@
   },
   "repos": {
     "title": "Repository",
+    "overview": {
+      "recentRuns": {
+        "title": "Recent runs",
+        "viewAll": "View all runs"
+      }
+    },
     "runs": {
       "title": "Runs"
     },

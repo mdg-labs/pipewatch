@@ -1,2 +1,2 @@
-export { RepoRunsListView as RepoDetailView } from "@/components/repos/RepoRunsListView";
-export type { RepoRunsListViewProps as RepoDetailViewProps } from "@/components/repos/RepoRunsListView";
+export { RepoOverviewView as RepoDetailView } from "@/components/repos/RepoOverviewView";
+export type { RepoOverviewViewProps as RepoDetailViewProps } from "@/components/repos/RepoOverviewView";

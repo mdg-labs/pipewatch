@@ -5,7 +5,7 @@ import type {
   InsightsRange,
   InsightsSlowestWorkflow,
 } from "@pipewatch/types";
-import { DataTable, type DataTableColumn } from "@pipewatch/ui";
+import { DataTable, classNames, type DataTableColumn } from "@pipewatch/ui";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
@@ -21,6 +21,7 @@ export type InsightsTablesProps = {
   mostFailingWorkflows: InsightsMostFailingWorkflow[];
   workspaceSlug: string;
   range: InsightsRange;
+  showSlowest?: boolean;
 };
 
 function TrendIndicator({
@@ -86,6 +87,7 @@ export function InsightsTables({
   mostFailingWorkflows,
   workspaceSlug,
   range,
+  showSlowest = true,
 }: InsightsTablesProps) {
   const t = useTranslations("insights.tables");
   const { formatMsAsDuration } = useInsightsFormatters();
@@ -198,18 +200,25 @@ export function InsightsTables({
   );
 
   return (
-    <div className="pw-insights-tables-grid">
-      <section className="pw-insights-table-card">
-        <header className="pw-insights-table-header">
-          <h2 className="pw-insights-table-title">{t("slowestTitle")}</h2>
-          <span className="pw-insights-table-subtitle">{t("slowestSubtitle")}</span>
-        </header>
-        <DataTable
-          columns={slowestColumns}
-          rows={slowestWorkflows}
-          getRowKey={(row) => `${row.repo_id}:${row.workflow}`}
-        />
-      </section>
+    <div
+      className={classNames(
+        "pw-insights-tables-grid",
+        !showSlowest && "pw-insights-tables-grid-single",
+      )}
+    >
+      {showSlowest ? (
+        <section className="pw-insights-table-card">
+          <header className="pw-insights-table-header">
+            <h2 className="pw-insights-table-title">{t("slowestTitle")}</h2>
+            <span className="pw-insights-table-subtitle">{t("slowestSubtitle")}</span>
+          </header>
+          <DataTable
+            columns={slowestColumns}
+            rows={slowestWorkflows}
+            getRowKey={(row) => `${row.repo_id}:${row.workflow}`}
+          />
+        </section>
+      ) : null}
 
       <section className="pw-insights-table-card">
         <header className="pw-insights-table-header">
