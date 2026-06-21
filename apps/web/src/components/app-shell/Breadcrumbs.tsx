@@ -7,9 +7,15 @@ import { useMemo } from "react";
 
 import { classNames } from "@pipewatch/ui";
 
+import { useBreadcrumbRepoLabel } from "@/hooks/use-breadcrumb-repo-label";
+
 export type BreadcrumbSegment = {
   label: string;
   href?: string | undefined;
+};
+
+export type BuildBreadcrumbOptions = {
+  repoLabelOverride?: string | undefined;
 };
 
 export type BreadcrumbsProps = {
@@ -77,6 +83,7 @@ export function buildBreadcrumbSegments(
   pathname: string,
   workspaceSlug: string,
   t: BreadcrumbTranslator,
+  options: BuildBreadcrumbOptions = {},
 ): BreadcrumbSegment[] {
   const prefix = `/workspaces/${workspaceSlug}`;
   const segments: BreadcrumbSegment[] = [
@@ -102,13 +109,30 @@ export function buildBreadcrumbSegments(
   parts.forEach((part, index) => {
     currentPath += `/${part}`;
     const isLast = index === parts.length - 1;
-    const label = KNOWN_SEGMENTS.includes(part as (typeof KNOWN_SEGMENTS)[number])
-      ? segmentLabel(part, t)
-      : titleCase(part);
+    const isReposSegment = part === "repos";
+    const isRepoIdSegment = index > 0 && parts[index - 1] === "repos";
+
+    let label: string;
+    if (isRepoIdSegment && options.repoLabelOverride) {
+      label = options.repoLabelOverride;
+    } else if (KNOWN_SEGMENTS.includes(part as (typeof KNOWN_SEGMENTS)[number])) {
+      label = segmentLabel(part, t);
+    } else {
+      label = titleCase(part);
+    }
+
+    let href: string | undefined;
+    if (isLast) {
+      href = undefined;
+    } else if (isReposSegment) {
+      href = prefix;
+    } else {
+      href = currentPath;
+    }
 
     segments.push({
       label,
-      href: isLast ? undefined : currentPath,
+      href,
     });
   });
 
@@ -118,9 +142,13 @@ export function buildBreadcrumbSegments(
 export function Breadcrumbs({ workspaceSlug }: BreadcrumbsProps) {
   const pathname = usePathname() ?? "";
   const t = useTranslations("app.breadcrumbs");
+  const repoLabelOverride = useBreadcrumbRepoLabel();
   const segments = useMemo(
-    () => buildBreadcrumbSegments(pathname, workspaceSlug, t),
-    [pathname, workspaceSlug, t],
+    () =>
+      buildBreadcrumbSegments(pathname, workspaceSlug, t, {
+        ...(repoLabelOverride ? { repoLabelOverride } : {}),
+      }),
+    [pathname, workspaceSlug, t, repoLabelOverride],
   );
 
   return (

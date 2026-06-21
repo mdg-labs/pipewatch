@@ -69,6 +69,7 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
   const t = useTranslations("runs");
   const tTriggers = useTranslations("runs.triggers");
   const tBreadcrumb = useTranslations("runs.breadcrumb");
+  const tAppBreadcrumbs = useTranslations("app.breadcrumbs");
   const { formatDuration, formatRelativeTime, emDash } = useTimeFormatters();
   const { workspace, workspaceId } = useApi();
   const setLiveStreamOverride = useSetLiveStreamOverride();
@@ -224,7 +225,7 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
     <div className="pw-run-detail">
       <nav className="pw-run-detail-breadcrumb" aria-label={tBreadcrumb("ariaLabel")}>
         <Link href={`/workspaces/${workspaceSlug}`} className="pw-run-detail-breadcrumb-link">
-          {tBreadcrumb("dashboard")}
+          {tAppBreadcrumbs("repos")}
         </Link>
         <span aria-hidden>/</span>
         <Link
