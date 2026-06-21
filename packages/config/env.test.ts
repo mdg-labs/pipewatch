@@ -251,6 +251,7 @@ describe("parseAdminEnv", () => {
     expect(env.PORT).toBe(3002);
     expect(env.ADMIN_ALERT_FAILURE_RATE_THRESHOLD).toBe(0.05);
     expect(env.ADMIN_POLL_INTERVAL_CRON).toBe("*/2 * * * *");
+    expect(env.ADMIN_PASSWORD_RESET_TTL_SECONDS).toBe(3600);
   });
 
   it("allows missing secrets in development when edition is cloud", () => {

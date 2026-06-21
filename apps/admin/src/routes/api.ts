@@ -5,7 +5,9 @@ import { sessionMiddleware } from "../middleware/session.js";
 import type { AdminAppBindings, AdminAppDeps } from "../types.js";
 import { registerAdminInviteRoutes } from "./admin/invites.js";
 import { registerAcceptInviteRoute } from "./auth/accept-invite.js";
+import { registerForgotPasswordRoute } from "./auth/forgot-password.js";
 import { registerLoginRoute, registerLogoutRoute } from "./auth/login.js";
+import { registerResetPasswordRoute } from "./auth/reset-password.js";
 import { registerIntegrationRoutes } from "./integrations.js";
 import { registerPlatformMetricsRoutes } from "./platform-metrics.js";
 import { registerWebhookDeliveryRoutes } from "./webhook-deliveries.js";
@@ -29,6 +31,12 @@ export function registerApiRoutes(app: Hono, deps: AdminAppDeps): void {
 
   registerLoginRoute(api);
   registerAcceptInviteRoute(api);
+  if (deps.forgotPasswordRateLimit) {
+    registerForgotPasswordRoute(api, { rateLimit: deps.forgotPasswordRateLimit });
+  } else {
+    registerForgotPasswordRoute(api);
+  }
+  registerResetPasswordRoute(api);
 
   api.use("*", sessionMiddleware());
 

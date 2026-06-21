@@ -236,6 +236,19 @@ Ops audit log for mutating actions (manual redelivery, invite revoke, role chang
 
 **Why this exists:** GitHub's `webhook_deliveries.redelivery` flag only records that GitHub resent an event — not **which operator** triggered it from PipeWatch. `audit_events` answers "who redelivered what, when?" for internal accountability.
 
+### 7.6 `admin.admin_password_reset_tokens`
+
+One-time tokens for existing operator password resets — no public sign-up.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | `uuid` PK | |
+| `admin_user_id` | `uuid` NOT NULL FK → `admin_users` ON DELETE CASCADE | |
+| `token_hash` | `text` NOT NULL UNIQUE | SHA-256 of reset token (token shown once in email) |
+| `expires_at` | `timestamptz` NOT NULL | Default 1 hour (`ADMIN_PASSWORD_RESET_TTL_SECONDS`) |
+| `used_at` | `timestamptz` NULL | Set when password is reset |
+| `created_at` | `timestamptz` NOT NULL DEFAULT now() |
+
 ---
 
 ## 8. Platform auth & roles
@@ -362,6 +375,7 @@ Follow `05-env-vars.mdc` when implementing. Admin-specific keys:
 | `SMTP_PASS` | same | ✓ | |
 | `SMTP_FROM` | same | ✓ | e.g. `noreply@pipewatch.app` |
 | `ADMIN_URL` | same | ✓ | `https://admin.pipewatch.app` (staging: `https://staging-admin.pipewatch.app`) — invite links |
+| `ADMIN_PASSWORD_RESET_TTL_SECONDS` | same | optional | Default `3600` — forgot-password token lifetime |
 
 **Not required for admin:** `JWT_SECRET`, `JWT_REFRESH_SECRET`, `GITHUB_WEBHOOK_SECRET`, `ENCRYPTION_KEY`, Stripe keys, OAuth client secrets.
 

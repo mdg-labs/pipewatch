@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   adminInvites,
+  adminPasswordResetTokens,
   adminSessions,
   adminUsers,
   auditEvents,
@@ -15,11 +16,12 @@ import {
 } from "../schema/public-read.js";
 
 describe("admin schema exports", () => {
-  it("exports all five admin tables with PRD column names", () => {
+  it("exports all six admin tables with PRD column names", () => {
     expect(getTableName(webhookDeliveries)).toBe("webhook_deliveries");
     expect(getTableName(adminUsers)).toBe("admin_users");
     expect(getTableName(adminSessions)).toBe("admin_sessions");
     expect(getTableName(adminInvites)).toBe("admin_invites");
+    expect(getTableName(adminPasswordResetTokens)).toBe("admin_password_reset_tokens");
     expect(getTableName(auditEvents)).toBe("audit_events");
 
     const deliveryColumns = getTableColumns(webhookDeliveries);
@@ -43,6 +45,10 @@ describe("admin schema exports", () => {
 
     const inviteColumns = getTableColumns(adminInvites);
     expect(inviteColumns.tokenHash.isUnique).toBe(true);
+
+    const resetColumns = getTableColumns(adminPasswordResetTokens);
+    expect(resetColumns.tokenHash.isUnique).toBe(true);
+    expect(resetColumns.usedAt).toBeDefined();
 
     const auditColumns = getTableColumns(auditEvents);
     expect(auditColumns.metadata).toBeDefined();
@@ -75,6 +81,14 @@ describe("admin schema exports", () => {
     const sessionFks = getTableConfig(adminSessions).foreignKeys;
     const adminUserFk = sessionFks.find((fk) =>
       fk.reference().columns.includes(adminSessions.adminUserId),
+    );
+    expect(adminUserFk?.onDelete).toBe("cascade");
+  });
+
+  it("defines admin_password_reset_tokens cascade on admin_user delete", () => {
+    const resetFks = getTableConfig(adminPasswordResetTokens).foreignKeys;
+    const adminUserFk = resetFks.find((fk) =>
+      fk.reference().columns.includes(adminPasswordResetTokens.adminUserId),
     );
     expect(adminUserFk?.onDelete).toBe("cascade");
   });

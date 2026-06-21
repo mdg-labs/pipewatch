@@ -5,6 +5,7 @@
 
 export { adminSchema } from "./admin-schema.js";
 export { adminInvites } from "./admin-invites.js";
+export { adminPasswordResetTokens } from "./admin-password-reset-tokens.js";
 export { adminSessions } from "./admin-sessions.js";
 export { adminUsers } from "./admin-users.js";
 export { auditEvents } from "./audit-events.js";

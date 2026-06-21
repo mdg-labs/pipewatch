@@ -7,18 +7,23 @@ import { parseAdminEnv } from "@pipewatch/config/env";
 import { closeDb, createDb, type Db } from "@pipewatch/db";
 import {
   adminInvites,
+  adminPasswordResetTokens,
   adminSessions,
   adminUsers,
+  auditEvents,
 } from "@pipewatch/db-admin/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { createApp } from "../../app.js";
+import { resetForgotPasswordRateLimitMemory } from "../../middleware/forgot-password-rate-limit.js";
 import { bootstrapAdminUser } from "../../services/auth/bootstrap.js";
+import { GENERIC_FORGOT_PASSWORD_MESSAGE } from "../../services/auth/password-reset.js";
 import { hashPassword } from "../../services/auth/password.js";
 import { createSession } from "../../services/auth/session.js";
 import { ADMIN_SESSION_COOKIE } from "../../services/auth/session-token.js";
 import { buildAdminInviteUrl } from "../../services/mail/invite.js";
+import { buildAdminPasswordResetUrl } from "../../services/mail/password-reset.js";
 import postgres from "postgres";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -61,7 +66,10 @@ async function waitForPostgres(url: string, attempts = 30): Promise<void> {
 
 function createTestApp(db: Db, overrides: Record<string, string> = {}) {
   const env = parseAdminEnv({ ...baseEnv, ...overrides, DATABASE_URL: process.env.DATABASE_URL });
-  return createApp({ env, db }, null);
+  return createApp(
+    { env, db, forgotPasswordRateLimit: { disabled: true } },
+    null,
+  );
 }
 
 async function seedAdminUser(
@@ -333,5 +341,122 @@ describe("admin platform auth", () => {
 
     expect(inviteRow?.acceptedAt).not.toBeNull();
     expect(inviteRow?.invitedBy).toBe(admin.id);
+  });
+
+  it("requests password reset, accepts valid token, and rejects reuse", async () => {
+    resetForgotPasswordRateLimitMemory();
+
+    const suffix = randomBytes(4).toString("hex");
+    const email = `reset-${suffix}@pipewatch.app`;
+    const oldPassword = "old-password-123";
+    const newPassword = "new-password-123";
+
+    const user = await seedAdminUser(database, {
+      email,
+      password: oldPassword,
+      role: "operator",
+    });
+
+    const app = createTestApp(database);
+
+    const forgotResponse = await app.request("http://localhost/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+
+    expect(forgotResponse.status).toBe(200);
+    const forgotBody = (await forgotResponse.json()) as {
+      message: string;
+      reset_url?: string;
+    };
+    expect(forgotBody.message).toBe(GENERIC_FORGOT_PASSWORD_MESSAGE);
+    if (!forgotBody.reset_url) {
+      throw new Error("Expected reset_url when SMTP is unset");
+    }
+
+    const token = new URL(forgotBody.reset_url).searchParams.get("token");
+    if (!token) {
+      throw new Error("Expected reset token in reset_url");
+    }
+
+    expect(forgotBody.reset_url).toBe(buildAdminPasswordResetUrl(baseEnv.ADMIN_URL, token));
+
+    const resetResponse = await app.request("http://localhost/api/auth/reset-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token, password: newPassword }),
+    });
+
+    expect(resetResponse.status).toBe(204);
+
+    const reusedResponse = await app.request("http://localhost/api/auth/reset-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token, password: "another-password-123" }),
+    });
+
+    expect(reusedResponse.status).toBe(400);
+    await expect(reusedResponse.json()).resolves.toEqual({
+      error: {
+        code: "BAD_REQUEST",
+        message: "Invalid or expired reset token",
+      },
+    });
+
+    await login(app, email, newPassword);
+
+    const loginWithOldPassword = await app.request("http://localhost/api/auth/login", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email, password: oldPassword }),
+    });
+    expect(loginWithOldPassword.status).toBe(401);
+
+    const [tokenRow] = await database
+      .select({ usedAt: adminPasswordResetTokens.usedAt })
+      .from(adminPasswordResetTokens)
+      .where(eq(adminPasswordResetTokens.adminUserId, user.id))
+      .limit(1);
+
+    expect(tokenRow?.usedAt).not.toBeNull();
+
+    const [auditRow] = await database
+      .select({ action: auditEvents.action, targetId: auditEvents.targetId })
+      .from(auditEvents)
+      .where(eq(auditEvents.adminUserId, user.id))
+      .limit(1);
+
+    expect(auditRow).toMatchObject({
+      action: "admin.password_reset",
+      targetId: user.id,
+    });
+  });
+
+  it("returns enumeration-safe forgot-password response for unknown email", async () => {
+    resetForgotPasswordRateLimitMemory();
+
+    const app = createTestApp(database);
+    const unknownEmail = `missing-${randomBytes(4).toString("hex")}@pipewatch.app`;
+
+    const response = await app.request("http://localhost/api/auth/forgot-password", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: unknownEmail }),
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      message: GENERIC_FORGOT_PASSWORD_MESSAGE,
+    });
+
+    const [createdToken] = await database
+      .select({ id: adminPasswordResetTokens.id })
+      .from(adminPasswordResetTokens)
+      .innerJoin(adminUsers, eq(adminPasswordResetTokens.adminUserId, adminUsers.id))
+      .where(sql`lower(${adminUsers.email}) = ${unknownEmail.toLowerCase()}`)
+      .limit(1);
+
+    expect(createdToken).toBeUndefined();
   });
 });

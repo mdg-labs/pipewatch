@@ -1,6 +1,7 @@
 import type { AdminEnv } from "@pipewatch/config/env";
 import type { Db } from "@pipewatch/db";
 
+import type { ForgotPasswordRateLimitDeps } from "./middleware/forgot-password-rate-limit.js";
 import type { EmailTransport } from "./services/mail/invite.js";
 
 /** Platform operator roles — distinct from workspace `admin` (Admin PRD §8.1). */
@@ -26,4 +27,5 @@ export type AdminAppDeps = {
   env: AdminEnv;
   db: Db;
   emailTransport?: EmailTransport;
+  forgotPasswordRateLimit?: ForgotPasswordRateLimitDeps;
 };
