@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { Navigate } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 
-import { Button, Card, Input } from "@pipewatch/ui";
+import { Button, Card, Input, LogoWordmark } from "@pipewatch/ui";
 
 import { useAuth } from "../hooks/use-auth.js";
 
@@ -33,6 +33,9 @@ export function LoginPage() {
   return (
     <div className="admin-login">
       <Card className="admin-login-card">
+        <div className="admin-login-brand">
+          <LogoWordmark markSize={24} />
+        </div>
         <h1>PipeWatch Admin</h1>
         <p className="admin-muted">Sign in with your platform operator account.</p>
         <form className="admin-login-form" onSubmit={(event) => void handleSubmit(event)}>
@@ -57,9 +60,14 @@ export function LoginPage() {
               {error}
             </p>
           ) : null}
-          <Button type="submit" loading={submitting} disabled={loading}>
-            Sign in
-          </Button>
+          <div className="admin-login-actions">
+            <Link className="admin-auth-link" to="/forgot-password">
+              Forgot password?
+            </Link>
+            <Button type="submit" loading={submitting} disabled={loading}>
+              Sign in
+            </Button>
+          </div>
         </form>
       </Card>
     </div>

@@ -201,6 +201,33 @@ body {
   padding: 1.5rem;
 }
 
+.admin-login-brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.admin-login-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-auth-link {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  text-decoration: none;
+}
+
+.admin-auth-link:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}
+
+.admin-auth-footer {
+  margin: 1rem 0 0;
+}
+
 .admin-login-form,
 .admin-invite-form {
   display: flex;

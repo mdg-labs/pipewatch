@@ -6,7 +6,9 @@ import { useAuth } from "./hooks/use-auth.js";
 import { AdminUsersPage } from "./pages/AdminUsersPage.js";
 import { InstallationDetailPage } from "./pages/InstallationDetailPage.js";
 import { InstallationsPage } from "./pages/InstallationsPage.js";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage.js";
 import { LoginPage } from "./pages/LoginPage.js";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage.js";
 import { OverviewPage } from "./pages/OverviewPage.js";
 import { WebhookHealthPage } from "./pages/WebhookHealthPage.js";
 import { WorkspaceDetailPage } from "./pages/WorkspaceDetailPage.js";
@@ -55,6 +57,8 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/*" element={<ProtectedRoutes />} />
     </Routes>
   );
