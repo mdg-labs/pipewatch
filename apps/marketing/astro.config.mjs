@@ -5,6 +5,16 @@ import { defineConfig } from "astro/config";
 
 export default defineConfig({
   output: "server",
+  redirects: {
+    "/docs": {
+      status: 308,
+      destination: "https://docs.pipewatch.app",
+    },
+    "/docs/[...path]": {
+      status: 308,
+      destination: "https://docs.pipewatch.app/[...path]",
+    },
+  },
   adapter: cloudflare({
     platformProxy: {
       enabled: true,

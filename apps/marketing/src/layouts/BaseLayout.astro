@@ -1,12 +1,26 @@
 ---
 import "@pipewatch/ui/styles.css";
+import "../styles/globals.css";
+import "../components/layout/marketing-layout.css";
+
+import { flags } from "@pipewatch/config/edition";
+import { UmamiScript } from "../components/analytics/UmamiScript";
+import { MarketingFooter } from "../components/layout/MarketingFooter";
+import { MarketingNav } from "../components/layout/MarketingNav";
+import { isUmamiEnabled, isWaitlistEnabled } from "../lib/edition-features";
+import { getGitHubStarCount } from "../lib/github-stars";
 
 export interface Props {
   title: string;
   description?: string;
 }
 
-const { title, description = "PipeWatch — GitHub Actions dashboard" } = Astro.props;
+const {
+  title,
+  description = "Real-time GitHub Actions dashboard across all your repositories — PipeWatch Cloud or self-hosted CE.",
+} = Astro.props;
+
+const starCount = await getGitHubStarCount();
 ---
 
 <!doctype html>
@@ -16,23 +30,19 @@ const { title, description = "PipeWatch — GitHub Actions dashboard" } = Astro.
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <title>{title}</title>
+    <UmamiScript />
   </head>
-  <body>
-    <header>
-      <nav aria-label="Primary">
-        <a href="/">Home</a>
-        <a href="/pricing">Pricing</a>
-        <a href="/changelog">Changelog</a>
-      </nav>
-    </header>
-    <main>
-      <slot />
-    </main>
-    <footer>
-      <nav aria-label="Footer">
-        <a href="/terms">Terms</a>
-        <a href="/privacy">Privacy</a>
-      </nav>
-    </footer>
+  <body
+    data-edition={flags.IS_CE ? "ce" : "cloud"}
+    data-umami={isUmamiEnabled() ? "enabled" : "hidden"}
+    data-waitlist={isWaitlistEnabled() ? "enabled" : "hidden"}
+  >
+    <div class="marketing-shell">
+      <MarketingNav starCount={starCount} />
+      <main class="marketing-main">
+        <slot />
+      </main>
+      <MarketingFooter />
+    </div>
   </body>
 </html>

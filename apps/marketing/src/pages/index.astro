@@ -1,14 +1,11 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { StubCtaButton } from "../components/StubCtaButton";
-import { getMarketingEnv } from "../lib/env";
+import { HomePage } from "../components/home/HomePage";
+import { getGitHubStarCount } from "../lib/github-stars";
 
-const env = getMarketingEnv();
-const ctaLabel = env.LAUNCH_MODE === "live" ? "Get started" : "Join waitlist";
+const starCount = await getGitHubStarCount();
 ---
 
 <BaseLayout title="PipeWatch">
-  <h1>PipeWatch</h1>
-  <p>GitHub Actions dashboard — marketing site scaffold.</p>
-  <StubCtaButton client:load label={ctaLabel} />
+  <HomePage client:load starCount={starCount} />
 </BaseLayout>
