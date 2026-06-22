@@ -13,6 +13,8 @@ dist/
 .next/
 .turbo/
 .open-next/
+.astro/
+.wrangler/
 
 # Test artifacts
 e2e/test-results/

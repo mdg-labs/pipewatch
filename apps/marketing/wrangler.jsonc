@@ -1,5 +1,6 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
+  // Dev / astro dev only — production deploy uses dist/server/wrangler.json after `astro build`.
   "name": "pipewatch-staging-marketing",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2025-05-21",

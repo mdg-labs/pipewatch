@@ -116,35 +116,31 @@ else
   echo "deploy-cf-worker: Astro build for ${FILTER}"
   env "${BUILD_ENV[@]}" pnpm exec turbo run build --filter="${FILTER}"
 
-  if [[ ! -d "${APP_DIR}/dist" ]]; then
-    echo "deploy-cf-worker: missing ${APP_DIR}/dist after Astro build" >&2
+  BUILT_WRANGLER="${APP_DIR}/dist/server/wrangler.json"
+  if [[ ! -f "$BUILT_WRANGLER" ]]; then
+    echo "deploy-cf-worker: missing ${BUILT_WRANGLER} after Astro build" >&2
+    echo "deploy-cf-worker: deploy from Astro-built config (main: entry.mjs), not source wrangler.jsonc" >&2
     exit 1
   fi
 
-  MARKETING_WRANGLER_TEMPLATE="${APP_DIR}/wrangler.jsonc"
-  if [[ ! -f "$MARKETING_WRANGLER_TEMPLATE" ]]; then
-    echo "deploy-cf-worker: missing Wrangler config: ${MARKETING_WRANGLER_TEMPLATE}" >&2
-    exit 1
-  fi
-
-  deploy_config="$(mktemp "${APP_DIR}/.wrangler-deploy.XXXXXX.jsonc")"
+  deploy_config="${APP_DIR}/dist/server/wrangler.deploy.json"
   trap 'rm -f "$deploy_config"' EXIT
 
-  sed \
-    -e "s/\"name\": \"[^\"]*\"/\"name\": \"${WORKER_NAME}\"/g" \
-    -e "s/\"account_id\": \"[^\"]*\"/\"account_id\": \"${CF_ACCOUNT_ID}\"/g" \
-    "$MARKETING_WRANGLER_TEMPLATE" >"$deploy_config"
-
-  # Inject custom domain route at deploy time.
+  # Astro 6 emits dist/server/wrangler.json with entry.mjs + ../client assets.
+  # Source wrangler.jsonc is dev-only (@astrojs/cloudflare/entrypoints/server).
   node -e "
     const fs = require('node:fs');
-    const configPath = process.argv[1];
-    const domain = process.argv[2];
-    const raw = fs.readFileSync(configPath, 'utf8');
-    const config = JSON.parse(raw.replace(/\/\/.*$/gm, ''));
+    const builtPath = process.argv[1];
+    const outPath = process.argv[2];
+    const workerName = process.argv[3];
+    const accountId = process.argv[4];
+    const domain = process.argv[5];
+    const config = JSON.parse(fs.readFileSync(builtPath, 'utf8'));
+    config.name = workerName;
+    config.account_id = accountId;
     config.routes = [{ pattern: domain, custom_domain: true }];
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
-  " "$deploy_config" "$CUSTOM_DOMAIN"
+    fs.writeFileSync(outPath, JSON.stringify(config, null, 2));
+  " "$BUILT_WRANGLER" "$deploy_config" "$WORKER_NAME" "$CF_ACCOUNT_ID" "$CUSTOM_DOMAIN"
 fi
 
 echo "deploy-cf-worker: deploying ${WORKER_NAME} at https://${CUSTOM_DOMAIN}"

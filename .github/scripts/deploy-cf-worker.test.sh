@@ -14,12 +14,12 @@ if [[ ! -f "$WRANGLER" ]]; then
 fi
 
 if ! grep -q '@astrojs/cloudflare/entrypoints/server' "$WRANGLER"; then
-  echo "deploy-cf-worker.test: wrangler.jsonc must use Astro Cloudflare server entrypoint" >&2
+  echo "deploy-cf-worker.test: wrangler.jsonc must use Astro dev entrypoint" >&2
   exit 1
 fi
 
-if ! grep -q '"directory": "./dist"' "$WRANGLER"; then
-  echo "deploy-cf-worker.test: wrangler.jsonc must serve Astro dist assets" >&2
+if ! grep -q 'dist/server/wrangler.json' "$DEPLOY_SCRIPT"; then
+  echo "deploy-cf-worker.test: marketing deploy must use Astro-built dist/server/wrangler.json" >&2
   exit 1
 fi
 
