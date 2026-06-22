@@ -4,6 +4,12 @@ import react from "@astrojs/react";
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
+  // Marketing has no server-side session state — avoid SESSION KV auto-provision on deploy.
+  session: {
+    driver: {
+      entrypoint: "unstorage/drivers/null",
+    },
+  },
   output: "server",
   redirects: {
     "/docs": {

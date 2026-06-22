@@ -139,6 +139,7 @@ else
     config.name = workerName;
     config.account_id = accountId;
     config.routes = [{ pattern: domain, custom_domain: true }];
+    delete config.kv_namespaces;
     fs.writeFileSync(outPath, JSON.stringify(config, null, 2));
   " "$BUILT_WRANGLER" "$deploy_config" "$WORKER_NAME" "$CF_ACCOUNT_ID" "$CUSTOM_DOMAIN"
 fi
