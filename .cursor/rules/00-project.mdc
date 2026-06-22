@@ -14,7 +14,7 @@ Open-core GitHub Actions dashboard — aggregates workflow runs across multiple 
 - **Backend API:** **Hono** + `@hono/zod-openapi` — API + webhook receiver on Fly.io
 - **Worker:** **BullMQ** consumer on Fly.io Machines
 - **Web client:** **Next.js** (App Router) via **OpenNext** on Cloudflare Workers
-- **Marketing:** **Next.js** via OpenNext on Cloudflare Workers (separate project)
+- **Marketing:** **Astro** via `@astrojs/cloudflare` on Cloudflare Workers (separate project)
 - **Persistence:** **Drizzle ORM** + **Drizzle Kit**; **Neon PostgreSQL** (hosted staging/prod); embedded Postgres in CE Docker Compose
 - **Queue/cache:** **Redis** on Fly.io (hosted); Redis in CE Compose
 - **Contracts/validation:** **Zod** in `packages/types`
@@ -34,7 +34,7 @@ Open-core GitHub Actions dashboard — aggregates workflow runs across multiple 
 | Redis | **Fly.io** | `pipewatch-{staging\|prod}-redis` |
 | Database | **Neon PostgreSQL** | Separate projects per env (Decision #17) |
 | Dashboard | **Cloudflare Workers** | `pipewatch-{staging\|prod}-web` |
-| Marketing | **Cloudflare Workers** | `pipewatch-{staging\|prod}-marketing` |
+| Marketing | **Cloudflare Workers** (Astro) | `pipewatch-{staging\|prod}-marketing` |
 
 **Domains:** `pipewatch.app` (marketing) · `cloud.pipewatch.app` (app) · `api.pipewatch.app` (API). Staging uses `staging-*` prefixes.
 

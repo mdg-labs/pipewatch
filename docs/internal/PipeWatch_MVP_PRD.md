@@ -79,7 +79,7 @@ On initial installation, PipeWatch performs a one-time historical sync via GitHu
 | Database | Neon PostgreSQL | Serverless, branching for preview envs |
 | Cache / Queue | Redis on Fly.io | `fly-redis` volume-backed app, cheapest for MVP |
 | Frontend / Dashboard | Cloudflare Workers (Next.js via OpenNext) | Consistent with Dispatch One stack |
-| Marketing Site | Cloudflare Workers (Next.js via OpenNext) | Separate CF Workers project, separate domain |
+| Marketing Site | Cloudflare Workers (Astro via `@astrojs/cloudflare`) | Separate CF Workers project, separate domain |
 | Marketing Analytics | Umami (self-hosted, existing instance) | Script injected into marketing site only |
 | Secrets Management | Phase Cloud (EU/Frankfurt) | E2E encrypted, SOC 2 Type II, GDPR-compatible |
 | Error Monitoring | Sentry | Full stack: traces, source maps, logs, sessions |
@@ -159,7 +159,8 @@ GitHub webhook event names (`workflow_run`, `workflow_job`) and callback query p
 | Job Queue | BullMQ + Redis | Battle-tested, self-hostable |
 | Database | Neon PostgreSQL | Serverless, preview branches, consistent with existing stack |
 | ORM / Migrations | Drizzle ORM | TypeScript-native, lightweight, good Neon support |
-| Frontend | Next.js (App Router) via OpenNext | SSR for dashboard, deploys to Cloudflare Workers |
+| Frontend (dashboard) | Next.js (App Router) via OpenNext | SSR for dashboard, deploys to Cloudflare Workers |
+| Marketing | Astro + `@astrojs/cloudflare` | Static/SSR marketing site, deploys to Cloudflare Workers |
 | Auth | JWT-based (custom) + API Keys | See Section 7.1 — Better Auth evaluated but custom JWT fits API-key requirement better |
 | Self-hosted delivery | Docker Compose | Single file, bundles Postgres + Redis |
 | Secrets | Phase Cloud (EU/Frankfurt) | E2E encrypted; operator syncs to GitHub Actions environments via Phase Console; SOC 2 Type II |
@@ -854,7 +855,7 @@ Separate deployment from the app — independent release cycle, no shared infra 
 
 ### Stack
 
-- Next.js (App Router) deployed to Cloudflare Workers via OpenNext
+- Astro deployed to Cloudflare Workers via `@astrojs/cloudflare` (`astro build` + Wrangler)
 - Separate Cloudflare Workers project from the dashboard
 - Domain: `pipewatch.app` (secured) — CF Worker: `pipewatch-prod-marketing`
 - App lives at: `cloud.pipewatch.app`
@@ -972,7 +973,7 @@ pipewatch/
 │   ├── api/          # Hono API + Webhook Receiver (Fly.io: pipewatch-{env}-api)
 │   ├── worker/       # BullMQ Worker (Fly.io: pipewatch-{env}-worker)
 │   ├── web/          # Next.js Dashboard (CF Worker: pipewatch-{env}-web)
-│   └── marketing/    # Next.js Marketing Site (CF Worker: pipewatch-{env}-marketing)
+│   └── marketing/    # Astro Marketing Site (CF Worker: pipewatch-{env}-marketing)
 ├── packages/
 │   ├── db/           # Drizzle schema, migrations, db client
 │   │   ├── schema/   # One file per entity (users.ts, integrations.ts, pipeline_runs.ts, etc.)

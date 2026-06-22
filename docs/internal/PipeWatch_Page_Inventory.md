@@ -11,10 +11,10 @@ PipeWatch CE and PipeWatch Cloud share the same app codebase. Edition-specific b
 
 ### Deployment Overview
 
-| Surface | Prod | Staging | CF Worker (prod) | CF Worker (staging) |
-|---|---|---|---|---|
-| Marketing | `pipewatch.app` | `staging.pipewatch.app` | `pipewatch-prod-marketing` | `pipewatch-staging-marketing` |
-| App (Cloud) | `cloud.pipewatch.app` | `staging-cloud.pipewatch.app` | `pipewatch-prod-web` | `pipewatch-staging-web` |
+| Surface | Prod | Staging | CF Worker (prod) | CF Worker (staging) | Stack |
+|---|---|---|---|---|---|
+| Marketing | `pipewatch.app` | `staging.pipewatch.app` | `pipewatch-prod-marketing` | `pipewatch-staging-marketing` | Astro on CF Workers (`@astrojs/cloudflare`) |
+| App (Cloud) | `cloud.pipewatch.app` | `staging-cloud.pipewatch.app` | `pipewatch-prod-web` | `pipewatch-staging-web` | Next.js via OpenNext on CF Workers |
 
 **Analytics:** Umami (self-hosted, existing MDG Labs instance) injected on marketing pages only — never in the app.
 
