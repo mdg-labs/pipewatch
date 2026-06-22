@@ -148,9 +148,6 @@ else
 fi
 
 echo "deploy-cf-worker: deploying ${WORKER_NAME} at https://${CUSTOM_DOMAIN}"
-(
-  cd "$APP_DIR"
-  pnpm exec wrangler deploy --config "$deploy_config"
-)
+bash "${SCRIPT_DIR}/wrangler-deploy-retry.sh" "$APP_DIR" --config "$deploy_config"
 
 echo "deploy-cf-worker: ${WORKER_NAME} deployed"
