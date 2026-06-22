@@ -1,8 +1,17 @@
 ---
+import { getCollection } from "astro:content";
+
+import { ChangelogPage } from "../components/changelog";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { toChangelogEntries } from "../lib/changelog";
+
+const collection = await getCollection("changelog");
+const entries = toChangelogEntries(collection);
 ---
 
-<BaseLayout title="Changelog — PipeWatch">
-  <h1>Changelog</h1>
-  <p>Placeholder — changelog page coming soon.</p>
+<BaseLayout
+  title="Changelog — PipeWatch"
+  description="PipeWatch release notes — features, fixes, and breaking changes for Cloud and CE."
+>
+  <ChangelogPage entries={entries} />
 </BaseLayout>

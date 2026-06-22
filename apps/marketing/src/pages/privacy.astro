@@ -1,8 +1,27 @@
 ---
+import { getEntry, render } from "astro:content";
+
+import LegalPageLayout from "../components/legal/LegalPageLayout.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
+
+const entry = await getEntry("legal", "privacy");
+if (!entry) {
+  return Astro.redirect("/404");
+}
+
+const { Content, headings } = await render(entry);
+const sections = headings
+  .filter((heading) => heading.depth === 2)
+  .map((heading) => ({ id: heading.slug, title: heading.text }));
 ---
 
-<BaseLayout title="Privacy — PipeWatch">
-  <h1>Privacy Policy</h1>
-  <p>Placeholder — legal content coming soon.</p>
+<BaseLayout title={`${entry.data.title} — PipeWatch`} description={entry.data.description}>
+  <LegalPageLayout
+    title={entry.data.title}
+    description={entry.data.description}
+    lastUpdated={entry.data.lastUpdated}
+    sections={sections}
+  >
+    <Content />
+  </LegalPageLayout>
 </BaseLayout>

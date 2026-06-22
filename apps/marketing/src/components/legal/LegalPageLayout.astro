@@ -1,0 +1,44 @@
+---
+import "./legal.css";
+import { formatLegalDate } from "../../lib/legal";
+import type { LegalSection } from "../../lib/legal";
+
+export interface Props {
+  title: string;
+  description: string;
+  lastUpdated: string;
+  sections: LegalSection[];
+}
+---
+
+<div class="legal-page">
+  <header class="legal-hero">
+    <h1 class="legal-hero-title">{Astro.props.title}</h1>
+    <p class="legal-hero-description">{Astro.props.description}</p>
+    <p class="legal-last-updated">
+      Last updated{" "}
+      <time datetime={Astro.props.lastUpdated}>{formatLegalDate(Astro.props.lastUpdated)}</time>
+    </p>
+  </header>
+
+  {
+    Astro.props.sections.length > 0 ? (
+      <nav class="legal-toc" aria-label="On this page">
+        <p class="legal-toc-label">On this page</p>
+        <ol class="legal-toc-list">
+          {Astro.props.sections.map((section) => (
+            <li>
+              <a href={`#${section.id}`} class="legal-toc-link">
+                {section.title}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    ) : null
+  }
+
+  <article class="legal-prose">
+    <slot />
+  </article>
+</div>
