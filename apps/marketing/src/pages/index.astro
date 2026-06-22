@@ -1,0 +1,14 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { StubCtaButton } from "../components/StubCtaButton";
+import { getMarketingEnv } from "../lib/env";
+
+const env = getMarketingEnv();
+const ctaLabel = env.LAUNCH_MODE === "live" ? "Get started" : "Join waitlist";
+---
+
+<BaseLayout title="PipeWatch">
+  <h1>PipeWatch</h1>
+  <p>GitHub Actions dashboard — marketing site scaffold.</p>
+  <StubCtaButton client:load label={ctaLabel} />
+</BaseLayout>

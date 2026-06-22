@@ -112,7 +112,7 @@ const marketingEnvSchema = z.object({
   NODE_ENV: nodeEnvSchema.default("development"),
   PIPEWATCH_EDITION: z.enum(["ce", "cloud"]).optional(),
   LAUNCH_MODE: launchModeSchema.default("waitlist"),
-  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  PUBLIC_APP_URL: z.string().url().optional(),
   UMAMI_SCRIPT_URL: z.string().url().optional(),
   UMAMI_WEBSITE_ID: z.string().min(1).optional(),
 });
@@ -403,7 +403,7 @@ export function parseMarketingEnv(
       "NODE_ENV",
       "PIPEWATCH_EDITION",
       "LAUNCH_MODE",
-      "NEXT_PUBLIC_APP_URL",
+      "PUBLIC_APP_URL",
       "UMAMI_SCRIPT_URL",
       "UMAMI_WEBSITE_ID",
     ]),

@@ -8,7 +8,7 @@
         "NODE_ENV",
         "PIPEWATCH_EDITION",
         "NEXT_PUBLIC_API_URL",
-        "NEXT_PUBLIC_APP_URL",
+        "PUBLIC_APP_URL",
         "LAUNCH_MODE"
       ]
     },

@@ -163,7 +163,7 @@ export const SYNC_SECRETS_MANIFEST: readonly ServiceSyncManifest[] = [
       gha("NODE_ENV"),
       gha("PIPEWATCH_EDITION"),
       gha("LAUNCH_MODE"),
-      gha("NEXT_PUBLIC_APP_URL"),
+      gha("PUBLIC_APP_URL"),
       gha("UMAMI_SCRIPT_URL", { required: true, cloudOnly: true }),
       gha("UMAMI_WEBSITE_ID", { required: true, cloudOnly: true }),
     ],
