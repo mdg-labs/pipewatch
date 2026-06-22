@@ -1,8 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { WaitlistTokenPage } from "../components/waitlist/WaitlistTokenPage";
+
+const token = Astro.url.searchParams.get("token");
 ---
 
-<BaseLayout title="Unsubscribe — PipeWatch">
-  <h1>Unsubscribe</h1>
-  <p>Placeholder — unsubscribe page coming soon.</p>
+<BaseLayout
+  title="Unsubscribe · PipeWatch"
+  description="Unsubscribe from PipeWatch waitlist emails."
+>
+  <WaitlistTokenPage client:load action="unsubscribe" token={token} />
 </BaseLayout>

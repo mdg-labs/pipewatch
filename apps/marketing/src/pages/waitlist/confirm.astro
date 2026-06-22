@@ -1,8 +1,13 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { WaitlistTokenPage } from "../../components/waitlist/WaitlistTokenPage";
+
+const token = Astro.url.searchParams.get("token");
 ---
 
-<BaseLayout title="Confirm waitlist — PipeWatch">
-  <h1>Waitlist confirmation</h1>
-  <p>Placeholder — confirmation page coming soon.</p>
+<BaseLayout
+  title="Confirm subscription · PipeWatch"
+  description="Confirm your PipeWatch waitlist subscription."
+>
+  <WaitlistTokenPage client:load action="confirm" token={token} />
 </BaseLayout>

@@ -1,0 +1,11 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { WaitlistPage } from "../components/waitlist/WaitlistPage";
+---
+
+<BaseLayout
+  title="Join the waitlist · PipeWatch"
+  description="Get notified when PipeWatch Cloud launches — real-time GitHub Actions across all your repositories."
+>
+  <WaitlistPage client:load />
+</BaseLayout>
