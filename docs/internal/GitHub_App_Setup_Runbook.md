@@ -208,7 +208,7 @@ Also confirm hosted URL vars align with the environment:
 | `MARKETING_URL` | `https://staging.pipewatch.app` | `https://pipewatch.app` |
 | `PUBLIC_API_URL` (API runtime) | `https://staging-api.pipewatch.app` | `https://api.pipewatch.app` |
 | `NEXT_PUBLIC_API_URL` (web; same Phase value) | `https://staging-api.pipewatch.app` | `https://api.pipewatch.app` |
-| `NEXT_PUBLIC_APP_URL` (marketing worker) | `https://staging-cloud.pipewatch.app` | `https://cloud.pipewatch.app` |
+| `PUBLIC_APP_URL` (marketing worker) | `https://staging-cloud.pipewatch.app` | `https://cloud.pipewatch.app` |
 | `PIPEWATCH_EDITION` | `cloud` | `cloud` |
 
 Phase Console syncs Staging/Production → GitHub Actions environments. Deploy workflows push to Fly/CF via `.github/workflows/sync-secrets.yml` (Decision #33).
