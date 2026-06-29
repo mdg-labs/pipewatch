@@ -1,6 +1,6 @@
 name: PR
 
-# Pull request entry point — CI, version check, and staging→main E2E (PRD §22).
+# Pull request entry point — CI and staging→main E2E (PRD §22).
 
 on:
   pull_request:
@@ -20,12 +20,6 @@ jobs:
       pull-requests: write
     uses: ./.github/workflows/ci.yml
     secrets: inherit
-
-  version-check:
-    name: Version check
-    permissions:
-      contents: read
-    uses: ./.github/workflows/version-check.yml
 
   e2e:
     name: E2E

@@ -1,0 +1,50 @@
+---
+description: Deploy package versioning — bump before push, pre-push gate
+alwaysApply: true
+---
+
+# Deploy package versioning
+
+Deployable surfaces version **independently** in each `package.json`:
+
+`apps/api` · `apps/worker` · `apps/web` · `apps/marketing` · `apps/admin`
+
+Shared libs (`config`, `db`, `db-admin`, `types`, `utils`, `github-app-auth`, `ui`) stay at `0.0.0` — consumer bumps required.
+
+## When to bump
+
+Before `git push` to `staging` or `main` — not on every commit.
+
+```bash
+pnpm setup:hooks
+pnpm bump:versions
+git add apps/*/package.json
+git commit -m "chore(repo)[#N]: bump versions for push"
+# full CI gate, then push
+```
+
+## Shared-lib → consumer map
+
+| Shared package | Bump these deployables |
+|---|---|
+| `packages/config` | api, worker, web, marketing, admin |
+| `packages/db` | api, worker |
+| `packages/db-admin` | admin |
+| `packages/types` | api, worker, web |
+| `packages/utils` | api, worker, web, admin |
+| `packages/github-app-auth` | api, worker, admin |
+| `packages/ui` | web, marketing, admin |
+
+Locale JSON under `apps/web/src/i18n/` and `apps/marketing/` **requires** a version bump — not in the policy ignore list.
+
+## Agent obligations
+
+When pushing deployable code: bump versions → full CI gate → push. Pre-push hook validates semver increased when deploy-relevant source changed.
+
+Skip once: `SKIP_DEPLOY_VERSION_BUMP_CHECK=1 git push --no-verify`
+
+Manual check: `pnpm check:push-version-bumps`
+
+Dry-run bumps: `pnpm bump:versions --dry-run`
+
+Force bump all: `pnpm bump:versions:force`

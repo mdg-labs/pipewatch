@@ -19,6 +19,10 @@
     "ci:verify-scoped": "bash scripts/ci-verify-scoped.sh",
     "i18n:validate": "node --experimental-strip-types scripts/i18n-validate.ts",
     "i18n:check:hardcoded": "node --experimental-strip-types scripts/i18n-check-hardcoded.ts",
+    "setup:hooks": "bash scripts/setup-hooks.sh",
+    "bump:versions": "node scripts/bump-package-versions.mjs",
+    "bump:versions:force": "node scripts/bump-package-versions.mjs --force",
+    "check:push-version-bumps": "node scripts/check-push-version-bumps.mjs",
     "test:scripts": "bash -c 'cd packages/config && pnpm exec vitest run --config ../../scripts/vitest.config.ts'",
     "db:generate": "turbo db:generate --filter=@pipewatch/db",
     "db:migrate": "turbo db:migrate --filter=@pipewatch/db"

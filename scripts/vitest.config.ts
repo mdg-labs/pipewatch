@@ -8,7 +8,7 @@ export default defineConfig({
   test: {
     name: "scripts",
     root: repoRoot,
-    include: ["scripts/i18n-*.test.ts"],
+    include: ["scripts/i18n-*.test.ts", "scripts/check-push-version-bumps.spec.ts"],
     environment: "node",
   },
 });
