@@ -1,17 +1,11 @@
 import type { PipelineJob } from "@pipewatch/types";
 
-export const DAG_NODE_WIDTH = 140;
-export const DAG_NODE_HEIGHT = 72;
-export const DAG_COLUMN_GAP = 80;
+/** Design mockup intrinsic node size (Run Detail.dc.html). */
+export const DAG_NODE_WIDTH = 124;
+export const DAG_NODE_HEIGHT = 52;
+export const DAG_COLUMN_GAP = 62;
 export const DAG_ROW_GAP = 24;
 export const DAG_PADDING = 24;
-
-/** Minimum readable node size before gap compaction is exhausted. */
-export const DAG_MIN_NODE_WIDTH = 80;
-export const DAG_MIN_NODE_HEIGHT = 48;
-export const DAG_MIN_COLUMN_GAP = 16;
-export const DAG_MIN_ROW_GAP = 8;
-export const DAG_MIN_PADDING = 12;
 
 export type DagNodeLayout = {
   jobId: string;
@@ -38,6 +32,7 @@ export type JobDagLayout = {
 
 export type LayoutJobDagOptions = {
   nowMs?: number;
+  /** @deprecated Ignored — layout uses fixed intrinsic dimensions; viewport handles fit/pan/zoom. */
   containerWidth?: number;
 };
 
@@ -108,12 +103,8 @@ function naturalHeight(rowCount: number): number {
   );
 }
 
-/** Resolve scaled node/gap metrics for a column/row grid and optional container width. */
-export function resolveLayoutMetrics(
-  columnCount: number,
-  rowCount: number,
-  containerWidth?: number,
-): LayoutMetrics {
+/** Fixed intrinsic metrics — graph size grows with columns/rows, never upscales to fill a container. */
+export function resolveLayoutMetrics(columnCount: number, rowCount: number): LayoutMetrics {
   if (columnCount === 0) {
     return {
       nodeWidth: DAG_NODE_WIDTH,
@@ -126,58 +117,15 @@ export function resolveLayoutMetrics(
     };
   }
 
-  if (containerWidth === undefined) {
-    return {
-      nodeWidth: DAG_NODE_WIDTH,
-      nodeHeight: DAG_NODE_HEIGHT,
-      columnGap: DAG_COLUMN_GAP,
-      rowGap: DAG_ROW_GAP,
-      padding: DAG_PADDING,
-      width: naturalWidth(columnCount),
-      height: naturalHeight(rowCount),
-    };
-  }
-
-  const baseWidth = naturalWidth(columnCount);
-  const scale = containerWidth / baseWidth;
-
-  let nodeWidth = DAG_NODE_WIDTH * scale;
-  let nodeHeight = DAG_NODE_HEIGHT * scale;
-  let columnGap = DAG_COLUMN_GAP * scale;
-  let rowGap = DAG_ROW_GAP * scale;
-  let padding = DAG_PADDING * scale;
-
-  if (nodeWidth < DAG_MIN_NODE_WIDTH) {
-    const compactWidth =
-      DAG_MIN_PADDING * 2 +
-      columnCount * DAG_MIN_NODE_WIDTH +
-      Math.max(0, columnCount - 1) * DAG_MIN_COLUMN_GAP;
-
-    if (compactWidth <= containerWidth) {
-      nodeWidth = DAG_MIN_NODE_WIDTH;
-      nodeHeight = DAG_MIN_NODE_HEIGHT;
-      columnGap = DAG_MIN_COLUMN_GAP;
-      rowGap = DAG_MIN_ROW_GAP;
-      const slack = containerWidth - compactWidth;
-      padding = DAG_MIN_PADDING + slack / 2;
-    } else {
-      nodeWidth =
-        (containerWidth -
-          DAG_MIN_PADDING * 2 -
-          Math.max(0, columnCount - 1) * DAG_MIN_COLUMN_GAP) /
-        columnCount;
-      nodeHeight = nodeWidth * (DAG_NODE_HEIGHT / DAG_NODE_WIDTH);
-      columnGap = DAG_MIN_COLUMN_GAP;
-      rowGap = DAG_MIN_ROW_GAP;
-      padding = DAG_MIN_PADDING;
-    }
-  }
-
-  const width = containerWidth;
-  const height =
-    padding * 2 + rowCount * nodeHeight + Math.max(0, rowCount - 1) * rowGap;
-
-  return { nodeWidth, nodeHeight, columnGap, rowGap, padding, width, height };
+  return {
+    nodeWidth: DAG_NODE_WIDTH,
+    nodeHeight: DAG_NODE_HEIGHT,
+    columnGap: DAG_COLUMN_GAP,
+    rowGap: DAG_ROW_GAP,
+    padding: DAG_PADDING,
+    width: naturalWidth(columnCount),
+    height: naturalHeight(rowCount),
+  };
 }
 
 function nodePosition(
@@ -228,7 +176,7 @@ export function layoutJobDag(
 
   const columnCount = waves.length;
   const rowCount = Math.max(...waves.map((wave) => wave.length), 1);
-  const metrics = resolveLayoutMetrics(columnCount, rowCount, options.containerWidth);
+  const metrics = resolveLayoutMetrics(columnCount, rowCount);
 
   const nodes: DagNodeLayout[] = [];
 

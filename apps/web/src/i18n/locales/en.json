@@ -447,6 +447,11 @@
     },
     "jobGraph": {
       "title": "Job execution graph",
+      "controlsAriaLabel": "Job graph viewport controls",
+      "zoomInAriaLabel": "Zoom in",
+      "zoomOutAriaLabel": "Zoom out",
+      "fitToViewAriaLabel": "Fit graph to view",
+      "resetZoomAriaLabel": "Reset zoom to 100%",
       "jobAriaLabel": "{name} job",
       "viewLogsAriaLabel": "View {name} logs on GitHub"
     },

@@ -1,7 +1,13 @@
 import type { PipelineJob } from "@pipewatch/types";
 import { describe, expect, it } from "vitest";
 
-import { groupJobsIntoWaves, layoutJobDag } from "@/lib/job-dag-layout";
+import {
+  DAG_NODE_HEIGHT,
+  DAG_NODE_WIDTH,
+  groupJobsIntoWaves,
+  layoutJobDag,
+  resolveLayoutMetrics,
+} from "@/lib/job-dag-layout";
 
 function makeJob(
   id: string,
@@ -55,6 +61,17 @@ describe("groupJobsIntoWaves", () => {
   });
 });
 
+describe("resolveLayoutMetrics", () => {
+  it("uses fixed intrinsic node dimensions", () => {
+    const metrics = resolveLayoutMetrics(3, 1);
+
+    expect(metrics.nodeWidth).toBe(DAG_NODE_WIDTH);
+    expect(metrics.nodeHeight).toBe(DAG_NODE_HEIGHT);
+    expect(metrics.width).toBeGreaterThan(0);
+    expect(metrics.height).toBeGreaterThan(0);
+  });
+});
+
 describe("layoutJobDag", () => {
   const sequentialJobs = [
     makeJob("lint", "lint", "2026-06-10T12:00:00.000Z", "2026-06-10T12:01:00.000Z", 60_000),
@@ -84,18 +101,22 @@ describe("layoutJobDag", () => {
     expect(layout.height).toBe(0);
   });
 
-  it("fills the requested container width", () => {
-    const layout = layoutJobDag(sequentialJobs, {
-      containerWidth: 640,
+  it("keeps intrinsic graph size regardless of container width", () => {
+    const intrinsic = layoutJobDag(sequentialJobs, { nowMs: FIXED_NOW });
+    const withContainer = layoutJobDag(sequentialJobs, {
+      containerWidth: 960,
       nowMs: FIXED_NOW,
     });
 
-    expect(layout.width).toBe(640);
-    expect(layout.nodeWidth).toBeGreaterThan(0);
-    expect(layout.nodeHeight).toBeGreaterThan(0);
+    expect(withContainer.width).toBe(intrinsic.width);
+    expect(withContainer.height).toBe(intrinsic.height);
+    expect(withContainer.nodeWidth).toBe(DAG_NODE_WIDTH);
+    expect(withContainer.nodeHeight).toBe(DAG_NODE_HEIGHT);
+    expect(withContainer.nodeWidth).toBe(intrinsic.nodeWidth);
+    expect(withContainer.nodeHeight).toBe(intrinsic.nodeHeight);
   });
 
-  it("keeps stable relative node positions across container widths", () => {
+  it("does not upscale nodes for wide containers", () => {
     const narrow = layoutJobDag(sequentialJobs, {
       containerWidth: 480,
       nowMs: FIXED_NOW,
@@ -105,18 +126,12 @@ describe("layoutJobDag", () => {
       nowMs: FIXED_NOW,
     });
 
-    const relativeCenterX = (layout: ReturnType<typeof layoutJobDag>, jobId: string) => {
-      const node = layout.nodes.find((entry) => entry.jobId === jobId);
-      expect(node).toBeDefined();
-      return (node!.x + layout.nodeWidth / 2) / layout.width;
-    };
-
-    for (const jobId of ["lint", "test", "deploy"]) {
-      expect(relativeCenterX(narrow, jobId)).toBeCloseTo(relativeCenterX(wide, jobId), 2);
-    }
+    expect(wide.nodeWidth).toBe(narrow.nodeWidth);
+    expect(wide.nodeHeight).toBe(narrow.nodeHeight);
+    expect(wide.width).toBe(narrow.width);
   });
 
-  it("scales edge paths proportionally with container width", () => {
+  it("uses identical edge paths across container widths", () => {
     const narrow = layoutJobDag(sequentialJobs, {
       containerWidth: 480,
       nowMs: FIXED_NOW,
@@ -126,11 +141,12 @@ describe("layoutJobDag", () => {
       nowMs: FIXED_NOW,
     });
 
-    expect(narrow.edges[0]?.path).not.toBe(wide.edges[0]?.path);
+    expect(narrow.edges[0]?.path).toBe(wide.edges[0]?.path);
     expect(narrow.edges).toHaveLength(wide.edges.length);
   });
 
-  it("uses compact spacing for wide workflows before shrinking below minimum node size", () => {
+  it("grows graph width with more sequential columns", () => {
+    const threeColumn = layoutJobDag(sequentialJobs, { nowMs: FIXED_NOW });
     const manyColumnJobs = Array.from({ length: 6 }, (_, index) =>
       makeJob(
         `job-${index}`,
@@ -140,13 +156,9 @@ describe("layoutJobDag", () => {
         60_000,
       ),
     );
+    const sixColumn = layoutJobDag(manyColumnJobs, { nowMs: FIXED_NOW });
 
-    const layout = layoutJobDag(manyColumnJobs, {
-      containerWidth: 720,
-      nowMs: FIXED_NOW,
-    });
-
-    expect(layout.width).toBe(720);
-    expect(layout.nodeWidth).toBeGreaterThanOrEqual(80);
+    expect(sixColumn.width).toBeGreaterThan(threeColumn.width);
+    expect(sixColumn.nodeWidth).toBe(DAG_NODE_WIDTH);
   });
 });

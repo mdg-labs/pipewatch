@@ -52,4 +52,22 @@ describe("JobGraph", () => {
     expect(html).not.toContain("pw-job-graph-node-log-link");
     expect(html).not.toContain(JOB_LOG_URL);
   });
+
+  it("renders bounded viewport with pan/zoom controls", () => {
+    const html = renderGraph([makeJob()]);
+
+    expect(html).toContain("pw-job-graph-viewport");
+    expect(html).toContain("pw-job-graph-controls");
+    expect(html).toContain('aria-label="Zoom in"');
+    expect(html).toContain('aria-label="Zoom out"');
+    expect(html).toContain('aria-label="Fit graph to view"');
+    expect(html).toContain('aria-label="Reset zoom to 100%"');
+  });
+
+  it("uses compact intrinsic node layout classes", () => {
+    const html = renderGraph([makeJob()]);
+
+    expect(html).toContain("pw-job-graph-node-status");
+    expect(html).not.toContain("pw-job-graph-node-runner");
+  });
 });

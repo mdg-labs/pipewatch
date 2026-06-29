@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { PipelineJob } from "@pipewatch/types";
 import { StatusBadge, classNames } from "@pipewatch/ui";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Maximize2, Minus, Plus, RotateCcw } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { useTimeFormatters } from "@/i18n/use-time-formatters";
+import {
+  JOB_GRAPH_VIEWPORT_HEIGHT,
+  computeFitTransform,
+  computeResetTransform,
+  stepZoom,
+  zoomAtPoint,
+  type ViewportTransform,
+} from "@/lib/job-graph-viewport";
 import {
   layoutJobDag,
   type DagNodeLayout,
@@ -25,17 +33,21 @@ export type JobGraphProps = {
   onJobSelect: (jobId: string) => void;
 };
 
-function toPercent(value: number, total: number): string {
-  if (total <= 0) {
-    return "0%";
-  }
-
-  return `${(value / total) * 100}%`;
-}
-
 function scrollToJobPanel(jobId: string): void {
   const panel = document.getElementById(`job-panel-${jobId}`);
   panel?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function isPanExcludedTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof Element)) {
+    return false;
+  }
+
+  return Boolean(
+    target.closest(
+      ".pw-job-graph-node, .pw-job-graph-node-log-link, .pw-job-graph-controls button",
+    ),
+  );
 }
 
 function JobGraphNode({
@@ -43,8 +55,6 @@ function JobGraphNode({
   layout,
   nodeWidth,
   nodeHeight,
-  canvasWidth,
-  canvasHeight,
   selected,
   onSelect,
   formatDuration,
@@ -55,8 +65,6 @@ function JobGraphNode({
   layout: DagNodeLayout;
   nodeWidth: number;
   nodeHeight: number;
-  canvasWidth: number;
-  canvasHeight: number;
   selected: boolean;
   onSelect: () => void;
   formatDuration: (totalSeconds: number | null | undefined) => string;
@@ -79,10 +87,10 @@ function JobGraphNode({
     <div
       className="pw-job-graph-node-wrap"
       style={{
-        left: toPercent(layout.x, canvasWidth),
-        top: toPercent(layout.y, canvasHeight),
-        width: toPercent(nodeWidth, canvasWidth),
-        height: toPercent(nodeHeight, canvasHeight),
+        left: layout.x,
+        top: layout.y,
+        width: nodeWidth,
+        height: nodeHeight,
       }}
     >
       <button
@@ -100,14 +108,14 @@ function JobGraphNode({
         aria-pressed={selected}
         aria-label={jobAriaLabel(job.name)}
       >
-        <div className="pw-job-graph-node-header">
-          <span className="pw-job-graph-node-name">{job.name}</span>
-          <span className="pw-job-graph-node-duration">{durationLabel}</span>
-        </div>
-        <StatusBadge status={badgeStatus} />
-        {job.runner_name ? (
-          <span className="pw-job-graph-node-runner">{job.runner_name}</span>
-        ) : null}
+        <StatusBadge
+          status={badgeStatus}
+          label=""
+          className="pw-job-graph-node-status"
+          aria-label={job.name}
+        />
+        <span className="pw-job-graph-node-name">{job.name}</span>
+        <span className="pw-job-graph-node-duration">{durationLabel}</span>
       </button>
       {job.source_url ? (
         <a
@@ -128,11 +136,50 @@ function JobGraphNode({
 export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
   const t = useTranslations("runs.jobGraph");
   const { formatDuration } = useTimeFormatters();
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState<number | undefined>(undefined);
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [viewportSize, setViewportSize] = useState({ width: 0, height: JOB_GRAPH_VIEWPORT_HEIGHT });
+  const [transform, setTransform] = useState<ViewportTransform>({
+    scale: 1,
+    translateX: 0,
+    translateY: 0,
+  });
+  const panStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+  } | null>(null);
+
+  const layout = layoutJobDag(jobs);
+  const jobById = new Map(jobs.map((job) => [job.id, job]));
+
+  const applyFit = useCallback(() => {
+    const element = viewportRef.current;
+    if (!element || layout.width <= 0 || layout.height <= 0) {
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    setTransform(
+      computeFitTransform(rect.width, rect.height, layout.width, layout.height),
+    );
+  }, [layout.width, layout.height]);
+
+  const applyReset = useCallback(() => {
+    const element = viewportRef.current;
+    if (!element || layout.width <= 0 || layout.height <= 0) {
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    setTransform(
+      computeResetTransform(rect.width, rect.height, layout.width, layout.height),
+    );
+  }, [layout.width, layout.height]);
 
   useEffect(() => {
-    const element = wrapRef.current;
+    const element = viewportRef.current;
     if (!element) {
       return undefined;
     }
@@ -140,23 +187,132 @@ export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
     const observer = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (entry) {
-        setContainerWidth(entry.contentRect.width);
+        setViewportSize({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        });
       }
     });
 
     observer.observe(element);
-    setContainerWidth(element.getBoundingClientRect().width);
+    const rect = element.getBoundingClientRect();
+    setViewportSize({ width: rect.width, height: rect.height });
 
     return () => {
       observer.disconnect();
     };
   }, []);
 
-  const layout = layoutJobDag(
-    jobs,
-    containerWidth === undefined ? {} : { containerWidth },
-  );
-  const jobById = new Map(jobs.map((job) => [job.id, job]));
+  useEffect(() => {
+    if (viewportSize.width <= 0 || layout.width <= 0) {
+      return;
+    }
+
+    setTransform(
+      computeFitTransform(
+        viewportSize.width,
+        viewportSize.height,
+        layout.width,
+        layout.height,
+      ),
+    );
+  }, [layout.width, layout.height, viewportSize.width, viewportSize.height]);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      const pan = panStateRef.current;
+      if (!pan || pan.pointerId !== event.pointerId) {
+        return;
+      }
+
+      setTransform((current) => ({
+        ...current,
+        translateX: pan.originX + (event.clientX - pan.startX),
+        translateY: pan.originY + (event.clientY - pan.startY),
+      }));
+    };
+
+    const handlePointerUp = (event: PointerEvent) => {
+      const pan = panStateRef.current;
+      if (!pan || pan.pointerId !== event.pointerId) {
+        return;
+      }
+
+      panStateRef.current = null;
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+    };
+  }, []);
+
+  const handleWheel = (event: React.WheelEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    const element = viewportRef.current;
+    if (!element) {
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const pointerX = event.clientX - rect.left;
+    const pointerY = event.clientY - rect.top;
+    const zoomFactor = event.deltaY < 0 ? 1.1 : 0.9;
+
+    setTransform((current) =>
+      zoomAtPoint(current, current.scale * zoomFactor, pointerX, pointerY),
+    );
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || isPanExcludedTarget(event.target)) {
+      return;
+    }
+
+    panStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: transform.translateX,
+      originY: transform.translateY,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleZoomIn = () => {
+    const element = viewportRef.current;
+    if (!element) {
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    setTransform((current) =>
+      zoomAtPoint(current, stepZoom(current.scale, "in"), centerX, centerY),
+    );
+  };
+
+  const handleZoomOut = () => {
+    const element = viewportRef.current;
+    if (!element) {
+      return;
+    }
+
+    const rect = element.getBoundingClientRect();
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+
+    setTransform((current) =>
+      zoomAtPoint(current, stepZoom(current.scale, "out"), centerX, centerY),
+    );
+  };
 
   if (jobs.length === 0) {
     return null;
@@ -165,82 +321,134 @@ export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
   return (
     <div className="pw-job-graph">
       <h2 className="pw-run-section-title">{t("title")}</h2>
-      <div ref={wrapRef} className="pw-job-graph-canvas-wrap">
-        <div
-          className="pw-job-graph-canvas"
-          style={{ height: layout.height }}
-        >
-          <svg
-            className="pw-job-graph-edges"
-            viewBox={`0 0 ${layout.width} ${layout.height}`}
-            preserveAspectRatio="none"
-            aria-hidden
+      <div className="pw-job-graph-canvas-wrap">
+        <div className="pw-job-graph-controls" role="toolbar" aria-label={t("controlsAriaLabel")}>
+          <button
+            type="button"
+            className="pw-job-graph-control"
+            onClick={handleZoomIn}
+            aria-label={t("zoomInAriaLabel")}
           >
-            {layout.edges.map((edge) => {
-              const toJob = jobById.get(edge.toJobId);
-              const dashed = toJob ? mapPipelineJobToBadgeStatus(toJob) === "skipped" : false;
-
-              return (
-                <path
-                  key={`${edge.fromJobId}-${edge.toJobId}`}
-                  d={edge.path}
-                  className={classNames(
-                    "pw-job-graph-edge",
-                    dashed && "pw-job-graph-edge-skipped",
-                  )}
-                  fill="none"
-                  vectorEffect="non-scaling-stroke"
-                  markerEnd={dashed ? "url(#pw-dag-arrow-skipped)" : "url(#pw-dag-arrow)"}
-                />
-              );
-            })}
-            <defs>
-              <marker
-                id="pw-dag-arrow"
-                markerWidth="8"
-                markerHeight="8"
-                refX="7"
-                refY="4"
-                orient="auto"
+            <Plus size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="pw-job-graph-control"
+            onClick={handleZoomOut}
+            aria-label={t("zoomOutAriaLabel")}
+          >
+            <Minus size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="pw-job-graph-control"
+            onClick={applyFit}
+            aria-label={t("fitToViewAriaLabel")}
+          >
+            <Maximize2 size={14} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="pw-job-graph-control"
+            onClick={applyReset}
+            aria-label={t("resetZoomAriaLabel")}
+          >
+            <RotateCcw size={14} aria-hidden />
+          </button>
+        </div>
+        <div
+          ref={viewportRef}
+          className="pw-job-graph-viewport"
+          style={{ height: JOB_GRAPH_VIEWPORT_HEIGHT }}
+          onWheel={handleWheel}
+          onPointerDown={handlePointerDown}
+        >
+          <div
+            className="pw-job-graph-transform"
+            style={{
+              transform: `translate(${transform.translateX}px, ${transform.translateY}px) scale(${transform.scale})`,
+            }}
+          >
+            <div
+              className="pw-job-graph-canvas"
+              style={{ width: layout.width, height: layout.height }}
+            >
+              <svg
+                className="pw-job-graph-edges"
+                viewBox={`0 0 ${layout.width} ${layout.height}`}
+                width={layout.width}
+                height={layout.height}
+                aria-hidden
               >
-                <path d="M0,1 L0,7 L7,4 z" className="pw-job-graph-arrow" />
-              </marker>
-              <marker
-                id="pw-dag-arrow-skipped"
-                markerWidth="8"
-                markerHeight="8"
-                refX="7"
-                refY="4"
-                orient="auto"
-              >
-                <path d="M0,1 L0,7 L7,4 z" className="pw-job-graph-arrow-skipped" />
-              </marker>
-            </defs>
-          </svg>
+                {layout.edges.map((edge) => {
+                  const toJob = jobById.get(edge.toJobId);
+                  const dashed = toJob
+                    ? mapPipelineJobToBadgeStatus(toJob) === "skipped"
+                    : false;
 
-          {layout.nodes.map((node) => {
-            const job = jobById.get(node.jobId);
-            if (!job) {
-              return null;
-            }
+                  return (
+                    <path
+                      key={`${edge.fromJobId}-${edge.toJobId}`}
+                      d={edge.path}
+                      className={classNames(
+                        "pw-job-graph-edge",
+                        dashed && "pw-job-graph-edge-skipped",
+                      )}
+                      fill="none"
+                      vectorEffect="non-scaling-stroke"
+                      markerEnd={
+                        dashed ? "url(#pw-dag-arrow-skipped)" : "url(#pw-dag-arrow)"
+                      }
+                    />
+                  );
+                })}
+                <defs>
+                  <marker
+                    id="pw-dag-arrow"
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="7"
+                    refY="4"
+                    orient="auto"
+                  >
+                    <path d="M0,1 L0,7 L7,4 z" className="pw-job-graph-arrow" />
+                  </marker>
+                  <marker
+                    id="pw-dag-arrow-skipped"
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="7"
+                    refY="4"
+                    orient="auto"
+                  >
+                    <path d="M0,1 L0,7 L7,4 z" className="pw-job-graph-arrow-skipped" />
+                  </marker>
+                </defs>
+              </svg>
 
-            return (
-              <JobGraphNode
-                key={job.id}
-                job={job}
-                layout={node}
-                nodeWidth={layout.nodeWidth}
-                nodeHeight={layout.nodeHeight}
-                canvasWidth={layout.width}
-                canvasHeight={layout.height}
-                selected={selectedJobId === job.id}
-                onSelect={() => onJobSelect(job.id)}
-                formatDuration={formatDuration}
-                jobAriaLabel={(name) => t("jobAriaLabel", { name })}
-                viewLogsAriaLabel={(name) => t("viewLogsAriaLabel", { name })}
-              />
-            );
-          })}
+              {layout.nodes.map((node) => {
+                const job = jobById.get(node.jobId);
+                if (!job) {
+                  return null;
+                }
+
+                return (
+                  <JobGraphNode
+                    key={job.id}
+                    job={job}
+                    layout={node}
+                    nodeWidth={layout.nodeWidth}
+                    nodeHeight={layout.nodeHeight}
+                    selected={selectedJobId === job.id}
+                    onSelect={() => onJobSelect(job.id)}
+                    formatDuration={formatDuration}
+                    jobAriaLabel={(name) => t("jobAriaLabel", { name })}
+                    viewLogsAriaLabel={(name) => t("viewLogsAriaLabel", { name })}
+                  />
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>

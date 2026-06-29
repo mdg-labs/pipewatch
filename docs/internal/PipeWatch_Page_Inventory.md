@@ -324,7 +324,7 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 
 **Layout:**
 - **Header:** pipeline name, status badge, total duration, started/completed timestamps. Sub-line: branch, commit SHA (GitHub link) + message, actor, trigger. "View on GitHub" button (uses `pipeline_runs.source_url` from API).
-- **Job graph:** visual DAG of jobs (sequential + parallel lanes). Node: job name, status badge, duration, runner name; running jobs show live elapsed time. When `pipeline_jobs.source_url` is set, each node shows an external-link control (separate from node select) opening that job's GitHub log page.
+- **Job graph:** bounded viewport (~220px canvas height) with pan (drag empty space), wheel zoom, and toolbar controls (zoom in/out, fit-to-view, 100% reset). Visual DAG of jobs at fixed intrinsic node size (~124×52px) — sequential + parallel lanes; compact chrome: status icon, job name, duration (running jobs show live elapsed ticker). When `pipeline_jobs.source_url` is set, each node shows an external-link control (separate from node select) opening that job's GitHub log page.
 - **Job panels:** expandable list below the graph. Each job → its steps. When `source_url` is set, panel header includes an external-link control (separate from expand/collapse) to the job's GitHub logs.
   - **Step row:** number, name, status badge, duration. Failed steps highlighted (red), auto-expanded. When the parent job has `source_url`, each step row shows a trailing log link (same job URL — GitHub has no per-step webhook URL).
 - **Breadcrumb:** repo segment (`full_name`) → B4 overview; optional "All runs" → B4-runs; `Repositories` → B3 dashboard.
