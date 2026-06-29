@@ -8,7 +8,12 @@ export default defineConfig({
   test: {
     name: "scripts",
     root: repoRoot,
-    include: ["scripts/i18n-*.test.ts", "scripts/check-push-version-bumps.spec.ts"],
+    include: [
+      "scripts/i18n-*.test.ts",
+      "scripts/check-push-version-bumps.spec.ts",
+      "scripts/ci/resolve-deploy-plan.spec.ts",
+      "scripts/ci/create-draft-release.spec.ts",
+    ],
     environment: "node",
   },
 });

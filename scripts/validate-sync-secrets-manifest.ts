@@ -423,8 +423,8 @@ export function formatValidationIssues(issues: ValidationIssue[]): string {
 function main(): void {
   const issues = validateSyncSecretsManifest({
     yamlContent: readRepoFile(".github/workflows/sync-secrets.yml"),
-    shellContent: readRepoFile(".github/scripts/sync-secrets.sh"),
-    githubMapContent: readRepoFile(".github/scripts/github-secret-map.sh"),
+    shellContent: readRepoFile("scripts/ci/sync-secrets.sh"),
+    githubMapContent: readRepoFile("scripts/ci/github-secret-map.sh"),
   });
 
   if (issues.length > 0) {

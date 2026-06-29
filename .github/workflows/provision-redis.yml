@@ -28,4 +28,4 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           FLY_ORG: ${{ secrets.FLY_ORG }}
           FLY_REGION: ${{ secrets.FLY_REGION }}
-        run: bash .github/scripts/provision-redis.sh "${{ inputs.environment }}"
+        run: bash scripts/ci/provision-redis.sh "${{ inputs.environment }}"

@@ -15,7 +15,6 @@ Run the **full CI gate** when staged changes are in:
 - `packages/**`
 - `scripts/**`
 - `e2e/**`
-- `.github/scripts/**`
 
 Also require the full gate for root files: `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `turbo.json`.
 

@@ -96,8 +96,8 @@ describe("validateSyncSecretsManifest", () => {
   it("passes on the current repository fixtures", () => {
     const issues = validateSyncSecretsManifest({
       yamlContent: readFixture(".github/workflows/sync-secrets.yml"),
-      shellContent: readFixture(".github/scripts/sync-secrets.sh"),
-      githubMapContent: readFixture(".github/scripts/github-secret-map.sh"),
+      shellContent: readFixture("scripts/ci/sync-secrets.sh"),
+      githubMapContent: readFixture("scripts/ci/github-secret-map.sh"),
     });
     expect(issues).toEqual([]);
   });
@@ -105,8 +105,8 @@ describe("validateSyncSecretsManifest", () => {
   it("fails when a manifest GHA key is missing from sync-secrets.yml", () => {
     const issues = validateSyncSecretsManifest({
       yamlContent: BASE_YAML,
-      shellContent: readFixture(".github/scripts/sync-secrets.sh"),
-      githubMapContent: readFixture(".github/scripts/github-secret-map.sh"),
+      shellContent: readFixture("scripts/ci/sync-secrets.sh"),
+      githubMapContent: readFixture("scripts/ci/github-secret-map.sh"),
     });
     expect(issues.some((i) => i.code === "yaml-missing-gha-key")).toBe(true);
     expect(formatValidationIssues(issues)).toMatch(/missing GHA secret mapping/);
@@ -116,8 +116,8 @@ describe("validateSyncSecretsManifest", () => {
     const yaml = `${BASE_YAML}\n          REDIS_URL: \${{ secrets.REDIS_URL }}`;
     const issues = validateSyncSecretsManifest({
       yamlContent: yaml,
-      shellContent: readFixture(".github/scripts/sync-secrets.sh"),
-      githubMapContent: readFixture(".github/scripts/github-secret-map.sh"),
+      shellContent: readFixture("scripts/ci/sync-secrets.sh"),
+      githubMapContent: readFixture("scripts/ci/github-secret-map.sh"),
     });
     expect(issues.some((i) => i.code === "yaml-derived-forbidden")).toBe(true);
   });
@@ -126,7 +126,7 @@ describe("validateSyncSecretsManifest", () => {
     const issues = validateSyncSecretsManifest({
       yamlContent: readFixture(".github/workflows/sync-secrets.yml"),
       shellContent: BASE_SHELL,
-      githubMapContent: readFixture(".github/scripts/github-secret-map.sh"),
+      githubMapContent: readFixture("scripts/ci/github-secret-map.sh"),
     });
     expect(issues.some((i) => i.code.startsWith("shell-"))).toBe(true);
   });

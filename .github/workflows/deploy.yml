@@ -75,7 +75,9 @@ jobs:
       - name: Run Drizzle migrations
         env:
           DATABASE_URL_UNPOOLED: ${{ secrets.DATABASE_URL_UNPOOLED }}
-        run: bash .github/scripts/run-migrate.sh
+        run: |
+          bash scripts/ci/run-migrate.sh
+          bash scripts/ci/run-migrate-admin.sh
 
   derive-sentry-release:
     name: ${{ inputs.environment == 'production' && 'Production' || 'Staging' }} · 2 · Derive Sentry release
@@ -95,7 +97,7 @@ jobs:
         id: release
         env:
           RELEASE_VERSION: ${{ inputs.ref }}
-        run: bash .github/scripts/derive-sentry-release.sh
+        run: bash scripts/ci/derive-sentry-release.sh --package api
 
   deploy-api:
     name: ${{ inputs.environment == 'production' && 'Production' || 'Staging' }} · 3 · Deploy API
@@ -125,7 +127,7 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: pipewatch-api
         run: >-
-          bash .github/scripts/sentry-release.sh api apps/api/dist
+          bash scripts/ci/sentry-release.sh api apps/api/dist
           "${{ needs.derive-sentry-release.outputs.release }}" ${{ inputs.environment }}
 
       - name: Setup Flyctl
@@ -135,7 +137,7 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           FLY_APP: pipewatch-${{ inputs.environment == 'production' && 'prod' || 'staging' }}-api
-        run: bash .github/scripts/deploy-fly.sh api
+        run: bash scripts/ci/deploy-fly.sh api
 
   deploy-worker:
     name: ${{ inputs.environment == 'production' && 'Production' || 'Staging' }} · 3 · Deploy worker
@@ -165,7 +167,7 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: pipewatch-worker
         run: >-
-          bash .github/scripts/sentry-release.sh worker apps/worker/dist
+          bash scripts/ci/sentry-release.sh worker apps/worker/dist
           "${{ needs.derive-sentry-release.outputs.release }}" ${{ inputs.environment }}
 
       - name: Setup Flyctl
@@ -175,7 +177,7 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           FLY_APP: pipewatch-${{ inputs.environment == 'production' && 'prod' || 'staging' }}-worker
-        run: bash .github/scripts/deploy-fly.sh worker
+        run: bash scripts/ci/deploy-fly.sh worker
 
   deploy-admin:
     name: ${{ inputs.environment == 'production' && 'Production' || 'Staging' }} · 3 · Deploy admin
@@ -205,7 +207,7 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: pipewatch-admin
         run: >-
-          bash .github/scripts/sentry-release.sh admin apps/admin/dist
+          bash scripts/ci/sentry-release.sh admin apps/admin/dist
           "${{ needs.derive-sentry-release.outputs.release }}" ${{ inputs.environment }}
 
       - name: Setup Flyctl
@@ -215,7 +217,7 @@ jobs:
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           FLY_APP: pipewatch-${{ inputs.environment == 'production' && 'prod' || 'staging' }}-admin
-        run: bash .github/scripts/deploy-fly.sh admin
+        run: bash scripts/ci/deploy-fly.sh admin
 
   deploy-web:
     name: ${{ inputs.environment == 'production' && 'Production' || 'Staging' }} · 3 · Deploy web
@@ -253,7 +255,7 @@ jobs:
           SENTRY_PROJECT: pipewatch-web
           SENTRY_RELEASE: ${{ needs.derive-sentry-release.outputs.release }}
           SENTRY_ENVIRONMENT: ${{ inputs.environment }}
-        run: bash .github/scripts/deploy-cf-worker.sh web
+        run: bash scripts/ci/deploy-cf-worker.sh web
 
   deploy-marketing:
     name: ${{ inputs.environment == 'production' && 'Production' || 'Staging' }} · 3 · Deploy marketing
@@ -289,7 +291,7 @@ jobs:
           PUBLIC_APP_URL: ${{ secrets.PUBLIC_APP_URL }}
           UMAMI_SCRIPT_URL: ${{ secrets.UMAMI_SCRIPT_URL }}
           UMAMI_WEBSITE_ID: ${{ secrets.UMAMI_WEBSITE_ID }}
-        run: bash .github/scripts/deploy-cf-worker.sh marketing
+        run: bash scripts/ci/deploy-cf-worker.sh marketing
 
   smoke:
     name: ${{ inputs.environment == 'production' && 'Production' || 'Staging' }} · 4 · Smoke
@@ -310,4 +312,4 @@ jobs:
           ref: ${{ inputs.ref != '' && inputs.ref || github.sha }}
 
       - name: Smoke deploy surfaces
-        run: bash .github/scripts/smoke-staging-health.sh
+        run: bash scripts/ci/smoke-staging-health.sh
