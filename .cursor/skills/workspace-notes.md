@@ -1,5 +1,34 @@
 # PipeWatch workspace notes
 
+## 2026-06-29 — PW-224 epic orchestrator run (complete)
+
+**Lane:** S serial · **Linear sync:** ON · **Base:** pre-run staging HEAD
+
+| Issue | Status | Commit |
+|---|---|---|
+| PW-225 Per-deployable versioning toolchain | Done | `9cddc04` |
+| PW-226 GET /version on deployable surfaces | Done | `44eb7f7` |
+| PW-227 Port deploy-plan scripts to scripts/ci | Done | `2d4f022` |
+| PW-228 Enable selective deploy workflows | Done | `d11fdd2` |
+| PW-229 Update CI/CD docs | Done | `def23a8` |
+| PW-224 epic parent | Done | closes via PW-229 `fixes #246` |
+
+**Notes:**
+- Selective version-aware deploy: per-deployable semver (0.1.0 seed), pre-push hook (`pnpm setup:hooks`), `deploy-plan.yml` + refactored `deploy.yml`
+- All five surfaces: `GET /version`; marketing first-class; admin/product migrate split
+- CI scripts consolidated under `scripts/ci/`; removed `version-check.yml` and stale `ci-cd-example/`
+- CE images plan-gated (`push_ghcr_*`); staging tags `dev` + `short_sha` only
+- Production stays release-published (`release.yml` + `DEPLOYED_VERSION`)
+- No DB migrations
+- `staging` 7 commits ahead of `origin/staging` (not pushed)
+
+**Operator follow-up:**
+1. `pnpm setup:hooks` on each dev machine
+2. Push `staging` to exercise selective deploy on GHA — bump one surface semver, confirm only that surface deploys
+3. Smoke `/version` on all staging surfaces after first selective deploy
+
+**Next suggested:** push `staging`; manual `gh workflow run staging.yml --ref staging -f deploy_mode=manual` smoke
+
 ## 2026-06-22 — P237 epic #237 orchestrator run (complete)
 
 **Lane:** S serial · **GitHub sync:** ON · **Base:** `dc51a86`
