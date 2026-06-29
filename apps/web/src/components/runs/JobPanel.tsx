@@ -2,7 +2,7 @@
 
 import type { PipelineJob, PipelineStep } from "@pipewatch/types";
 import { StatusBadge, classNames } from "@pipewatch/ui";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ExternalLink } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useId, useRef } from "react";
 
@@ -65,32 +65,47 @@ export function JobPanel({
       )}
       data-job-id={job.id}
     >
-      <button
-        type="button"
-        className="pw-job-panel-header"
-        aria-expanded={expanded}
-        aria-controls={contentId}
-        onClick={onToggle}
-      >
-        <StatusBadge status={mapPipelineJobToBadgeStatus(job)} showIcon />
-        <span className="pw-job-panel-name">{job.name}</span>
-        <span className="pw-job-panel-duration">{durationLabel}</span>
-        {job.runner_name ? (
-          <span className="pw-job-panel-runner">{job.runner_name}</span>
+      <div className="pw-job-panel-header-row">
+        <button
+          type="button"
+          className="pw-job-panel-header"
+          aria-expanded={expanded}
+          aria-controls={contentId}
+          onClick={onToggle}
+        >
+          <StatusBadge status={mapPipelineJobToBadgeStatus(job)} showIcon />
+          <span className="pw-job-panel-name">{job.name}</span>
+          <span className="pw-job-panel-duration">{durationLabel}</span>
+          {job.runner_name ? (
+            <span className="pw-job-panel-runner">{job.runner_name}</span>
+          ) : null}
+          <ChevronDown
+            size={14}
+            className={classNames("pw-job-panel-chevron", expanded && "pw-job-panel-chevron-open")}
+            aria-hidden
+          />
+        </button>
+        {job.source_url ? (
+          <a
+            href={job.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pw-job-panel-log-link"
+            aria-label={t("viewLogsAriaLabel", { name: job.name })}
+          >
+            <ExternalLink size={14} aria-hidden />
+          </a>
         ) : null}
-        <ChevronDown
-          size={14}
-          className={classNames("pw-job-panel-chevron", expanded && "pw-job-panel-chevron-open")}
-          aria-hidden
-        />
-      </button>
+      </div>
 
       {expanded ? (
         <div id={contentId} className="pw-job-panel-steps">
           {steps.length === 0 ? (
             <p className="pw-job-panel-empty">{t("empty")}</p>
           ) : (
-            steps.map((step) => <StepRow key={step.id} step={step} />)
+            steps.map((step) => (
+              <StepRow key={step.id} step={step} jobSourceUrl={job.source_url} />
+            ))
           )}
         </div>
       ) : null}

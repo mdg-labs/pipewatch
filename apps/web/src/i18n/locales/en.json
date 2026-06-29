@@ -447,10 +447,15 @@
     },
     "jobGraph": {
       "title": "Job execution graph",
-      "jobAriaLabel": "{name} job"
+      "jobAriaLabel": "{name} job",
+      "viewLogsAriaLabel": "View {name} logs on GitHub"
     },
     "jobPanel": {
-      "empty": "No steps recorded for this job."
+      "empty": "No steps recorded for this job.",
+      "viewLogsAriaLabel": "View {name} logs on GitHub"
+    },
+    "stepRow": {
+      "viewLogsAriaLabel": "View {name} logs on GitHub"
     },
     "filters": {
       "branch": "Branch",

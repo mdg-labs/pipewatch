@@ -323,16 +323,17 @@ All marketing pages are public, server-rendered, Umami-tracked. Shared layout: t
 **Purpose:** Full drill-down into a single workflow run.
 
 **Layout:**
-- **Header:** pipeline name, status badge, total duration, started/completed timestamps. Sub-line: branch, commit SHA (GitHub link) + message, actor, trigger. "View on GitHub" button (uses `source_url` from API).
-- **Job graph:** visual DAG of jobs (sequential + parallel lanes). Node: job name, status badge, duration, runner name; running jobs show live elapsed time.
-- **Job panels:** expandable list below the graph. Each job → its steps.
-  - **Step row:** number, name, status badge, duration. Failed steps highlighted (red), auto-expanded.
+- **Header:** pipeline name, status badge, total duration, started/completed timestamps. Sub-line: branch, commit SHA (GitHub link) + message, actor, trigger. "View on GitHub" button (uses `pipeline_runs.source_url` from API).
+- **Job graph:** visual DAG of jobs (sequential + parallel lanes). Node: job name, status badge, duration, runner name; running jobs show live elapsed time. When `pipeline_jobs.source_url` is set, each node shows an external-link control (separate from node select) opening that job's GitHub log page.
+- **Job panels:** expandable list below the graph. Each job → its steps. When `source_url` is set, panel header includes an external-link control (separate from expand/collapse) to the job's GitHub logs.
+  - **Step row:** number, name, status badge, duration. Failed steps highlighted (red), auto-expanded. When the parent job has `source_url`, each step row shows a trailing log link (same job URL — GitHub has no per-step webhook URL).
 - **Breadcrumb:** repo segment (`full_name`) → B4 overview; optional "All runs" → B4-runs; `Repositories` → B3 dashboard.
 
 **Functions:**
 - Expand/collapse job panels (failed auto-expanded)
 - Job graph node click → scroll to / expand that job's panel
-- "View on GitHub" → `pipeline_runs.source_url` (full logs on GitHub; no log storage in MVP)
+- "View on GitHub" → `pipeline_runs.source_url` (full workflow run on GitHub; no log storage in MVP)
+- Per-job log links (graph node, panel header, step rows) → `pipeline_jobs.source_url` when present; hidden for legacy rows without a stored URL
 - Live updates via SSE while in progress (status, durations, step transitions)
 - Live elapsed-time ticker on running jobs
 

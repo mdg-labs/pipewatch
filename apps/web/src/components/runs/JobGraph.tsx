@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { PipelineJob } from "@pipewatch/types";
 import { StatusBadge, classNames } from "@pipewatch/ui";
+import { ExternalLink } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { useTimeFormatters } from "@/i18n/use-time-formatters";
@@ -48,6 +49,7 @@ function JobGraphNode({
   onSelect,
   formatDuration,
   jobAriaLabel,
+  viewLogsAriaLabel,
 }: {
   job: PipelineJob;
   layout: DagNodeLayout;
@@ -59,6 +61,7 @@ function JobGraphNode({
   onSelect: () => void;
   formatDuration: (totalSeconds: number | null | undefined) => string;
   jobAriaLabel: (name: string) => string;
+  viewLogsAriaLabel: (name: string) => string;
 }) {
   const active = isActiveJob(job);
   const badgeStatus = mapPipelineJobToBadgeStatus(job);
@@ -73,36 +76,52 @@ function JobGraphNode({
     );
 
   return (
-    <button
-      type="button"
-      className={classNames(
-        "pw-job-graph-node",
-        failed && "pw-job-graph-node-failed",
-        skipped && "pw-job-graph-node-skipped",
-        selected && "pw-job-graph-node-selected",
-      )}
+    <div
+      className="pw-job-graph-node-wrap"
       style={{
         left: toPercent(layout.x, canvasWidth),
         top: toPercent(layout.y, canvasHeight),
         width: toPercent(nodeWidth, canvasWidth),
         height: toPercent(nodeHeight, canvasHeight),
       }}
-      onClick={() => {
-        onSelect();
-        scrollToJobPanel(job.id);
-      }}
-      aria-pressed={selected}
-      aria-label={jobAriaLabel(job.name)}
     >
-      <div className="pw-job-graph-node-header">
-        <span className="pw-job-graph-node-name">{job.name}</span>
-        <span className="pw-job-graph-node-duration">{durationLabel}</span>
-      </div>
-      <StatusBadge status={badgeStatus} />
-      {job.runner_name ? (
-        <span className="pw-job-graph-node-runner">{job.runner_name}</span>
+      <button
+        type="button"
+        className={classNames(
+          "pw-job-graph-node",
+          failed && "pw-job-graph-node-failed",
+          skipped && "pw-job-graph-node-skipped",
+          selected && "pw-job-graph-node-selected",
+        )}
+        onClick={() => {
+          onSelect();
+          scrollToJobPanel(job.id);
+        }}
+        aria-pressed={selected}
+        aria-label={jobAriaLabel(job.name)}
+      >
+        <div className="pw-job-graph-node-header">
+          <span className="pw-job-graph-node-name">{job.name}</span>
+          <span className="pw-job-graph-node-duration">{durationLabel}</span>
+        </div>
+        <StatusBadge status={badgeStatus} />
+        {job.runner_name ? (
+          <span className="pw-job-graph-node-runner">{job.runner_name}</span>
+        ) : null}
+      </button>
+      {job.source_url ? (
+        <a
+          href={job.source_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pw-job-graph-node-log-link"
+          aria-label={viewLogsAriaLabel(job.name)}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <ExternalLink size={12} aria-hidden />
+        </a>
       ) : null}
-    </button>
+    </div>
   );
 }
 
@@ -218,6 +237,7 @@ export function JobGraph({ jobs, selectedJobId, onJobSelect }: JobGraphProps) {
                 onSelect={() => onJobSelect(job.id)}
                 formatDuration={formatDuration}
                 jobAriaLabel={(name) => t("jobAriaLabel", { name })}
+                viewLogsAriaLabel={(name) => t("viewLogsAriaLabel", { name })}
               />
             );
           })}
