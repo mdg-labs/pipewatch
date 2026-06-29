@@ -1,6 +1,6 @@
 name: Release
 
-# Published release — production deploy (no CI gate) and CE image tags (PRD §22).
+# Published release — production deploy plan + selective deploy, CE image tags (PRD §22).
 
 on:
   release:
@@ -36,9 +36,23 @@ jobs:
             echo "Deploying release ${TAG}"
           fi
 
+  plan:
+    name: Production · Deploy plan
+    needs: [check-not-deployed]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/deploy-plan.yml
+    with:
+      environment: production
+      ref: ${{ github.event.release.tag_name }}
+      deploy_mode: auto
+      force_full_deploy: "false"
+      should_deploy: ${{ needs.check-not-deployed.outputs.should_deploy }}
+    secrets: inherit
+
   deploy:
     name: Deploy production
-    needs: [check-not-deployed]
+    needs: [check-not-deployed, plan]
     permissions:
       contents: read
     uses: ./.github/workflows/deploy.yml
@@ -46,6 +60,20 @@ jobs:
       environment: production
       ref: ${{ github.event.release.tag_name }}
       should_deploy: ${{ needs.check-not-deployed.outputs.should_deploy }}
+      deploy_mode: auto
+      caller_plan: "true"
+      deploy_api: ${{ needs.plan.outputs.deploy_api }}
+      deploy_worker: ${{ needs.plan.outputs.deploy_worker }}
+      deploy_web: ${{ needs.plan.outputs.deploy_web }}
+      deploy_marketing: ${{ needs.plan.outputs.deploy_marketing }}
+      deploy_admin: ${{ needs.plan.outputs.deploy_admin }}
+      run_migrate: ${{ needs.plan.outputs.run_migrate }}
+      run_migrate_admin: ${{ needs.plan.outputs.run_migrate_admin }}
+      push_ghcr_api: ${{ needs.plan.outputs.push_ghcr_api }}
+      push_ghcr_worker: ${{ needs.plan.outputs.push_ghcr_worker }}
+      push_ghcr_web: ${{ needs.plan.outputs.push_ghcr_web }}
+      sync_services: ${{ needs.plan.outputs.sync_services }}
+      skip_reasons: ${{ needs.plan.outputs.skip_reasons }}
     secrets: inherit
 
   record-deployed-version:
@@ -64,14 +92,55 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh variable set DEPLOYED_VERSION --body "${{ github.event.release.tag_name }}"
 
-  ce-images:
-    name: Build CE images (release)
-    # CE Docker builds have no migration/Fly/CF dependency — run in parallel with deploy.
+  ce-images-api:
+    name: Build CE image · api (release)
+    needs: [check-not-deployed, plan, deploy]
+    if: >-
+      needs.check-not-deployed.outputs.should_deploy == 'true' &&
+      needs.deploy.result == 'success' &&
+      needs.plan.outputs.push_ghcr_api == 'true'
     permissions:
       contents: read
       packages: write
     uses: ./.github/workflows/build-and-push-ce-image.yml
     with:
+      service: api
+      tags: |
+        latest
+        ${{ github.event.release.tag_name }}
+    secrets: inherit
+
+  ce-images-worker:
+    name: Build CE image · worker (release)
+    needs: [check-not-deployed, plan, deploy]
+    if: >-
+      needs.check-not-deployed.outputs.should_deploy == 'true' &&
+      needs.deploy.result == 'success' &&
+      needs.plan.outputs.push_ghcr_worker == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-and-push-ce-image.yml
+    with:
+      service: worker
+      tags: |
+        latest
+        ${{ github.event.release.tag_name }}
+    secrets: inherit
+
+  ce-images-web:
+    name: Build CE image · web (release)
+    needs: [check-not-deployed, plan, deploy]
+    if: >-
+      needs.check-not-deployed.outputs.should_deploy == 'true' &&
+      needs.deploy.result == 'success' &&
+      needs.plan.outputs.push_ghcr_web == 'true'
+    permissions:
+      contents: read
+      packages: write
+    uses: ./.github/workflows/build-and-push-ce-image.yml
+    with:
+      service: web
       tags: |
         latest
         ${{ github.event.release.tag_name }}

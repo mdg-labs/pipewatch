@@ -34,9 +34,13 @@ jobs:
   prepare-release:
     name: Prepare release
     needs: [ci]
+    if: needs.ci.result == 'success'
     permissions:
       contents: write
     uses: ./.github/workflows/prepare-release.yml
+    with:
+      deploy-api: "true"
+      deploy-web: "true"
     secrets: inherit
 
   ce-images:

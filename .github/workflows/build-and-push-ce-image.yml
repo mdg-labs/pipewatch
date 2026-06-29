@@ -3,6 +3,11 @@ name: Build and push CE images
 on:
   workflow_call:
     inputs:
+      service:
+        description: Single CE service to build (api | worker | web). Omit to build all three.
+        type: string
+        required: false
+        default: ""
       tags:
         description: Newline-separated tag suffixes applied to each CE image (e.g. latest, abc1234, 1.0.0)
         type: string
@@ -13,31 +18,48 @@ permissions:
   packages: write
 
 jobs:
+  setup:
+    name: Resolve CE image matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - id: matrix
+        run: |
+          SERVICE="${{ inputs.service }}"
+          ALL='[{"service":"api","dockerfile":"apps/api/Dockerfile","image":"ghcr.io/mdg-labs/pipewatch-api"},{"service":"worker","dockerfile":"apps/worker/Dockerfile","image":"ghcr.io/mdg-labs/pipewatch-worker"},{"service":"web","dockerfile":"apps/web/Dockerfile","image":"ghcr.io/mdg-labs/pipewatch-web"}]'
+          if [ -z "$SERVICE" ]; then
+            echo "matrix=$ALL" >> "$GITHUB_OUTPUT"
+          else
+            FILTERED="$(node --input-type=module -e "
+              const all = JSON.parse(process.argv[1]);
+              const service = process.argv[2];
+              const filtered = all.filter((row) => row.service === service);
+              if (filtered.length === 0) {
+                throw new Error('unknown CE service: ' + service);
+              }
+              process.stdout.write(JSON.stringify(filtered));
+            " "$ALL" "$SERVICE")"
+            echo "matrix=$FILTERED" >> "$GITHUB_OUTPUT"
+          fi
+
   build:
     name: Build CE image (${{ matrix.service }})
+    needs: [setup]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - service: api
-            dockerfile: apps/api/Dockerfile
-            image: ghcr.io/mdg-labs/pipewatch-api
-          - service: worker
-            dockerfile: apps/worker/Dockerfile
-            image: ghcr.io/mdg-labs/pipewatch-worker
-          - service: web
-            dockerfile: apps/web/Dockerfile
-            image: ghcr.io/mdg-labs/pipewatch-web
+        include: ${{ fromJson(needs.setup.outputs.matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@9f698171ed81b15d1823a05fc7211befd50c8ae0 # v6.0.3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+        uses: docker/setup-buildx-action@e468709366ecd1a906a736059aabc937fc1cc9fd # v3.11.0
 
       - name: Log in to GHCR
-        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -67,7 +89,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Build and push
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: docker/build-push-action@263435318d21b8f0a8c93e8d3270b41d0a0c18f # v6.18.0
         with:
           context: .
           file: ${{ matrix.dockerfile }}
