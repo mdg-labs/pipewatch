@@ -36,6 +36,13 @@
       "when": 1781815217908,
       "tag": "0004_strong_outlaw_kid",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1782763396584,
+      "tag": "0005_yellow_hedge_knight",
+      "breakpoints": true
     }
   ]
 }

@@ -412,6 +412,8 @@ describe("workspace pipeline jobs routes", () => {
       startedAt: new Date("2026-06-10T12:02:00.000Z"),
       runnerName: "ubuntu-latest",
       durationMs: 45_000,
+      sourceUrl:
+        "https://github.com/org/repo/actions/runs/123/jobs/456",
     });
 
     const response = await app.request(
@@ -432,12 +434,14 @@ describe("workspace pipeline jobs routes", () => {
       workspace_id: workspace.id,
       run_id: run.id,
       runner_name: "ubuntu-latest",
+      source_url: "https://github.com/org/repo/actions/runs/123/jobs/456",
       status: "completed",
       duration_ms: 45_000,
     });
     expect(body.data[1]).toMatchObject({
       runner_name: "macos-latest",
       duration_ms: 60_000,
+      source_url: null,
     });
   });
 

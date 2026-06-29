@@ -31,6 +31,7 @@ function toPipelineJob(row: typeof pipelineJobs.$inferSelect): PipelineJob {
     status: row.status as PipelineJob["status"],
     conclusion: row.conclusion as PipelineJob["conclusion"],
     runner_name: row.runnerName,
+    source_url: row.sourceUrl,
     started_at: row.startedAt.toISOString(),
     completed_at: row.completedAt ? row.completedAt.toISOString() : null,
     duration_ms: row.durationMs,

@@ -38,6 +38,8 @@ describe("mapWorkflowJobPayload", () => {
       status: "completed",
       conclusion: "success",
       runnerName: "GitHub Actions 2",
+      sourceUrl:
+        "https://github.com/octocat/Hello-World/actions/runs/2891501295/jobs/2891501297",
       startedAt: new Date("2022-10-11T14:22:35Z"),
       completedAt: new Date("2022-10-11T14:23:40Z"),
       durationMs: 65_000,
@@ -69,6 +71,9 @@ describe("mapWorkflowJobPayload", () => {
     expect(result.job.completedAt).toBeNull();
     expect(result.job.durationMs).toBeNull();
     expect(result.job.runnerName).toBeNull();
+    expect(result.job.sourceUrl).toBe(
+      "https://github.com/octocat/Hello-World/actions/runs/2891501296/jobs/2891501298",
+    );
     expect(result.steps).toEqual([]);
   });
 
@@ -81,6 +86,9 @@ describe("mapWorkflowJobPayload", () => {
 
     expect(result.job.externalJobId).toBe("2891501297");
     expect(result.job.name).toBe("build");
+    expect(result.job.sourceUrl).toBe(
+      "https://github.com/octocat/Hello-World/actions/runs/2891501295/jobs/2891501297",
+    );
     expect(result.steps).toHaveLength(3);
   });
 });

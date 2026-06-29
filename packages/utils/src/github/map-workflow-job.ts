@@ -44,6 +44,7 @@ export interface PipelineJobUpsert {
   status: PipelineStatus;
   conclusion: PipelineConclusion;
   runnerName: string | null;
+  sourceUrl: string | null;
   startedAt: Date;
   completedAt: Date | null;
   durationMs: number | null;
@@ -142,6 +143,7 @@ export function mapWorkflowJobPayload(
     status,
     conclusion,
     runnerName: job.runner_name,
+    sourceUrl: job.html_url,
     startedAt,
     completedAt,
     durationMs: computeDurationMs(startedAt, completedAt),

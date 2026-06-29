@@ -10,6 +10,7 @@ export type PipelineJob = {
   status: PipelineStatus;
   conclusion: PipelineConclusion;
   runner_name: string | null;
+  source_url: string | null;
   started_at: string;
   completed_at: string | null;
   duration_ms: number | null;

@@ -359,6 +359,7 @@ One row per active session. On logout-all-sessions: revoke all rows for user. On
 | status | text | queued \| in_progress \| completed |
 | conclusion | text | success \| failure \| cancelled \| skipped \| null |
 | runner_name | text | nullable |
+| source_url | text | nullable — provider job log page URL (GitHub `html_url`) |
 | started_at | timestamptz | |
 | completed_at | timestamptz | |
 | duration_ms | int | |

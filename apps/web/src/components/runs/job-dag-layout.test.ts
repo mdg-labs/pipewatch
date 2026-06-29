@@ -19,6 +19,7 @@ function makeJob(
     status: completedAt ? "completed" : "in_progress",
     conclusion: completedAt ? "success" : null,
     runner_name: "ubuntu-latest",
+    source_url: null,
     started_at: startedAt,
     completed_at: completedAt,
     duration_ms: durationMs,

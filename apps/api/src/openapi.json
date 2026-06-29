@@ -4840,6 +4840,11 @@
             "type": "string",
             "nullable": true
           },
+          "source_url": {
+            "type": "string",
+            "nullable": true,
+            "format": "uri"
+          },
           "started_at": {
             "type": "string",
             "format": "date-time"
@@ -4863,6 +4868,7 @@
           "status",
           "conclusion",
           "runner_name",
+          "source_url",
           "started_at",
           "completed_at",
           "duration_ms"

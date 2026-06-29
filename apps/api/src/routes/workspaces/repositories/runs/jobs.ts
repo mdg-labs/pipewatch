@@ -29,6 +29,7 @@ const PipelineJobSchema = z
     status: PipelineStatusSchema,
     conclusion: PipelineConclusionSchema,
     runner_name: z.string().nullable(),
+    source_url: z.string().url().nullable(),
     started_at: z.string().datetime(),
     completed_at: z.string().datetime().nullable(),
     duration_ms: z.number().int().nullable(),

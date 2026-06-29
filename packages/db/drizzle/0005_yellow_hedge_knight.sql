@@ -1,0 +1,1 @@
+ALTER TABLE "pipeline_jobs" ADD COLUMN "source_url" text;

@@ -31,6 +31,7 @@ export const pipelineJobs = pgTable(
     status: text("status").notNull(),
     conclusion: text("conclusion"),
     runnerName: text("runner_name"),
+    sourceUrl: text("source_url"),
     startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     durationMs: integer("duration_ms"),

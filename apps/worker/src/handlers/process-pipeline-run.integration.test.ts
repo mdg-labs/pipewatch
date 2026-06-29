@@ -760,6 +760,9 @@ describe("process-pipeline-job integration", () => {
     expect(job?.status).toBe("completed");
     expect(job?.durationMs).toBe(65_000);
     expect(job?.runnerName).toBe("GitHub Actions 2");
+    expect(job?.sourceUrl).toBe(
+      "https://github.com/octocat/Hello-World/actions/runs/2891501295/jobs/2891501297",
+    );
 
     const steps = await database
       .select()
