@@ -1,57 +1,56 @@
 ---
-description: When and how to use the orchestrator skill and GitHub project board
+description: When and how to use the orchestrator skill and Linear task board
 alwaysApply: true
 ---
 
 # Orchestrator & task board
 
-PipeWatch is built **task-by-task** from GitHub Issues on the **PipeWatch Roadmap** project (org `mdg-labs`, project **#5**). Sub-agents implement tasks; a verifier checks them.
+PipeWatch work is tracked **task-by-task** in **Linear** (team **PipeWatch**, `PW-*`). The MVP phased roadmap is **complete** — normal work is **bugs, fixes, and iteration slices**, not epic-queue sweeps.
 
 ## Use the orchestrator skill when
 
-- The user asks to "orchestrate", "delegate", "run the roadmap", "implement phase X", or "execute tasks autonomously"
-- Multi-step work spans several tasks or an epic
+- The user asks to "orchestrate", "delegate", or implement a Linear issue (`PW-N`) with verifier gate
+- Multi-step work spans several linked tasks (optional epic — operator must name the target)
 
 In that case, follow `.cursor/skills/orchestrator/SKILL.md`. Do not improvise.
 
-## Use GitHub issues directly when
+## Use Linear issues directly when
 
-- You're implementing a single task and the user already pointed at an issue (e.g. `#12`)
-- You're checking dependencies or what's next
+- You're implementing a single bug or task and the user pointed at `PW-N`
+- Scope is small enough that orchestrator overhead is unnecessary
 
-Load the issue via MCP `issue_read` or `gh`; read acceptance criteria from the issue body and PRD `§` refs cited there.
+Load the issue via MCP `get_issue`; read acceptance criteria from the description and PRD `§` refs cited there.
 
 ## Task lifecycle
 
-| Board Status | Meaning |
+| Linear status | Meaning |
 |---|---|
 | Backlog | Unrefined / deferred |
 | Ready | Fully specified — orchestrator picks from here |
 | In Progress | Execution agent working |
 | In Review | Execution done — awaiting verifier |
-| Done | Verifier PASS — merged to `staging`, issue may still be open |
-| Closed | Auto when commit with `fixes #N` lands on `main` |
+| Done | Verifier PASS — commit on `staging`; linked GitHub issue closes on merge to `main` |
 
-**Blocking dependencies:** A task blocked by `#N` is **unblocked** when `#N`'s board Status is **Done** or **Closed** — not when the GitHub issue state is `closed` (issues stay open until release to `main`).
+**Blocking dependencies:** A task blocked by `PW-N` is **unblocked** when `PW-N`'s Linear status is **Done** or **Closed**.
 
-## GitHub board status (when orchestrating)
+## Linear board status (when orchestrating)
 
-PipeWatch project on GitHub (`mdg-labs/pipewatch`, project **#5**). Commit subjects use issue number: `[#12]`.
+Team **PipeWatch** on Linear. Operator references **`PW-N`**; commits use **`[#N]`** / **`fixes #N`** (GitHub number from Linear sync).
 
-- **Any orchestrator target** (single leaf or epic) → present batch plan, then start immediately unless user said `plan only` / `wait`
-- **Execution prompts** → paste **STATUS FIRST** block (filled GraphQL) as the **first lines** of every Task prompt — see `.cursor/skills/orchestrator/prompt-templates.md`
-- **Execution agents** → first Shell command sets **In Progress** (leaf + parent); **In Review** before verifier handoff; output must include `BOARD STATUS: …` lines
-- **Verification agents** → set **Done** after all layers PASS (launch **not** `readonly`); FAIL → **Ready** + comment
-- **Orchestrator** → after every verifier PASS, re-query board Status and set **Done** if still **In Review** (source of truth)
-- **Forbidden:** condensed `GITHUB SYNC: In Progress → In Review` one-liners — use full blocks from `prompt-templates.md`
-- Execution prompts must **not** set Done — see `.cursor/skills/orchestrator/github-board.md`
+- **Any orchestrator target** (single leaf or epic) → present batch plan with **`PW-N`**, then start immediately unless user said `plan only` / `wait`
+- **Execution prompts** → paste **STATUS FIRST** block as **first lines** — see `.cursor/skills/orchestrator/prompt-templates.md`
+- **Execution agents** → first MCP call sets **In Progress** (leaf + parent); **In Review** before verifier; output must include `BOARD STATUS: …`
+- **Verification agents** → set **Done** after all layers PASS (launch **not** `readonly`); FAIL → **Ready** + synced-thread comment
+- **Orchestrator** → after every verifier PASS, confirm Linear status **Done** and commit-linkage audit (`fixes #N` on `staging`)
+- **Forbidden:** condensed `LINEAR SYNC` one-liners — use full blocks from `prompt-templates.md`
+- Execution prompts must **not** set Done — see `.cursor/skills/orchestrator/linear-board.md`
 
 ## Universal acceptance criteria (every task)
 
 Even when not listed in an issue, the verifier applies:
 
 - File / directory naming (`04-naming.mdc`)
-- Conventional commits with `[#N]` (`01-git-workflow.mdc`, `07-issue-commit-linking.mdc`)
+- Conventional commits with `[#N]` — GitHub `#N` resolved from Linear (`07-issue-commit-linking.mdc`)
 - TypeScript strict, no `any`, no `console.log` (when TypeScript is in scope)
 - Security defaults — JWT/refresh/API-key rules, webhook HMAC, workspace scoping (`03-security-baseline.mdc`)
 - Edition flags via `packages/config/edition.ts` — no scattered edition checks (`00-project.mdc`)

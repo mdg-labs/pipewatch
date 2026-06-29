@@ -1,6 +1,6 @@
 # Triage description template (PipeWatch)
 
-Use for MCP `issue_write` body. Keep `## Report` first — verbatim.
+Use for `save_issue` `description`. Keep `## Report` first — verbatim.
 
 **Title:** separate `title` param per [summary-patterns.md](summary-patterns.md).
 
@@ -11,7 +11,7 @@ Use for MCP `issue_write` body. Keep `## Report` first — verbatim.
 
 ## Regression
 
-{Regression Bugs only: "Escaped defect from #N (board was Done/Closed)."}
+{Regression Bugs only: "Escaped defect from PW-N (was Done)."}
 
 ## Classification
 
@@ -19,7 +19,7 @@ Use for MCP `issue_write` body. Keep `## Report` first — verbatim.
 
 ## {Flow name}
 
-{End-to-end steps — e.g. "Webhook ingest flow", "JWT refresh flow", "SSE subscribe flow"}
+{End-to-end steps}
 
 ## Failure modes / gates
 
@@ -30,7 +30,6 @@ Use for MCP `issue_write` body. Keep `## Report` first — verbatim.
 ## Suspects (ranked)
 
 1. **`path/file.ts`** — {why}
-2. ...
 
 ## Recommended triage
 

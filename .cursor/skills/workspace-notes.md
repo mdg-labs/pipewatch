@@ -1,5 +1,71 @@
 # PipeWatch workspace notes
 
+## 2026-06-22 — P237 epic #237 orchestrator run (complete)
+
+**Lane:** S serial · **GitHub sync:** ON · **Base:** `dc51a86`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #238 Scaffold Astro marketing app on Cloudflare | Done | `5fa5c50`, `8257bc4` (docs fix) |
+| #239 Migrate layout, homepage, and pricing | Done | `163b621` |
+| #240 Migrate changelog and legal MDX pages | Done | `2aafd34` |
+| #241 Migrate waitlist and email action pages | Done | `8d933c5` |
+| #242 Wire Astro marketing CF deploy pipeline | Done | `111ed7d` |
+| #243 Decommission Next.js marketing and update specs | Done | `0f5d4bb`, `f7e6daf` |
+| #237 epic parent | Done | closes via #243 `fixes #237` |
+
+**Notes:**
+- Marketing migrated Next.js/OpenNext → Astro 6 + `@astrojs/cloudflare` on CF Workers
+- `NEXT_PUBLIC_APP_URL` → `PUBLIC_APP_URL` across env schema, deploy/sync scripts, docs
+- All A-series pages (A1–A7): home, pricing, changelog, legal, waitlist, confirm/unsubscribe
+- Umami + LAUNCH_MODE/WAITLIST_ENABLED behaviour preserved; `/docs` 308 → docs.pipewatch.app
+- #243 verifier FAIL: orphaned `apps/marketing/app/` — fixed in `f7e6daf`
+- Operator follow-up: rename Phase `NEXT_PUBLIC_APP_URL` → `PUBLIC_APP_URL` before next deploy/sync; push `staging` to exercise Astro CF deploy on GHA
+- No DB migrations
+- `staging` 10 commits ahead of run base (not pushed)
+
+**Next suggested:** push `staging` to deploy Astro marketing to `staging.pipewatch.app`; smoke A-series pages + waitlist middleware; operator Phase key rename
+
+## 2026-06-21 — P231 epic #231 orchestrator run (complete)
+
+**Lane:** S serial · **GitHub sync:** ON · **Base:** `633ec7f`
+
+| Issue | Status | Commit |
+|---|---|---|
+| #232 Update Page Inventory + PRD for repo overview split | Done | `8e01048` |
+| #233 Fix breadcrumb repo name and dead link | Done | `6924adb` |
+| #234 Add repository runs list route | Done | `217e00c` |
+| #235 Build repository overview dashboard on B4 route | Done | `92abd53` |
+| #236 Update insights and run deep links to runs route | Done | `dc51a86` |
+| #231 epic parent | Done | closes via #236 `fixes #231` |
+
+**Notes:**
+- B4 `/repos/:repoId` → curated overview (insights cards, failing workflows, recent runs, SSE banner)
+- B4-runs `/repos/:repoId/runs` → full filterable run list (extracted `RepoRunsListView`)
+- Breadcrumbs: `full_name` labels; Repositories → B3 dashboard
+- Run detail: overview + "All runs" breadcrumb; insights deep links → `/runs?workflow=…`
+- No DB migrations
+- `staging` 5 commits ahead of run base (not pushed)
+
+**Next suggested:** push `staging` to deploy; smoke B4 overview + B4-runs filters + breadcrumb nav on staging-cloud
+
+## 2026-06-21 — #230 orchestrator run (complete)
+
+**Lane:** S on `staging` · **GitHub sync:** ON · **Base:** post-#229
+
+| Issue | Status | Commit |
+|---|---|---|
+| #230 Dashboard: sidebar stays active on insights and settings routes | Done | `13da9b8` |
+
+**Notes:**
+- `isActivePath` now exact-matches workspace root via `isWorkspaceRootPath` — Dashboard active only on `/workspaces/:slug`
+- Insights keeps prefix matching for child routes; settings behavior unchanged
+- Four new active-state unit tests in `Sidebar.test.tsx`
+- No DB migrations
+- `staging` 1 commit ahead of prior run base (not pushed)
+
+**Next suggested:** push `staging` to deploy; smoke sidebar nav on insights + settings routes on staging-cloud
+
 ## 2026-06-21 — #229 orchestrator run (complete)
 
 **Lane:** S on `staging` · **GitHub sync:** ON · **Base:** post-#220

@@ -2,103 +2,83 @@
 
 Copy and fill. Sub-agents do not see the orchestrator chat.
 
-Include **role-specific** GITHUB SYNC blocks from [github-board.md](github-board.md).
+Include **role-specific** LINEAR SYNC blocks from [linear-board.md](linear-board.md).
 
-**Every execution and verifier prompt** must include **GITHUB TOOLS**, **NODE ENV**, **CI GATE (SHELL)**, and (execution only) **DB MIGRATIONS** blocks below.
+**Every execution and verifier prompt** must include **LINEAR TOOLS**, **NODE ENV**, **CI GATE (SHELL)**, and (execution only) **DB MIGRATIONS** blocks below.
 
 **Orchestrator dispatch rules:**
 
-- **Any GitHub target** (single leaf or epic) → build batch plan, **show plan to user**, then start batch 1 immediately (unless user said `plan only` / `wait` / `don't start`).
-- **Every Task prompt** (execution + verifier) → include the **CI GATE (SHELL)** block verbatim; sub-agents must use `required_permissions: ["all"]` on first Shell attempt.
-- **Verifier Task** → `readonly: false` always (needs GraphQL Status mutations).
-- After verifier PASS → orchestrator runs [board sync](github-board.md#orchestrator--after-every-verifier-pass-mandatory) regardless of verifier output.
+- **Any Linear target** (single leaf or epic) → build batch plan with **`PW-N`**, show plan, start batch 1 (unless user said `plan only` / `wait`)
+- **Every Task prompt** → **CI GATE (SHELL)** block; `required_permissions: ["all"]` on first Shell attempt
+- **Verifier Task** → `readonly: false` always (Linear MCP status + comments)
+- After verifier PASS → orchestrator runs [board sync](linear-board.md#status-sync--sub-agent-duties--orchestrator-guarantee)
 
 ## Prompt compression policy (mandatory)
 
-Sub-agents do **not** read `github-board.md` or this file unless you paste the relevant blocks into the Task prompt. **Never** replace full GITHUB SYNC blocks with one-line shorthands.
+Sub-agents do **not** read `linear-board.md` or this file unless you paste blocks into the Task prompt. **Never** one-line LINEAR SYNC shorthands.
 
-| ❌ Forbidden (agents skip board updates) | ✅ Required |
+| ❌ Forbidden | ✅ Required |
 |---|---|
-| `GITHUB SYNC: In Progress #143+#141 → In Review → commit …` | Full **STATUS FIRST** block (below) with issue numbers filled in |
-| `GITHUB SYNC: (see github-board.md)` | Inline GraphQL commands with `<N>` replaced |
-| GITHUB SYNC buried after AC / CI / scope | **STATUS FIRST** is the **first section** of every execution prompt |
-| No board-status lines in REQUIRED OUTPUT | `BOARD STATUS: …` required in execution output |
+| `LINEAR SYNC: In Progress PW-143 → In Review → commit …` | Full **STATUS FIRST** block with `PW-N` filled in |
+| `LINEAR SYNC: (see linear-board.md)` | Inline MCP steps with IDs replaced |
+| STATUS FIRST buried after AC / CI | **STATUS FIRST** is **first section** of every execution prompt |
 
 ### Execution prompt section order (mandatory)
 
-Orchestrator **must** assemble execution Task prompts in this order — no exceptions:
-
-1. **STATUS FIRST** — filled GraphQL for In Progress (leaf + parent); `FIRST SHELL COMMAND` rule
-2. **GITHUB SYNC — EXECUTION** — full block from [github-board.md](github-board.md#execution-variant)
-3. **GITHUB TOOLS** — GraphQL IDs + forbidden ops
-4. MODE / LANE / TASK / SESSION / PARENT / CLOSE_PARENTS
-5. ACCEPTANCE CRITERIA + DOC REFERENCE + READ/WRITE SCOPE
-6. **CI GATE (SHELL)** + **DB MIGRATIONS** (execution only)
-7. WORK steps + **REQUIRED OUTPUT** (includes board status confirmation)
-
-Verifier prompts: **GITHUB SYNC — VERIFIER** + **GITHUB TOOLS** before VERIFY steps (same rule — never one-line shorthand).
+1. **STATUS FIRST** — In Progress via `save_issue` (leaf + parent)
+2. **LINEAR SYNC — EXECUTION** — full block from [linear-board.md](linear-board.md#linear-sync-blocks)
+3. **LINEAR TOOLS**
+4. **COMMIT LINK** — `#N` resolved from `get_issue` attachments
+5. MODE / LANE / TASK / SESSION / PARENT / CLOSE_PARENTS
+6. ACCEPTANCE CRITERIA + DOC REFERENCE + READ/WRITE SCOPE
+7. **CI GATE (SHELL)** + **DB MIGRATIONS**
+8. WORK steps + **REQUIRED OUTPUT**
 
 ---
 
 ## Orchestrator — batch plan + run loop
 
 ```text
-TARGET: #<N> | epic #<parent> | phase P1
+TARGET: PW-<N> | epic PW-<parent>
 PAUSE: only if user said plan only / wait / don't start
 
-1. Load issues + board Status + deps
-2. OUTPUT batch plan table (Lane S/P per batch) — BEFORE first Task dispatch
+1. Load issues via get_issue / list_issues(parentId) + status + deps
+2. OUTPUT batch plan table (PW-N only) — BEFORE first Task dispatch
 3. Dispatch batch 1 execution agent(s)
 4. Verifier(s) — readonly: FALSE
-5. Orchestrator board sync on PASS
+5. Orchestrator board sync on PASS + commit-linkage audit (fixes #N)
 6. Next batch until queue empty or FAIL
 
 EPIC example:
 | Batch | Lane | Issues |
-| 1 | S | #31 |
-| 2 | S | #32 |
-| 3 | S | #33, #34, #35 |  # serialized if shared index.ts
-| 4 | S | #36 | CLOSE_PARENTS: [#5] — subject `[#36][#5]`; body `refs #5` + `fixes #5`
+| 1 | S | PW-31 |
+| 2 | S | PW-32 |
 
-SINGLE LEAF example:
-| Batch | Lane | Issues |
-| 1 | S | #42 |
+COMMIT LINK (execution only, not in plan table):
+- PW-31 → #31; epic PW-5 → #5 for refs/fixes on final child
 ```
 
-## GITHUB TOOLS — mandatory in every GITHUB SYNC prompt
+---
+
+## LINEAR TOOLS — mandatory in every LINEAR SYNC prompt
 
 ```text
-GITHUB TOOLS — MANDATORY:
-- MCP server: user-github
-- Issue create/update: MCP issue_write (type, labels, Priority, Effort, assignees, milestone — all mandatory on create)
-- Issue read: MCP issue_read
-- Comments: MCP add_issue_comment
-- Sub-issues: MCP sub_issue_write (database IDs via GraphQL)
-- Search/list: MCP search_issues / list_issues
+LINEAR TOOLS — MANDATORY:
+- MCP server: plugin-linear-linear
+- Read: get_issue (includeRelations for blockers)
+- List children: list_issues with parentId
+- Create/update: save_issue (state, labels, parentId, blockedBy)
+- Comments: save_comment with parentId = GitHub-synced thread root (list_comments first)
 
-PROJECT STATUS — GraphQL only (project #5):
-- Project node ID: PVT_kwDODv-LLc4Ba3QP
-- Status field ID: PVTSSF_lADODv-LLc4Ba3QPzhVryEg
-- Options: Backlog=9485f8e2, Ready=a0e7153f, In Progress=47fc9ee4, In Review=81f76819, Done=98236657, Closed=99be8811, Declined=e36e1062
-- Roadmap map: docs/internal/github-roadmap-issue-map.json (databaseId + node_id per task)
-- Default milestone: MVP #1; org Effort/Priority via issue_fields (see github-board.md)
-
-Step 1 — item ID:
-  gh api graphql -f 'query=query { repository(owner:"mdg-labs",name:"pipewatch") { issue(number:N) { projectItems(first:10) { nodes { id project { number } } } } } }'
-  → filter project.number == 5
-
-Step 2 — set Status:
-  gh api graphql -f 'query=mutation { updateProjectV2ItemFieldValue(input: {
-    projectId: "PVT_kwDODv-LLc4Ba3QP" itemId: "<ITEM_ID>"
-    fieldId: "PVTSSF_lADODv-LLc4Ba3QPzhVryEg"
-    value: { singleSelectOptionId: "<OPTION_ID>" }
-  }) { projectV2Item { fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } } } } }'
+COMMIT RESOLVE (before git commit — never user-github):
+- get_issue(PW-N) → attachments[].url → GitHub #N
+- Example: PW-222 → #244
 
 FORBIDDEN:
-- gh issue create/edit (use MCP)
-- gh project item-list / item-edit
-- Checking "is issue in project" (rule 12-github-project-board.mdc)
-- Setting GitHub issue open/closed — board Status only
+- user-github issue_read, issue_write, search_issues, add_issue_comment
+- GraphQL updateProjectV2ItemFieldValue (GitHub Project #5)
+- fixes PW-N or [#PW-N] in commits
+- Top-level save_comment for operational output
 ```
 
 ---
@@ -117,52 +97,23 @@ NODE ENV:
 
 ## CI GATE (SHELL) — mandatory in every execution and verifier prompt
 
-**Root causes addressed:** (1) Default Cursor sandbox blocks Docker/`gh`. (2) Turbo parallel fan-out + stale agent processes exhaust user task limits (`fork: EAGAIN`) on long orchestrator runs.
-
 ```text
 CI GATE (SHELL) — MANDATORY:
 - NEVER run pnpm, gh, docker, or CI gate commands in the default sandbox
 - ALWAYS invoke Shell with required_permissions: ["all"] on the FIRST attempt
-- Do NOT "try sandbox first" and retry — start outside sandbox
 - Repo root: /home/mdguggenbichler/projects/pipewatch
-- ALWAYS export TURBO_CONCURRENCY=1 (scripts set this; do not override upward)
-- ALWAYS run preflight before CI (scripts call it automatically)
+- ALWAYS export TURBO_CONCURRENCY=1
 
-PARALLEL-SAFE PREFLIGHT (mandatory — do not use global pkill):
-- WORK_ROOT = agent repo/worktree absolute path (Lane S: repo root; Lane P: worktree path)
-- CI_PREFLIGHT_MODE=local — default; cleans turbo/vitest only under WORK_ROOT (Lane P parallel OK)
-- CI_PREFLIGHT_MODE=global — Lane S serial only; also prunes labeled integration containers
-- FORBIDDEN during Lane P parallel batch: CI_PREFLIGHT_MODE=global, pkill -f turbo/vitest without WORK_ROOT scoping
-
-Execution — full gate before commit (.cursor/rules/06-local-ci-before-commit.mdc):
+Execution — full gate before commit:
   WORK_ROOT=<repo-or-worktree> CI_PREFLIGHT_MODE=<local|global> pnpm ci:gate
-  (runs lint, typecheck, test:unit, build, test:integration, audit sequentially with TURBO_CONCURRENCY=1)
 
-Verifier — Layer 2 scoped (execution already ran full gate; do NOT rerun whole monorepo):
+Verifier — Layer 2 scoped:
   WORK_ROOT=<repo-or-worktree> TURBO_FILTER=<filter> pnpm ci:verify-scoped
-  (preflight + turbo lint/typecheck/test:unit for filter cone only)
-
-TURBO_FILTER — derive from primary WRITE SCOPE package (orchestrator fills in prompt):
-| Primary path prefix        | TURBO_FILTER          |
-| apps/api/                  | @pipewatch/api...     |
-| apps/worker/               | @pipewatch/worker...  |
-| apps/web/                  | @pipewatch/web...     |
-| apps/marketing/            | @pipewatch/marketing... |
-| packages/ui/               | @pipewatch/ui...      |
-| packages/db/               | @pipewatch/db...      |
-| packages/types/            | @pipewatch/types...   |
-| packages/utils/            | @pipewatch/utils...   |
-| packages/config/           | @pipewatch/config...  |
-| Multiple packages touched  | filter of primary app + ... (dependency cone) |
 
 Also use required_permissions: ["all"] for:
-- pnpm install / pnpm ci:gate / pnpm ci:verify-scoped / pnpm ci:preflight
-- gh api graphql (board Status mutations)
+- pnpm ci:gate / ci:verify-scoped / ci:preflight
 - phase run --env=Development -- …
-- Any command that starts containers, binds ports, or calls GitHub
-
-If fork/EAGAIN or "Resource temporarily unavailable" after ["all"]: report blocked with user pids.current; do not retry in a loop.
-If a command fails with sandbox/network/Docker errors after using ["all"], report blocked — do not loop sandbox retries.
+- gh api (Dependabot only — not issue board)
 ```
 
 ---
@@ -171,56 +122,46 @@ If a command fails with sandbox/network/Docker errors after using ["all"], repor
 
 ```text
 DB MIGRATIONS — MANDATORY (see .cursor/rules/15-db-migrations-schema.mdc):
-- Schema in packages/db/schema/ is source of truth — if not in schema, it does not exist
-- Workflow: edit schema → pnpm db:generate (Drizzle Kit) → commit schema + generated migration together
-- FORBIDDEN: hand-written SQL, hand-created migration dirs, editing/deleting committed migrations, drizzle-kit push
-- If Drizzle Kit cannot run → report blocked; do NOT hand-write SQL
+- Schema in packages/db/schema/ is source of truth
+- Workflow: edit schema → pnpm db:generate → commit schema + migration together
+- FORBIDDEN: hand-written SQL, editing committed migrations, drizzle-kit push
 ```
 
 ---
 
-## STATUS FIRST — mandatory header (execution only; paste at top of every execution Task prompt)
+## STATUS FIRST — mandatory header (execution only)
 
-Orchestrator **fills in issue numbers** and **pastes this block first** — before MODE, AC, CI, or scope. Sub-agent's **first Shell command** must be one of these GraphQL mutations (or the batch variant).
+Orchestrator **fills in `PW-N`** and pastes this block **first**.
 
 ```text
 ⚠️ STATUS FIRST — MANDATORY (before session memory, before Read/Grep, before any code)
 
-Your FIRST action is board Status → In Progress. Do NOT read files, write code, or create session memory until board Status is In Progress on every issue listed below.
+Your FIRST actions:
+1. get_issue PW-<LEAF> [+ PW-<PARENT>] → record COMMIT LINK (#N from attachments)
+2. save_issue { id: "PW-<LEAF>", state: "In Progress" }
+3. save_issue { id: "PW-<PARENT>", state: "In Progress" }  # if subtask
+4. Output: BOARD STATUS: In Progress on PW-<LEAF> [and PW-<PARENT>]
 
-Issues to update now: #<LEAF> [+ #<PARENT> if subtask]
+If save_issue fails → BOARD_SYNC: FAILED and stop.
 
-Step 1 — get project item IDs (Shell, required_permissions: ["all"]):
-  gh api graphql -f 'query=query { repository(owner:"mdg-labs",name:"pipewatch") { issue(number:<LEAF>) { projectItems(first:10) { nodes { id project { number } } } } } }'
-  # repeat for parent #<PARENT> if not none
-
-Step 2 — set In Progress (option ID 47fc9ee4) for EACH issue:
-  gh api graphql -f 'query=mutation { updateProjectV2ItemFieldValue(input: {
-    projectId: "PVT_kwDODv-LLc4Ba3QP" itemId: "<ITEM_ID>"
-    fieldId: "PVTSSF_lADODv-LLc4Ba3QPzhVryEg"
-    value: { singleSelectOptionId: "47fc9ee4" }
-  }) { projectV2Item { fieldValueByName(name: "Status") { ... on ProjectV2ItemFieldSingleSelectValue { name } } } } }'
-
-Step 3 — confirm in output: BOARD STATUS: In Progress on #<LEAF> [and #<PARENT>]
-
-If GraphQL fails → report BOARD_SYNC: FAILED and stop (do not implement until fixed).
-
-Pre-handoff (after CI gate, before returning): repeat Steps 1–2 with In Review (option ID 81f76819) on leaf #<LEAF> only; confirm BOARD STATUS: In Review on #<LEAF>.
+Pre-handoff: save_issue PW-<LEAF> state "In Review"; confirm BOARD STATUS: In Review on PW-<LEAF>
 ```
 
-**Batch shortcut** (2+ issues, same Status): one mutation with `items: [{ itemId, fieldId, value }, …]` is OK after fetching all item IDs.
+---
 
-### BAD vs GOOD (orchestrator — do not dispatch the BAD prompt)
+## COMMIT LINK — mandatory in execution prompts
+
+Orchestrator resolves or instructs execution to resolve before commit:
 
 ```text
-# ❌ BAD — agents skip board updates; subtask commit omits epic linkage
-MODE: GitHub | Lane S | TASK #143 | PARENT #141
-GITHUB SYNC: In Progress #143+#141 → In Review → commit feat(runs)[#143] …
-CI: required_permissions ["all"]; pnpm ci:gate
-ACCEPTANCE CRITERIA: …
+COMMIT LINK (from get_issue attachments):
+- Leaf: PW-<LEAF> → GitHub #<N>
+- Parent: PW-<PARENT> → GitHub #<P>  # if subtask
 
-# ✅ GOOD — STATUS FIRST block pasted verbatim with #143 and #141 filled in, then full GITHUB SYNC — EXECUTION block
-# Commit example for subtask: feat(runs)[#143][#141]: … / body: fixes #143 + refs #141
+COMMIT FORMAT (GitHub numbers only):
+- Subject: [#<N>] (+ [#<P>] when subtask)
+- Body: fixes #<N>; refs #<P> on subtasks; fixes #<P> per CLOSE_PARENTS (final child only)
+- FORBIDDEN: fixes PW-N, [PW-N] in git
 ```
 
 ---
@@ -228,61 +169,52 @@ ACCEPTANCE CRITERIA: …
 ## Execution agent — Lane S (serial on staging)
 
 ```text
-⚠️ STATUS FIRST — (paste filled block from section above — MUST be first lines of prompt)
+⚠️ STATUS FIRST — (paste filled block — MUST be first lines)
 
-GITHUB SYNC — EXECUTION:
-- MCP server: user-github
-- owner: mdg-labs | repo: pipewatch | project: 5
-- issues: [{ number: <N> }, { number: <parent> }]  # parent omitted if none
-- CLOSE_PARENTS: [#<parent>] | none
-- FIRST ACTION: GraphQL Status → In Progress (all listed) — BEFORE session memory or code
-- LAST ACTIONS: session ended → Status → In Review (leaf only) → single commit
-- FORBIDDEN: Status → Done; verification comments; committing session memory
-- COMMIT: `[#<N>]` in subject (+ `[#<parent>]` when subtask); `fixes #<N>` in body; `refs #<parent>` on every subtask; `fixes #<parent>` per CLOSE_PARENTS (final child only)
+LINEAR SYNC — EXECUTION:
+(paste full block from linear-board.md)
 
-GITHUB TOOLS — MANDATORY:
-(paste GITHUB TOOLS block from top of this file)
+LINEAR TOOLS — MANDATORY:
+(paste LINEAR TOOLS block)
 
-MODE: GitHub
+COMMIT LINK:
+- PW-<N> → #<N>
+- PW-<parent> → #<P> | none
+
+MODE: Linear
 LANE: S
 TARGET REPO: /home/mdguggenbichler/projects/pipewatch
 WORK BRANCH: staging
-TASK ID: #<N>
-SESSION ID: #<N>-<YYYYMMDD>-<4hex>
-PARENT: #<parent> | none
-CLOSE_PARENTS: [#<parent>] | none
+TASK ID: PW-<N>
+SESSION ID: PW-<N>-<YYYYMMDD>-<4hex>
+PARENT: PW-<parent> | none
+CLOSE_PARENTS: [PW-<parent>] | none
 
-CI GATE (SHELL): (see prompt-templates.md — required_permissions: ["all"], never sandbox)
+CI GATE (SHELL): required_permissions ["all"]
 
 DB MIGRATIONS — MANDATORY:
-(paste DB MIGRATIONS block from top of this file)
+(paste DB MIGRATIONS block)
 
 ACCEPTANCE CRITERIA:
-- <from issue body>
+- <from issue description>
 
 DOC REFERENCE:
 - prd §<N>
-- pages <section>
 
-READ SCOPE:
+READ SCOPE / WRITE SCOPE:
 - <paths>
-
-WRITE SCOPE:
-- <paths>
-
-SESSION MEMORY: .cursor/skills/agent-memory/active/<SESSION-ID>.md
 
 WORK:
-1. STATUS FIRST — In Progress (GraphQL; confirm BOARD STATUS in output)
-2. Session memory start + pnpm install if needed
-3. Implement per AC
-4. Full CI gate: WORK_ROOT=<repo> CI_PREFLIGHT_MODE=<local|global> pnpm ci:gate
-5. Pre-handoff: In Review (leaf) → single commit with `[#N]` (+ `[#parent]` when subtask) + `fixes` / `refs` lines per 07-issue-commit-linking.mdc
+1. STATUS FIRST + COMMIT LINK
+2. Session memory + implement
+3. pnpm ci:gate
+4. In Review → commit with [#N] / fixes #N
 
-REQUIRED OUTPUT (all fields mandatory):
-- BOARD STATUS: In Progress on #<N> [and parent] — set at start
-- BOARD STATUS: In Review on #<N> — set before handoff (or BOARD_SYNC: FAILED)
-- Session ID, commit SHA, files changed, status: complete | blocked
+REQUIRED OUTPUT:
+- BOARD STATUS: In Progress on PW-<N>
+- BOARD STATUS: In Review on PW-<N>
+- COMMIT LINK used: #<N>
+- commit SHA, status: complete | blocked
 ```
 
 ---
@@ -290,80 +222,64 @@ REQUIRED OUTPUT (all fields mandatory):
 ## Verifier — Lane S
 
 ```text
-GITHUB SYNC — VERIFIER:
-- project: 5
-- issues: [{ number: <N> }]
-- CLOSE_PARENTS: [#<parent>] | none
-- DISPATCH: readonly MUST be false (GraphQL Status mutations)
-- AFTER PASS: comment → Status → Done → re-query and report actual Status in output
-- AFTER FAIL: FAIL comment → Status → Ready
-- Orchestrator re-syncs Done after PASS regardless (see github-board.md)
+LINEAR SYNC — VERIFIER:
+(paste full block from linear-board.md)
 
-GITHUB TOOLS — MANDATORY:
-(paste GITHUB TOOLS block from top of this file)
+LINEAR TOOLS — MANDATORY:
+(paste LINEAR TOOLS block)
 
-MODE: GitHub verify
-LANE: S
-TARGET REPO: /home/mdguggenbichler/projects/pipewatch
-TASK ID: #<N>
-SESSION ID: <same as execution>
-CLOSE_PARENTS: [#<parent>] | none
+COMMIT LINK:
+- PW-<N> → #<N> (for Layer 3c3 audit)
 
-DISPATCH NOTE: Orchestrator must launch this agent with readonly: FALSE.
+MODE: Linear verify
+TASK ID: PW-<N>
+CLOSE_PARENTS: [PW-<parent>] | none
+readonly: FALSE
 
-CI GATE (SHELL): (see prompt-templates.md — required_permissions: ["all"], never sandbox)
-
-TURBO_FILTER: <from WRITE SCOPE — see CI GATE table>
+TURBO_FILTER: <from WRITE SCOPE>
 
 VERIFY:
-- Layer 1: scope audit
-- Layer 2: WORK_ROOT=<repo-or-worktree> TURBO_FILTER=<filter> pnpm ci:verify-scoped (scoped; do NOT rerun full monorepo)
-- Layer 3: AC, PRD contract, security, env vars, commit linking, migration policy (`15-db-migrations-schema.mdc`)
-- Layer 3c3 (mandatory): `git log staging --grep='fixes #<N>'` must return at least one commit for task #<N> (combined commits must list every covered issue on separate `fixes #N` lines). When `PARENT` is set: subject includes `[#<parent>]` and body includes `refs #<parent>` (final child may use `fixes #<parent>` per CLOSE_PARENTS instead of or in addition to `refs`)
+- Layer 1: scope
+- Layer 2: pnpm ci:verify-scoped
+- Layer 3: AC, PRD, security, env vars, commit linking, migrations
+- Layer 3c3: git log staging --grep='fixes #<N>' (N from COMMIT LINK)
 
-AFTER PASS (mandatory before returning):
-1. add_issue_comment with PASS summary
-2. GraphQL Status → Done (option ID 98236657) on leaf (#<N>)
-3. If CLOSE_PARENTS: GraphQL Status → Done on each parent
-4. Re-query Status; include actual board Status in output (not assumed)
+AFTER PASS:
+1. save_comment in synced thread
+2. save_issue state Done (leaf + CLOSE_PARENTS parents)
+3. Re-query get_issue; report actual status
 
-REQUIRED OUTPUT (all fields mandatory):
-- PASS | FAIL with layer detail and fix hints
-- BOARD STATUS: <actual Status after your mutation> on #<N> (and parents if applicable)
-- If GraphQL failed: report BOARD_SYNC: FAILED — orchestrator will retry
+REQUIRED OUTPUT:
+- PASS | FAIL
+- BOARD STATUS: <actual> on PW-<N>
 ```
 
 ---
 
-## Execution agent — Lane P (isolated branch)
+## Execution agent — Lane P
 
-Same as Lane S except — **STATUS FIRST block still required at top** (In Progress on leaf + parent before worktree setup):
+Same as Lane S except:
 
 ```text
 LANE: P
-WORK BRANCH: orchestrator/<TASK-ID>
-WORKTREE: ../pipewatch-wt-<TASK-ID>
-STAGING_BASE_SHA: <sha at batch start>
-
-FORBIDDEN: checkout staging, merge, push during execution
-FIRST SHELL AFTER STATUS: pnpm install in worktree (still after In Progress GraphQL)
-WORK_ROOT: <worktree absolute path> — use for all ci:preflight / ci:gate / ci:verify-scoped
-CI_PREFLIGHT_MODE: local — mandatory during Lane P parallel (never global while siblings run)
-TURBO_FILTER: <from WRITE SCOPE — per-task filter; each parallel agent uses its own>
+WORK BRANCH: orchestrator/PW-<N>
+WORKTREE: ../pipewatch-wt-PW-<N>
+WORK_ROOT: <worktree path>
+CI_PREFLIGHT_MODE: local
 ```
 
 ---
 
-## Orchestrator — pre-dispatch checklist (every Task call)
+## Orchestrator — pre-dispatch checklist
 
-Before `Task` tool for execution:
+Before execution Task:
 
-- [ ] **STATUS FIRST** block pasted first with `#N` and parent filled in
-- [ ] Full **GITHUB SYNC — EXECUTION** block (not one-line shorthand)
-- [ ] **GITHUB TOOLS** block included
-- [ ] **CI GATE** + **DB MIGRATIONS** blocks included
-- [ ] `readonly: false` on verifier dispatches
+- [ ] **STATUS FIRST** with `PW-N` filled in
+- [ ] Full **LINEAR SYNC — EXECUTION**
+- [ ] **COMMIT LINK** block (or instruct get_issue at start)
+- [ ] **CI GATE** + **DB MIGRATIONS**
+- [ ] Verifier `readonly: false`
 
-After execution returns:
+After execution:
 
-- [ ] Output contains `BOARD STATUS: In Progress on #N` — if missing, do not dispatch verifier until fixed
+- [ ] Output contains `BOARD STATUS: In Progress on PW-N`

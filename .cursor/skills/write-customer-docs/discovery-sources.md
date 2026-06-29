@@ -29,7 +29,7 @@ Read these **in order** before drafting or refreshing customer docs. Never guess
 ## Greenfield discovery (0 MDX for an area)
 
 1. **Map routes to doc topics** — walk `pipewatch/apps/web/src/app/` and Page Inventory B-series pages.
-2. **Read PRD sections** cited in the GitHub issue or task (auth §7, onboarding §13, CE §25, editions §26).
+2. **Read PRD sections** cited in the Linear task description (auth §7, onboarding §13, CE §25, editions §26).
 3. **Note edition gates** — from `packages/config/edition.ts` (`flags.BILLING_ENABLED`, `flags.WORKSPACE_SWITCHER`, etc.).
 4. **Check `pipewatch-docs/documentation.json`** — confirm group and empty slots for new `path` entries.
 5. **Build behaviour notes table** before IA proposal:

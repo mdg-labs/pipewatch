@@ -45,15 +45,16 @@ Reference sections as `§N` or heading, e.g. `prd §7.1`, `prd §17`, `pages B3`
 | `prd §26` | Edition system (`PIPEWATCH_EDITION`) |
 | `prd §27` | Decision log |
 
-## GitHub issue tracking
+## Linear task tracking
 
-Issues on `mdg-labs/pipewatch`. Project board: **PipeWatch Roadmap (#5)**.
+Team **PipeWatch** (`PW-*`) on Linear. **Post-MVP:** bugs, fixes, and iteration tasks — not phased roadmap epics. Board reference: [linear-board.md](linear-board.md).
 
 | Field | Purpose |
 |---|---|
-| Issue number | Commit suffix `[#12]` (subtasks: `[#12][#8]` + body `refs #8`); session memory |
+| `PW-N` | Operator prompts, orchestrator batch plans, session memory |
+| GitHub `#N` | Commits only — resolved from `get_issue` sync attachment |
 | Labels | Domain routing (`domain:frontend`, etc.) |
-| Board Status | Execution/verification lifecycle |
+| Linear `state` | Execution/verification lifecycle |
 
 ## Default verification commands
 

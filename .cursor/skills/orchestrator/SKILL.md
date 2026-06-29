@@ -1,11 +1,21 @@
 ---
 name: orchestrator
-description: Run a chat as a pure orchestrator for PipeWatch. Reads the GitHub Issues board (project #5), presents a Lane S/P batch plan, then dispatches sub-agents immediately (unless user says wait). Verifies each task and syncs board Status to Done after every PASS. Sends a Slack DM to the configured operator (from cursor@mdg-labs.dev MCP auth) when the run ends. Epic or single issue — start without asking. Use when the user asks to orchestrate, delegate end-to-end, or implement a GitHub issue/epic.
+description: Run a chat as a pure orchestrator for PipeWatch. Dispatches sub-agents for a named Linear issue (PW-N), verifies, and syncs board status. Default work is bugs and iteration tasks — not roadmap epic sweeps. Use when the user asks to orchestrate, delegate end-to-end, or implement PW-N with verifier gate.
 ---
 
 # Orchestrator (PipeWatch)
 
-The main agent in this chat is a **dispatcher only**. It reads the **GitHub board** (project **#5**), decides what to run next, and hands implementation to sub-agents.
+The main agent in this chat is a **dispatcher only**. It loads the **named Linear issue** (`PW-N`), runs execution + verifier sub-agents, and syncs status. **Default target:** one bug or task — not a phased roadmap epic unless the operator explicitly names an epic parent.
+
+## Operating mode (post-MVP)
+
+| Work | Orchestrator behavior |
+|---|---|
+| **Bug / single task** (`implement PW-42`) | One leaf, Lane S, verify, Done |
+| **Multi-task feature** (operator names epic `PW-100`) | `list_issues` children → serial batches per parallelism rules |
+| **Ad-hoc / no issue** | Chat mode — `TodoWrite` only |
+
+Do **not** assume a backlog epic queue, phase labels (P0–P21), or `pipewatch-development-roadmap.md` ordering. New work is filed via **linear-intake** / **linear-triage** as bugs and iteration tasks.
 
 ## Workspace
 
@@ -14,25 +24,37 @@ The main agent in this chat is a **dispatcher only**. It reads the **GitHub boar
 | Repo | `/home/mdguggenbichler/projects/pipewatch` |
 | Integration branch | `staging` |
 | Production branch | `main` — **protected**; **never push** from agents |
-| Task branch (Lane P) | `orchestrator/<TASK-ID>` |
-| Worktree (Lane P) | `../pipewatch-wt-<TASK-ID>` or subagent-managed |
-| Task board | GitHub Issues — [github-board.md](github-board.md) (project **#5**) |
+| Task branch (Lane P) | `orchestrator/PW-<N>` |
+| Worktree (Lane P) | `../pipewatch-wt-PW-<N>` or subagent-managed |
+| Task board | Linear — [linear-board.md](linear-board.md) (team **PipeWatch**, project **PipeWatch Roadmap**) |
 | Spec docs | `docs/internal/PipeWatch_*.md` — [doc-index.md](doc-index.md) |
 | Workspace memory | `.cursor/skills/workspace-notes.md` |
 | Session memory | `.cursor/skills/agent-memory/active/<SESSION-ID>.md` — **gitignored** |
 | Prompt templates | [prompt-templates.md](prompt-templates.md) |
+| Migration spec | `docs/internal/Linear_Migration_Assessment.md` |
+
+## Two identifiers
+
+| Context | ID | Example |
+|---|---|---|
+| Operator, orchestrator, batch plans, Slack, prompts | Linear | `PW-216` |
+| Git commit subject & body | GitHub (from Linear sync) | `[#41]`, `fixes #41` |
+| Verifier commit audit | GitHub | `git log --grep='fixes #41'` |
+
+Orchestrator prompts and batch plans cite **`PW-N` only**. GitHub `#N` appears in execution prompts only inside the **COMMIT LINK** block (resolved via `get_issue` attachments). **Forbidden:** `#N` in operator invocations, batch plan tables, or Slack summaries as the primary task ref; `fixes PW-N` in commit bodies.
 
 ## What the orchestrator does (and does not do)
 
 ### MAY do
 
-- Read **GitHub issue payloads** via MCP (`user-github`)
-- Read [doc-index.md](doc-index.md), [prompt-templates.md](prompt-templates.md), [github-board.md](github-board.md)
+- Read **Linear issue payloads** via MCP (`plugin-linear-linear`: `get_issue`, `list_issues`)
+- Read [doc-index.md](doc-index.md), [prompt-templates.md](prompt-templates.md), [linear-board.md](linear-board.md)
 - Read/write `.cursor/skills/workspace-notes.md`
-- Use `TodoWrite` in chat mode / GitHub mode
+- Use `TodoWrite` in chat mode / Linear mode
 - Launch sub-agents via **Task** tool
-- **Board status sync** after verifier PASS — GraphQL `updateProjectV2ItemFieldValue` via Shell/`gh` (see [Board sync](#board-sync-mandatory-orchestrator-owned))
-- **Board status audit** — re-query project Status after each task; fix stuck **In Review**
+- **Board status sync** after verifier PASS — `save_issue` → `state: "Done"` via Linear MCP (see [Board sync](#board-sync-mandatory-orchestrator-owned))
+- **Board status audit** — re-query issue `status` via `get_issue` after each task; fix stuck **In Review**
+- **Commit-linkage audit** — map `PW-N` → `#N`; `git log --grep='fixes #N'` on `staging` (see [Commit linkage audit](#commit-linkage-audit-mandatory-orchestrator-owned))
 - **Session-end Slack DM** to the configured **operator** via service-account MCP auth (see [Session-end Slack DM](#session-end-slack-dm-mandatory), [slack-notify.md](slack-notify.md))
 - Ask clarifying questions **only** when target is ambiguous, all children are blocked, or user explicitly paused sync
 
@@ -44,23 +66,25 @@ The main agent in this chat is a **dispatcher only**. It reads the **GitHub boar
 - Paste spec doc bodies into sub-agent prompts — pass paths and `§` refs
 - Paste entire issue bodies — extract AC, file paths, doc refs, deps
 - Dispatch Lane P and Lane S in the same batch
+- Use `user-github` issue tools (`issue_read`, `issue_write`, `search_issues`, `add_issue_comment`) for task work
+- Use GraphQL `updateProjectV2ItemFieldValue` or GitHub Project #5 Status mutations
 
 ## Modes
 
 | Mode | When | Status tracking |
 |---|---|---|
-| **GitHub mode** | User names issue/epic (`#N`, URL) | Board Status + comments |
+| **Linear mode** | User names issue/epic (`PW-N`, Linear URL) | Linear `state` + synced-thread comments |
 | **Chat mode** | Ad-hoc work, no board issue | `TodoWrite` only |
 
-Default to **GitHub mode** when user names an issue.
+Default to **Linear mode** when user names a `PW-N` issue or Linear URL.
 
 ## Default: start immediately (plan first, then dispatch)
 
-Whatever the user throws at `/orchestrator` — **single leaf**, **epic parent**, issue URL, or phase label — **start work immediately**. The user will say explicitly when **not** to start (e.g. `plan only`, `wait`, `hold`, `don't start`).
+Whatever the user throws at `/orchestrator` — **single leaf** (`PW-N`), **epic parent** when explicitly named, or Linear URL — **start work immediately**. Do not infer "run next roadmap epic" or phase sweeps. The user will say explicitly when **not** to start (e.g. `plan only`, `wait`, `hold`, `don't start`).
 
 **Before the first sub-agent dispatch**, the orchestrator **must present a batch plan** to the user:
 
-1. Load target issue(s) + board Status + dependencies.
+1. Load target issue(s) + Linear `status` + dependencies (`get_issue` with `includeRelations: true` or `blockedBy`).
 2. Apply [parallelism rules](#parallelism--orchestrator-decides-serial-vs-parallel) to split work into **batches**.
 3. **Output the plan** (see [Batch plan format](#batch-plan-format)) — mandatory user-visible message **before** any `Task` tool call.
 4. **Then dispatch** the first batch in the **same turn** (unless user paused).
@@ -72,92 +96,97 @@ Do **not** ask “go?” or wait for confirmation. The plan **is** the heads-up;
 ```markdown
 ## Orchestrator plan — <target>
 
-**Lane default:** S on `staging` · **GitHub sync:** ON
+**Lane default:** S on `staging` · **Linear sync:** ON
 
 | Batch | Lane | Issues | Notes |
 |---|---|---|---|
-| 1 | S | #31 | tokens — unblocks #32 |
-| 2 | S | #32 | core components |
-| 3 | P | #33, #35 | disjoint scopes (if Lane P applies) |
+| 1 | S | PW-31 | tokens — unblocks PW-32 |
+| 2 | S | PW-32 | core components |
+| 3 | P | PW-33, PW-35 | disjoint scopes (if Lane P applies) |
 | … | | | |
 
-**Skipped (Done):** #25  
+**Skipped (Done):** PW-25  
 **Blocked:** —  
-**Epic linkage:** every child commit includes `[#<epic>]` in subject + `refs #<epic>` in body  
-**CLOSE_PARENTS:** `fixes #5` on final child #36 only (in addition to `refs #5`)
+**Epic linkage:** every child commit includes `[#<epic>]` in subject + `refs #<epic>` in body (GitHub numbers from COMMIT LINK)  
+**CLOSE_PARENTS:** `fixes #5` on final child (PW-36) only (in addition to `refs #5`)
 
 → Starting batch 1…
 ```
 
-For a **single leaf**, the plan is one row (Batch 1 · Lane S · `#N`).
+For a **single leaf**, the plan is one row (Batch 1 · Lane S · `PW-N`).
+
+**Forbidden in batch plans:** `#N` as primary issue reference; GitHub issue URLs as task IDs.
 
 ### Epic (parent issue)
 
-When target is a **Feature/epic**:
+When target is a **Feature/epic** (`type:epic` label):
 
-1. Load parent via `issue_read` + `get_sub_issues`.
-2. Queue all leaves **not Done** on the board; respect `Depends on: #N`.
+1. Load parent via `get_issue` + `list_issues` with `parentId: "PW-<epic>"`.
+2. Queue all leaves **not Done** on the board; respect `blockedBy` / `Depends on: PW-N` in description.
 3. Split queue into batches per parallelism rules (often all Lane S for one epic).
 4. Present full multi-batch plan → start batch 1.
 
 Parent **In Progress** when first child starts; parent **Done** only after final child verifies PASS + orchestrator board sync.
 
-User modifiers: `serial` · `parallel` · `from #N` · `plan only` (no dispatch).
+User modifiers: `serial` · `parallel` · `from PW-N` · `plan only` (no dispatch).
 
 ### Single leaf
 
-When target is one **Task** (no sub-issues): present one-batch plan → dispatch immediately.
+When target is one **Task** (no children): present one-batch plan → dispatch immediately.
 
 **Commits:** local per task on `staging` (Lane S) or task branches (Lane P). **Never push** unless user asks — **never push to `main`**.
 
-**GitHub sync (default ON):** pass role-specific GITHUB SYNC blocks from [github-board.md](github-board.md). Skip only if user says "don't update GitHub issues".
+**Linear sync (default ON):** pass role-specific LINEAR SYNC blocks from [linear-board.md](linear-board.md). Skip only if user says "don't update Linear issues".
 
 ## Startup sequence
 
 1. Confirm target is `/home/mdguggenbichler/projects/pipewatch`.
 2. Read `.cursor/skills/workspace-notes.md`.
-3. **GitHub mode:** load issue(s); epics → `get_sub_issues`; query board Status for deps.
+3. **Linear mode:** load issue(s) via `get_issue`; epics → `list_issues` with `parentId`; query Linear `status` for deps.
 4. **Build + present batch plan** (mandatory before first `Task`).
 5. **Dispatch batch 1** immediately unless user said not to start.
-6. **Ambiguous target only** (no issue number, multiple unrelated epics) → ask once which epic/issue, then plan + start.
+6. **Ambiguous target only** (no `PW-N`, multiple unrelated epics) → ask once which epic/issue, then plan + start.
 7. **On stop:** update `workspace-notes.md` → [session-end Slack DM](#session-end-slack-dm-mandatory) → final summary in chat.
 
-## GitHub status ownership
+## Linear status ownership
 
 | Status | Who | When |
 |---|---|---|
 | In Progress | **Execution** | First action (leaf + parent if subtask) |
 | In Review | **Execution** | Before verifier handoff |
 | Done | **Verifier** (best effort) + **Orchestrator** (mandatory confirm) | After all layers PASS |
+| Ready | **Verifier** | On FAIL |
 
 ### Board sync (mandatory, orchestrator-owned)
 
-**Root cause (P1 #5 run):** Verifiers were launched `readonly: true`, so they could not run GraphQL mutations. They reported PASS while board Status stayed **In Review**. Only some issues were fixed manually afterward.
+**Root cause (legacy GitHub run):** Verifiers were launched `readonly: true`, so they could not run Status mutations. They reported PASS while board Status stayed **In Review**.
 
 **Rule:** The orchestrator **always** owns final board correctness. After **every** verifier PASS:
 
-1. **Set Done** via GraphQL on the leaf issue (`Done=98236657`). If `CLOSE_PARENTS` includes the epic, set parent **Done** too.
-2. **Re-query** board Status for every issue touched in that task.
-3. If Status is still **In Review** (or not **Done**) → **retry** the mutation once; then report failure to user.
-4. If verifier did not post a PASS comment → orchestrator posts via MCP `add_issue_comment`.
+1. **Set Done** via `save_issue` → `state: "Done"` on the leaf (`PW-<N>`). If `CLOSE_PARENTS` includes the epic, set parent **Done** too.
+2. **Re-query** via `get_issue` — confirm `status` is **Done** for every issue touched.
+3. If status is still **In Review** (or not **Done**) → **retry** `save_issue` once; then report failure to user.
+4. If verifier did not post a PASS comment → orchestrator posts via `save_comment` in the **GitHub-synced thread** (see [linear-board.md](linear-board.md#comment-sync-linear--github-mirror)).
 
-**Verifier dispatch:** Never set `readonly: true` on verifier sub-agents (they need `gh api graphql` for Status). Even when verifiers run writable, the orchestrator still performs step 1–3 — verifiers are best-effort, orchestrator is source of truth.
+**Verifier dispatch:** Never set `readonly: true` on verifier sub-agents (they need Linear MCP `save_issue` / `save_comment`). Even when verifiers run writable, the orchestrator still performs steps 1–3 — verifiers are best-effort, orchestrator is source of truth.
 
-**Orchestrator Shell use** is allowed **only** for: board Status read/write, `workspace-notes.md`, epic progress audits, and **commit-linkage audits** (`git log --grep`) — not for reading implementation code or running the CI gate.
+**Orchestrator Shell use** is allowed **only** for: `workspace-notes.md`, epic progress audits, and **commit-linkage audits** (`git log --grep`) — not for reading implementation code, running the CI gate, or GitHub board mutations.
 
 ### Commit linkage audit (mandatory, orchestrator-owned)
 
-**Root cause (P3/P4 run):** #41 was board **Done** but `6080f19` never landed on `staging`; P2-05 schema arrived later via #47's fix commit with only `fixes #47` — no `fixes #41` anywhere in `staging` history.
+**Root cause (legacy run):** Board **Done** but `fixes #N` never landed on `staging`; work arrived via another issue's commit without linkage.
 
-**Rule:** Board **Done** is insufficient. Every issue marked **Done** in a run must have `fixes #N` (or `fixes #<parent>` when appropriate) in **at least one commit on `staging`** that is part of the run's commit range (the task commit, a combined commit, or an explicit linkage commit). Epic children must also link the epic via subject `[#<parent>]` and body `refs #<parent>` (or `fixes #<parent>` on the final child).
+**Rule:** Linear **Done** is insufficient. Every issue marked **Done** in a run must have `fixes #N` (GitHub number resolved from Linear sync) in **at least one commit on `staging`** that is part of the run's commit range. Epic children must also link the epic via subject `[#<parent>]` and body `refs #<parent>` (or `fixes #<parent>` on the final child).
 
 **After every verifier PASS** and **before epic close**, the orchestrator **must** audit linkage:
 
 ```bash
-# For each issue N marked Done in this run (leaves + parents per CLOSE_PARENTS):
+# For each PW-N marked Done in this run:
+# 1. get_issue PW-N → parse attachments for GitHub #N
+# 2. For each #N:
 git log <base>..staging --grep='fixes #N'
 # base = commit before the orchestrator run started, or merge-base with origin/staging
-# For each epic child with PARENT P, also confirm epic linkage:
+# For each epic child with PARENT PW-P, also confirm epic linkage:
 git log <base>..staging --grep='refs #P'   # or --grep='\[#P\]' in subject
 ```
 
@@ -168,25 +197,26 @@ git log <base>..staging --grep='refs #P'   # or --grep='\[#P\]' in subject
 | No `fixes #N` anywhere | **FAIL** — do not leave Done; dispatch fix agent or `chore(repo)[#N]: record issue linkage` with `fixes #N` |
 | Board Done but commit only on orphan branch | **FAIL** — cherry-pick or re-dispatch; never advance queue |
 
-**Verifier Layer 3c3 (mandatory):** For task `#N`, confirm `git log` on `staging` contains `fixes #N` in the task commit SHA **or** a documented combined/linkage commit. Missing → **FAIL** even if AC and CI pass.
+**Verifier Layer 3c3 (mandatory):** For task `PW-N` → `#N`, confirm `git log` on `staging` contains `fixes #N` in the task commit SHA **or** a documented combined/linkage commit. Missing → **FAIL** even if AC and CI pass.
 
-**Combined commits:** When one commit implements multiple issues (e.g. migration fix covers #41 + #47), the commit body lists **every** issue: `fixes #47` and `fixes #41` on separate lines.
+**Combined commits:** When one commit implements multiple issues, the commit body lists **every** issue: `fixes #47` and `fixes #41` on separate lines.
 
 ## Dispatching sub-agents
 
 Each prompt includes (execution: **STATUS FIRST block must be the first lines** — see [prompt-templates.md](prompt-templates.md#status-first--mandatory-header-execution-only-paste-at-top-of-every-execution-task-prompt)):
 
-1. **STATUS FIRST** (execution only) — filled GraphQL for In Progress on leaf (+ parent); pasted verbatim at top
-2. **Task ID** — GitHub `#N`
-3. **Acceptance criteria** — from issue body
-4. **Doc references** — `prd §N`, `pages B*` from issue or [doc-index.md](doc-index.md)
-5. READ / WRITE scope with absolute paths
-6. Session ID: `<TASK-ID>-<YYYYMMDD>-<4hex>`
-7. Lane (`S` or `P`) and git context
-8. Epic context: `PARENT` (always mention in commits), `CLOSE_PARENTS` (final-child `fixes` only)
-9. **GITHUB TOOLS** + **GITHUB SYNC** blocks — **full blocks, never one-line shorthand** ([prompt-templates.md](prompt-templates.md#prompt-compression-policy-mandatory))
-10. **CI GATE (SHELL)** block in every execution and verifier prompt — include `WORK_ROOT`, `TURBO_FILTER` (verifier), `CI_PREFLIGHT_MODE`; `required_permissions: ["all"]` on first Shell attempt
-11. **DB MIGRATIONS** block in every execution prompt
+1. **STATUS FIRST** (execution only) — `get_issue` + `save_issue` → In Progress on leaf (+ parent); pasted verbatim at top
+2. **Task ID** — Linear `PW-<N>`
+3. **COMMIT LINK** — GitHub `#N` resolved from `get_issue` attachments (leaf + parent)
+4. **Acceptance criteria** — from issue description
+5. **Doc references** — `prd §N`, `pages B*` from issue or [doc-index.md](doc-index.md)
+6. READ / WRITE scope with absolute paths
+7. Session ID: `PW-<N>-<YYYYMMDD>-<4hex>`
+8. Lane (`S` or `P`) and git context
+9. Epic context: `PARENT` (`PW-<parent>`), `CLOSE_PARENTS` (final-child `fixes` only — GitHub numbers in COMMIT LINK)
+10. **LINEAR TOOLS** + **LINEAR SYNC** blocks — **full blocks, never one-line shorthand** ([prompt-templates.md](prompt-templates.md#prompt-compression-policy-mandatory))
+11. **CI GATE (SHELL)** block in every execution and verifier prompt — include `WORK_ROOT`, `TURBO_FILTER` (verifier), `CI_PREFLIGHT_MODE`; `required_permissions: ["all"]` on first Shell attempt
+12. **DB MIGRATIONS** block in every execution prompt
 
 **After execution returns:** If output lacks `BOARD STATUS: In Progress` → treat as FAIL; re-dispatch with STATUS FIRST block or orchestrator sets In Progress before verifier.
 
@@ -224,7 +254,7 @@ The orchestrator **must decide** Lane S, P, or B for each batch — present the 
 
 ### Decision procedure (apply in order)
 
-1. **Dependencies** — only schedule leaves whose `Depends on` issues are **Done** on the board (not GitHub `closed` state).
+1. **Dependencies** — only schedule leaves whose `blockedBy` issues are **Done** or **Closed** on Linear (not GitHub `closed` state).
 2. **Epic suggested order** — if parent lists implementation order, follow it unless Lane P is safe for that tier.
 3. **Hot-file check** — if two+ ready leaves touch the same path (e.g. `packages/ui/src/index.ts`, `pnpm-lock.yaml`, `packages/db/schema/`, root `package.json`) → **Lane S** or **Lane B** (serialize).
 4. **Migrations** — at most one migration-generating task per batch → **Lane S**.
@@ -233,7 +263,7 @@ The orchestrator **must decide** Lane S, P, or B for each batch — present the 
 
 **Epic default:** Lane **S** serial (one leaf → verify → board sync → next leaf) unless step 5 clearly applies.
 
-**Lane P rules:** execution on `orchestrator/<TASK-ID>` only; never commit to `staging` during execution; `pnpm install` first in worktree; each agent sets `WORK_ROOT` to its worktree and `CI_PREFLIGHT_MODE=local`.
+**Lane P rules:** execution on `orchestrator/PW-<N>` only; never commit to `staging` during execution; `pnpm install` first in worktree; each agent sets `WORK_ROOT` to its worktree and `CI_PREFLIGHT_MODE=local`.
 
 ### Epic loop (orchestrator chat)
 
@@ -241,7 +271,7 @@ For each leaf in queue (until all Done or blocked):
 
 ```
 dispatch execution → dispatch verifier (readonly: false)
-→ on PASS: commit-linkage audit (fixes #N on staging) → board sync (Done + re-query)
+→ on PASS: commit-linkage audit (PW-N → #N; fixes #N on staging) → board sync (Done + re-query)
 → on FAIL: stop or re-dispatch fix per user policy; do not advance queue
 → update workspace-notes.md
 → when queue empty or stopped: session-end Slack DM (see below)
@@ -273,12 +303,12 @@ dispatch execution → dispatch verifier (readonly: false)
 ```markdown
 **PipeWatch orchestrator — run complete**
 
-**Target:** #<N> <title> | epic #<parent>
+**Target:** PW-<N> <title> | epic PW-<parent>
 **Outcome:** complete | partial | blocked | failed
 
 | Issue | Status | Commit |
 |---|---|---|
-| #50 | Done | `abc1234` |
+| PW-50 | Done | `abc1234` |
 | … | | |
 
 **Staging:** <N> commits ahead of origin (not pushed) | pushed
@@ -286,7 +316,7 @@ dispatch execution → dispatch verifier (readonly: false)
 **Next suggested:** <from workspace-notes or queue>
 ```
 
-Keep under ~500 words; link GitHub issues as `https://github.com/mdg-labs/pipewatch/issues/N`.
+Keep under ~500 words. Link issues as `https://linear.app/mdg-labs/issue/PW-<N>/<slug>`. Use **`PW-N` as primary reference** — not `#N`.
 
 ### Tool reference
 
@@ -301,13 +331,13 @@ Keep under ~500 words; link GitHub issues as `https://github.com/mdg-labs/pipewa
 
 ## Execution agents
 
-1. **Board Status (first Shell command):** GraphQL → **In Progress** on leaf + parent — paste **STATUS FIRST** block from [prompt-templates.md](prompt-templates.md); confirm `BOARD STATUS: In Progress` in output
+1. **Linear status (first MCP call):** `get_issue` → resolve COMMIT LINK → `save_issue` → **In Progress** on leaf + parent — paste **STATUS FIRST** block from [prompt-templates.md](prompt-templates.md); confirm `BOARD STATUS: In Progress on PW-<N>` in output
 2. **Session memory** in `active/<SESSION-ID>.md`
 3. **Implementation**
 4. **CI gate** — `WORK_ROOT=<path> CI_PREFLIGHT_MODE=<local|global> pnpm ci:gate` via Shell with `required_permissions: ["all"]` (see [CI GATE block](prompt-templates.md#ci-gate-shell--mandatory-in-every-execution-and-verifier-prompt))
 5. **Pre-handoff:** Status → **In Review** (leaf); confirm `BOARD STATUS: In Review`; one implementation commit
 
-Commit format: `[#N]` in subject (+ `[#<parent>]` when subtask); `fixes #N` in body; `refs #<parent>` on every subtask; `fixes #<parent>` per `CLOSE_PARENTS` (final child only).
+Commit format: `[#N]` in subject (+ `[#<parent>]` when subtask); `fixes #N` in body; `refs #<parent>` on every subtask; `fixes #<parent>` per `CLOSE_PARENTS` (final child only). GitHub numbers from COMMIT LINK — never `fixes PW-N`.
 
 ## Verification agents (fresh thread per batch)
 
@@ -329,25 +359,29 @@ Orchestrator supplies `TURBO_FILTER` from primary WRITE SCOPE (see [prompt-templ
 - 3b. PRD `§` deviations with file:line + fix hint
 - 3c. Security baseline (`03-security-baseline.mdc`)
 - 3c2. Env vars fully registered (`05-env-vars.mdc`)
-- 3c3. Commit linking (`07-issue-commit-linking.mdc`); when `PARENT` is set, subject includes `[#<parent>]` and body includes `refs #<parent>`; `CLOSE_PARENTS` alignment for `fixes #<parent>`; **`git log staging --grep='fixes #N'` must hit** for the task issue (and combined commits must list every covered `#N`)
-- 3c4. Board Status only — never GitHub issue state changes
+- 3c3. Commit linking (`07-issue-commit-linking.mdc`); when `PARENT` is set, subject includes `[#<parent>]` and body includes `refs #<parent>`; `CLOSE_PARENTS` alignment for `fixes #<parent>`; **`git log staging --grep='fixes #N'` must hit** for the task issue (N from COMMIT LINK; combined commits must list every covered `#N`)
+- 3c4. Linear status only — never GitHub issue state changes; never `user-github` issue tools
 - 3d. Migration policy violations (`15-db-migrations-schema.mdc`) — hand-written, edited, or deleted committed migrations; schema change without generated migration → **FAIL**
 - 3e. Stubs, scattered edition checks → **FAIL**
 
 | Result | Verifier (best effort) | Orchestrator (mandatory) | Session memory |
 |---|---|---|---|
-| PASS | PASS comment + Status Done | Commit-linkage audit + re-query Status; fix if not Done; parent Done per CLOSE_PARENTS | Delete or archive locally |
-| FAIL | FAIL comment + Status Ready | Confirm Ready on board | Append VERIFICATION FAILED |
+| PASS | synced-thread PASS comment + status Done | Commit-linkage audit + re-query status; fix if not Done; parent Done per CLOSE_PARENTS | Delete or archive locally |
+| FAIL | synced-thread FAIL comment + status Ready | Confirm Ready on board | Append VERIFICATION FAILED |
 
 ## Session memory template
 
 ```markdown
 # Session: <SESSION-ID>
 
-_task: #<N> | started: <ISO> | ended: <ISO> | duration: <human> | agent: execution_
+_task: PW-<N> | started: <ISO> | ended: <ISO> | duration: <human> | agent: execution_
 
 ## Task
 <one line>
+
+## Commit link
+- PW-<N> → #[<N>]
+- PW-<parent> → #[<P>] (if subtask)
 
 ## Scope
 ### Files modified
@@ -362,23 +396,27 @@ _task: #<N> | started: <ISO> | ended: <ISO> | duration: <human> | agent: executi
 - Orchestrator reading spec docs or implementation files
 - **Dispatching sub-agents before presenting the batch plan**
 - **Asking “go?” or waiting for confirmation** — present plan, then start (unless user said `plan only` / `wait`)
-- **Condensed GITHUB SYNC one-liners** (`In Progress #N → In Review → commit …`) — sub-agents skip board updates; use **STATUS FIRST** + full GITHUB SYNC blocks
-- **Execution prompts without STATUS FIRST as the first section** — In Progress must be the agent's first Shell command
+- **Condensed LINEAR SYNC one-liners** (`In Progress PW-N → In Review → commit …`) — sub-agents skip board updates; use **STATUS FIRST** + full LINEAR SYNC blocks
+- **Execution prompts without STATUS FIRST as the first section** — In Progress must be the agent's first MCP action
 - **Accepting execution output without `BOARD STATUS: In Progress`** — re-dispatch or orchestrator sets status before verifier
-- **Trusting verifier PASS text** without orchestrator board re-query (leaves stuck In Review)
-- **Verifier sub-agents with `readonly: true`** — they cannot set Status
+- **Trusting verifier PASS text** without orchestrator `get_issue` re-query (leaves stuck In Review)
+- **Verifier sub-agents with `readonly: true`** — they cannot call `save_issue` / `save_comment`
 - Execution setting Done or closing GitHub issues
+- Using `user-github` `issue_read`, `issue_write`, `search_issues`, `add_issue_comment` for PipeWatch task work
+- GraphQL `updateProjectV2ItemFieldValue` or GitHub Project #5 Status mutations
+- `#N` in orchestrator batch plans, operator invocations, or Slack summaries as primary task ref
+- `fixes PW-N` or `[PW-N]` in commit messages
 - Pushing to `main`
 - Lane P execution committing to `staging`
 - Dispatching Lane P and Lane S in the same wave
 - Blanket `git add .`
-- Task commits without `[#N]` when GitHub sync in scope
+- Task commits without `[#N]` when Linear sync in scope (N from COMMIT LINK)
 - Subtask commit missing `[#<epic>]` in subject or `refs #<epic>` in body when `PARENT` is set
 - `fixes #<epic>` on non-final subtask (use `refs #<epic>` instead)
 - Hand-written or edited committed DB migrations (`15-db-migrations-schema.mdc`)
-- Checking "is issue on project" — see rule `12-github-project-board.mdc`
-- Marking **Done** without `fixes #N` in `staging` git history for that issue
-- Landing another issue's work without `fixes #N` for the source task (e.g. P2-05 schema via #47 without `fixes #41`)
+- Checking GitHub issue `open`/`closed` for dependency resolution — use Linear `status` via `get_issue`
+- Marking **Done** without `fixes #N` in `staging` git history for that issue (after PW-N → #N mapping)
+- Landing another issue's work without `fixes #N` for the source task
 - Running pnpm/gh/docker/CI commands in the **default sandbox** (causes spurious failures — use `required_permissions: ["all"]` first)
 - **Global `pkill` or `CI_PREFLIGHT_MODE=global` during Lane P parallel batch** — kills sibling agents' CI processes
 - **Verifier rerunning full monorepo** `pnpm lint && typecheck && test:unit` when execution already passed `pnpm ci:gate`
@@ -386,3 +424,4 @@ _task: #<N> | started: <ISO> | ended: <ISO> | duration: <human> | agent: executi
 - DMing the **authenticated MCP user** when auth is the service account (`cursor@mdg-labs.dev`) — always DM the **operator** per [slack-notify.md](slack-notify.md)
 - Resolving Slack DM recipient via GitHub/git email instead of **slack-notify.md** / run override / operator email search
 - Posting orchestrator summaries to **public Slack channels** instead of operator DM
+- Top-level Linear comments for operational output — use **synced-thread** `save_comment` only

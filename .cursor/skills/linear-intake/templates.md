@@ -1,10 +1,10 @@
 # Issue description templates (PipeWatch)
 
-Summaries (titles): [summary-patterns.md](../github-triage/summary-patterns.md).
+Summaries (titles): [summary-patterns.md](../linear-triage/summary-patterns.md).
 
-**Milestone required on every create.** Fetch milestones first ([github-intake § Milestones](../github-intake/SKILL.md)).
+**Project required on every create:** `PipeWatch Roadmap`.
 
-## Feature (epic) parent
+## Epic parent
 
 ```markdown
 ## Feature: {Feature name}
@@ -17,8 +17,8 @@ Summaries (titles): [summary-patterns.md](../github-triage/summary-patterns.md).
 
 | Issue | Domain | Description |
 |---|---|---|
-| #XX | Backend | {one line} |
-| #YY | Frontend | {one line} |
+| PW-XX | Backend | {one line} |
+| PW-YY | Frontend | {one line} |
 
 ---
 
@@ -30,15 +30,13 @@ Summaries (titles): [summary-patterns.md](../github-triage/summary-patterns.md).
 
 ### Product rules (epic-level)
 
-- {Rule from PRD, e.g. prd §4.4: webhook HMAC always enforced}
-- {Edition rule, e.g. prd §26: cloud-only billing}
+- {Rule from PRD}
 
 ---
 
 ### Suggested implementation order
 
-1. **#XX** → **#YY**
-2. **#ZZ**
+1. **PW-XX** → **PW-YY**
 
 ---
 
@@ -50,8 +48,8 @@ See child issues for AC, files, and tests.
 ```markdown
 ## {Title}
 
-**Parent feature:** #XX {title}
-**Depends on:** #YY | none
+**Parent feature:** PW-XX {title}
+**Depends on:** PW-YY | none
 **Spec refs:** prd §{N}
 
 ---
@@ -71,14 +69,12 @@ See child issues for AC, files, and tests.
 ### Acceptance criteria
 
 - [ ] {testable criterion}
-- [ ] {testable criterion}
 
 ---
 
 ### Files (expected)
 
 - `apps/api/src/...`
-- `packages/db/schema/...`
 
 ---
 
@@ -93,15 +89,15 @@ See child issues for AC, files, and tests.
 ```markdown
 ## {Title}
 
-**Parent feature:** #XX
-**Depends on:** #YY API issue | none
+**Parent feature:** PW-XX
+**Depends on:** PW-YY API issue | none
 **Page ref:** pages {B-series section}
 
 ---
 
 ### UI behaviour
 
-- {layout, states, edition differences CE vs Cloud}
+- {layout, states, edition differences}
 
 ---
 
@@ -114,12 +110,6 @@ See child issues for AC, files, and tests.
 ### Files (expected)
 
 - `apps/web/src/...`
-
----
-
-### Tests
-
-- Unit / e2e: `...
 ```
 
 ## Bug template

@@ -1,6 +1,6 @@
 # Issue summary patterns (PipeWatch)
 
-Single source of truth for **issue titles**. Both `github-triage` and `github-intake` must follow this.
+Single source of truth for **issue titles**. Both `linear-triage` and `linear-intake` must follow this.
 
 ## Pattern table
 
@@ -8,7 +8,7 @@ Single source of truth for **issue titles**. Both `github-triage` and `github-in
 |---|---|---|
 | **Bug** | `{Area}: {observed defect}` | `Webhooks: invalid signature returns 500 instead of 401` |
 | **Task** | `{Verb} {target}` | `Add HMAC verification for GitHub webhook endpoint` |
-| **Feature** | `{Feature name}` | `GitHub App installation and backfill` |
+| **Epic** | `{Feature name}` | `GitHub App installation and backfill` |
 
 ## Area prefixes
 

@@ -28,7 +28,7 @@ When code and a spec doc disagree, the **code is the security reality** — flag
 | "Security audit", "audit PipeWatch security", "find vulns" | **Full audit** — all domains in `checklist.md` |
 | "Audit auth" / "check webhook security" / "is multi-tenancy safe?" | **Scoped audit** — relevant domains only |
 | "How do I harden CE?" / "make self-hosting secure" | **Hardening pass** — `recommendations.md` (CE focus) |
-| "File these findings" / "ticket them" / "send to the board" | **Handoff** — `report-to-issues.md` → `github-intake` |
+| "File these findings" / "ticket them" / "send to the board" | **Handoff** — `report-to-issues.md` → `linear-intake` |
 | "Review this PR/diff for security" | **Stop** — use built-in `security-review` skill instead |
 
 ## Audit workflow
@@ -83,9 +83,9 @@ A theoretical issue with no reachable path is **Info**, not Critical — state t
 
 Pair every finding with a concrete fix referencing the exact file. Then pull forward systemic gaps from **[recommendations.md](recommendations.md)**. Present using the template below.
 
-### 7. Handoff to github-intake (optional)
+### 7. Handoff to linear-intake (optional)
 
-When the user wants findings turned into board work ("file these", "ticket them"), follow **[report-to-issues.md](report-to-issues.md)**: it maps each finding's severity → Priority, picks Bug vs Task, sets the domain label, and hands a ready payload to the **`github-intake`** skill (which creates the issues, requires approval, and stops at Ready). Apply the disclosure guard before filing 🔴/🟠 findings — never put exploit detail or secrets in a public issue.
+When the user wants findings turned into board work ("file these", "ticket them"), follow **[report-to-issues.md](report-to-issues.md)**: it maps each finding's severity → Priority, picks Bug vs Task, sets the domain label, and hands a ready payload to the **`linear-intake`** skill (which creates the issues, requires approval, and stops at Ready). Apply the disclosure guard before filing 🔴/🟠 findings — never put exploit detail or secrets in a public issue.
 
 ## Report template
 
@@ -136,4 +136,4 @@ When the user wants findings turned into board work ("file these", "ticket them"
 
 - **[checklist.md](checklist.md)** — per-domain attack surfaces and vulnerability classes to check.
 - **[recommendations.md](recommendations.md)** — hardening backlog and CE/Cloud-specific gaps to consider adding.
-- **[report-to-issues.md](report-to-issues.md)** — map findings to `github-intake` (severity → Priority, Bug/Task, domain label) to file them as Ready issues.
+- **[report-to-issues.md](report-to-issues.md)** — map findings to `linear-intake` (severity → Priority, Bug/Task, domain label) to file them as Ready issues.

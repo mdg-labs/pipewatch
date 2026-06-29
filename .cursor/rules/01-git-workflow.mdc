@@ -32,13 +32,13 @@ build(<scope>)[#123]: <summary>
 perf(<scope>)[#123]: <summary>
 ```
 
-Use `[#N]` when the task is on GitHub Issues. The commit body must include `fixes #N` to auto-close the issue on merge to `main`. Subtasks under an epic include `[#<epic>]` in the subject and `refs #<epic>` in the body on **every** child commit; parent Features close via `fixes #<parent>` on the **final in-scope child** only — see `07-issue-commit-linking.mdc`.
+Use `[#N]` in commits — resolve `#N` from the Linear task's GitHub sync attachment (`get_issue` → `attachments`) before committing. The commit body must include `fixes #N` to auto-close the linked GitHub issue on merge to `main`. Subtasks under an epic include `[#<epic>]` in the subject and `refs #<epic>` in the body on **every** child commit; parent Features close via `fixes #<parent>` on the **final in-scope child** only — see `07-issue-commit-linking.mdc`.
 
 **Allowed scopes**: `repo`, `ci`, `api`, `worker`, `web`, `marketing`, `db`, `types`, `utils`, `config`, `docs`, `workspaces`, `integrations`, `repositories`, `pipelines`, `runs`, `webhooks`, `auth`, `billing`, `sse`, `insights`, `onboarding`, `ce`, `infra`, `deps`
 
 (`db` = Drizzle schema/migrations · `types` = `packages/types` · `config` = `packages/config` edition/flags)
 
-Session memory (`.cursor/skills/agent-memory/`) is **gitignored** — local working notes only. Verifiers post outcomes to GitHub issues; never commit session files.
+Session memory (`.cursor/skills/agent-memory/`) is **gitignored** — local working notes only. Verifiers post outcomes to the Linear synced thread; never commit session files.
 
 ## Commit rules
 

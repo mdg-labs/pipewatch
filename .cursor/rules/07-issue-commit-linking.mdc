@@ -5,7 +5,16 @@ alwaysApply: true
 
 # Issue commit linking
 
-Every **task-related** commit must reference a GitHub issue so the **Development** panel links correctly and the issue auto-closes on merge to `main`.
+Every **task-related** commit must reference the linked GitHub issue (`#N`) so the **Development** panel links correctly and the issue auto-closes on merge to `main`. **Resolve `#N` from Linear** before committing (`get_issue("PW-N")` → GitHub attachment URL or title).
+
+## Resolving `#N` from Linear
+
+Task work uses **`PW-N`** everywhere except git. At commit time only:
+
+1. `get_issue("PW-N")` → read `attachments[]` for GitHub issue URL, or parse `#N` from title if synced.
+2. Use that `#N` in subject `[#N]` and body `fixes #N` — never `fixes PW-N`.
+
+Orchestrator execution prompts include a **COMMIT LINK** block with pre-resolved `#N` when available.
 
 ## Required subject format
 

@@ -5,6 +5,9 @@
         },
         {
             "path": "../pipewatch-docs"
+        },
+        {
+            "path": "../pipewatch-test"
         }
     ],
     "settings": {}

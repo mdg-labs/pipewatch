@@ -1,0 +1,78 @@
+---
+description: Linear task board — PipeWatch team PW; status via save_issue; commits use GitHub #N from sync
+alwaysApply: true
+---
+
+# Linear task board (PipeWatch)
+
+PipeWatch task tracking uses **Linear** (`plugin-linear-linear` MCP), team **PipeWatch** (`PW-*`). GitHub Project #5 is **retired** for agents.
+
+## Context
+
+| Layer | System |
+|---|---|
+| Task board & workflow | Linear `PW-*` |
+| Git commits | GitHub `#N` — resolved from Linear sync attachment before commit |
+| Comments on GitHub | Linear synced-thread `save_comment` only |
+
+**Board status** is Linear issue `state` — set via `save_issue`. Agents **never** use GraphQL GitHub project Status or `user-github` issue tools for task work.
+
+| Field | Value |
+|---|---|
+| MCP server | `plugin-linear-linear` |
+| Team | **PipeWatch** (key: `PW`) |
+| Project | **PipeWatch Roadmap** |
+| Board reference | `.cursor/skills/orchestrator/linear-board.md` |
+
+## Blocking dependencies
+
+A task blocked by `PW-N` is **unblocked** when that issue's Linear status is **Done** or **Closed**.
+
+**Never** check GitHub issue `open`/`closed` for dependency resolution — check Linear `status` via `get_issue`.
+
+## Status workflow
+
+```
+Backlog → Ready → In Progress → In Review → Done
+```
+
+| Status | Typical setter |
+|---|---|
+| Ready | intake / triage |
+| In Progress | Execution (first action) |
+| In Review | Execution (handoff) |
+| Done | Verifier + orchestrator confirm |
+
+## Correct workflow for setting status
+
+```json
+{
+  "server": "plugin-linear-linear",
+  "toolName": "save_issue",
+  "arguments": { "id": "PW-216", "state": "In Progress" }
+}
+```
+
+## Forbidden (agents)
+
+- `user-github` `issue_read`, `issue_write`, `search_issues`, `add_issue_comment` for PipeWatch tasks
+- GraphQL `updateProjectV2ItemFieldValue` (GitHub Project #5)
+- Top-level Linear comments for operational output (use synced thread)
+- `#N` in orchestrator prompts or batch plans (use `PW-N`)
+- `fixes PW-N` in commit messages (use `fixes #N` from sync lookup)
+
+## Anti-patterns
+
+```bash
+# ❌ NEVER — GitHub board status
+gh api graphql … updateProjectV2ItemFieldValue …
+
+# ❌ NEVER — dispatch by GitHub number
+orchestrate #41
+
+# ✅ CORRECT — Linear status
+CallMcpTool save_issue { id: "PW-216", state: "In Progress" }
+
+# ✅ CORRECT — commit after resolving sync
+get_issue PW-216 → attachments → fixes #41
+```
