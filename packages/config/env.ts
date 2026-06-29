@@ -99,6 +99,7 @@ const workerEnvSchema = z.object({
       "Self-hosted ingestion mode: webhook (default) or polling (CE global override when no public webhook endpoint)",
     ),
   RETENTION_DAYS: z.coerce.number().int().positive().default(30),
+  PORT: z.coerce.number().int().positive().default(3003),
 });
 
 const webEnvSchema = z.object({

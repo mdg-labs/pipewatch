@@ -17,6 +17,7 @@ import { registerInviteAcceptRoutes } from "./routes/invite/accept.js";
 import { registerGitHubInstallCallbackRoute } from "./routes/onboarding/github-callback.js";
 import { registerGitHubWebhookRoute } from "./routes/webhooks/github.js";
 import { registerHealthRoute } from "./routes/health.js";
+import { registerVersionRoute } from "./routes/version.js";
 import { registerSseTokenRoute } from "./routes/sse-token.js";
 import { registerOpenApiRoutes } from "./routes/openapi.js";
 import { registerAppConfigRoute } from "./routes/public/app-config.js";
@@ -44,6 +45,7 @@ export function createApp(): OpenAPIHono<ApiEnv> {
   app.get("/", (c) => c.text("PipeWatch API"));
 
   registerHealthRoute(app);
+  registerVersionRoute(app);
   registerOpenApiRoutes(app);
   registerBootstrapStatusRoute(app);
   registerAppConfigRoute(app);

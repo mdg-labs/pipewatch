@@ -3798,6 +3798,37 @@
         }
       }
     },
+    "/version": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Deployed package version",
+        "description": "Public semver probe for deploy planning — no authentication required.",
+        "responses": {
+          "200": {
+            "description": "Current deployable version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VersionResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Unexpected server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/webhooks/github": {
       "post": {
         "tags": [
@@ -5293,6 +5324,18 @@
           "email",
           "avatar_url",
           "github_login"
+        ]
+      },
+      "VersionResponse": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string",
+            "example": "0.1.0"
+          }
+        },
+        "required": [
+          "version"
         ]
       },
       "WaitlistActionResponse": {

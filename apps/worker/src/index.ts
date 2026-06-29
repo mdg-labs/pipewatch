@@ -1,6 +1,8 @@
+import { serve } from "@hono/node-server";
 import { parseWorkerEnv } from "@pipewatch/config/env";
 
 import { registerCloudWorkers } from "./edition-features.js";
+import { createProbeApp } from "./probe-server.js";
 import { resolveRedisUrl } from "./queues/connection.js";
 import { registerRetentionCleanupSchedule } from "./queues/maintenance.js";
 import { initSentry } from "./sentry.js";
@@ -18,7 +20,13 @@ const redisUrl = resolveRedisUrl(env.REDIS_URL);
 await registerRetentionCleanupSchedule(redisUrl);
 
 await Promise.all(runtime.workers.map((worker) => worker.waitUntilReady()));
-process.stdout.write("worker ready\n");
+
+serve({
+  fetch: createProbeApp().fetch,
+  port: env.PORT,
+});
+
+process.stdout.write(`worker ready (probe port ${env.PORT})\n`);
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, () => {

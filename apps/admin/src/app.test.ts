@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import { parseAdminEnv } from "@pipewatch/config/env";
 
+import packageJson from "../package.json" with { type: "json" };
+
 import { createApp } from "./app.js";
 
 const testSecret = "a".repeat(32);
@@ -30,6 +32,16 @@ describe("createApp", () => {
     await expect(response.json()).resolves.toEqual({
       status: "ok",
       edition: "cloud",
+    });
+  });
+
+  it("returns 200 from /version", async () => {
+    const app = createApp({ env, db }, null);
+    const response = await app.request("/version");
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      version: packageJson.version,
     });
   });
 

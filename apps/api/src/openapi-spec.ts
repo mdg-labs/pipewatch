@@ -30,6 +30,7 @@ export const PRD_CORE_OPENAPI_PATHS = [
   "/invite/{token}/accept",
   "/webhooks/github",
   "/health",
+  "/version",
 ] as const;
 
 /** Cloud-only PRD §7 routes — registered when `PIPEWATCH_EDITION=cloud`. */
