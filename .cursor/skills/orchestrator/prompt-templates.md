@@ -210,6 +210,12 @@ WORK:
 3. pnpm ci:gate
 4. In Review → commit with [#N] / fixes #N
 
+PUSH (when operator requests — not on every task):
+1. pnpm bump:versions (when deploy-relevant source changed)
+2. git add apps/*/package.json if bumped
+3. pnpm ci:gate
+4. git push — pre-push hook validates version bumps (pnpm setup:hooks once per clone)
+
 REQUIRED OUTPUT:
 - BOARD STATUS: In Progress on PW-<N>
 - BOARD STATUS: In Review on PW-<N>

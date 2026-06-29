@@ -62,3 +62,28 @@ Optional ReportPortal locally: `phase run --env=CI -- pnpm test:integration` (DB
 - If any full-gate command fails, **do not commit**. Fix failures first, then rerun from the start.
 - After a full-gate commit, explicitly report that the full gate passed.
 - Do not skip the full gate for code-impacting changes because failures are "likely unrelated".
+
+## Pre-push version gate (separate from commit gate)
+
+Deployable surfaces version independently (`apps/*/package.json`). The **pre-push hook** runs on `git push` to `staging` or `main` — not at commit time.
+
+| Step | When | Command |
+|---|---|---|
+| Install hooks | Once per clone | `pnpm setup:hooks` |
+| Bump versions | Before push, when deploy-relevant source changed | `pnpm bump:versions` |
+| Full CI gate | Before commit (code-impacting) | `pnpm ci:gate` or individual gate commands below |
+| Pre-push check | Automatically on push | `.githooks/pre-push` → `pnpm check:push-version-bumps` |
+
+**Order for a typical deploy push:**
+
+```bash
+pnpm bump:versions
+git add apps/*/package.json …
+git commit -m "…"
+pnpm ci:gate          # if code-impacting — run before commit
+git push              # pre-push validates version bumps
+```
+
+The pre-push gate and CI `deploy-plan.yml` both read `apps/<surface>/package.json` semver — single source of truth. See `.cursor/rules/15-deploy-version-bumps.mdc` and `docs/internal/devops-cicd.md`.
+
+Manual pre-push check: `pnpm check:push-version-bumps`. Skip once: `SKIP_DEPLOY_VERSION_BUMP_CHECK=1 git push --no-verify`.

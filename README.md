@@ -14,14 +14,20 @@ Open-core GitHub Actions dashboard — aggregates workflow runs across repositor
 
 ```bash
 pnpm install
+pnpm setup:hooks   # install pre-push version bump gate (once per clone)
 pnpm dev
 ```
+
+`pnpm setup:hooks` sets `core.hooksPath=.githooks` so pushes to `staging` or `main` validate deployable version bumps. See `.cursor/rules/15-deploy-version-bumps.mdc` and `docs/internal/devops-cicd.md`.
 
 ## Scripts
 
 | Script | Description |
 |---|---|
 | `pnpm dev` | Start all apps in development mode |
+| `pnpm setup:hooks` | Install repo git hooks (pre-push version gate) |
+| `pnpm bump:versions` | Bump deployable package.json versions for changed surfaces |
+| `pnpm check:push-version-bumps` | Validate version bumps before push (also runs in pre-push hook) |
 | `pnpm build` | Build all packages and apps |
 | `pnpm lint` | Lint all workspaces |
 | `pnpm typecheck` | Type-check all workspaces |
@@ -91,7 +97,7 @@ Self-hosted CE images are published to GitHub Container Registry under `ghcr.io/
 | Worker | `ghcr.io/mdg-labs/pipewatch-worker` | — |
 | Web | `ghcr.io/mdg-labs/pipewatch-web` | 3001 |
 
-Common tags: `latest` (stable release), semver release tags, `nightly` (staging builds). The API image runs Drizzle migrations on startup before serving (CE auto-migrate — PRD Decision #36).
+Common tags: `latest` (stable release), semver release tags, `dev` + `{short_sha}` (staging builds). The API image runs Drizzle migrations on startup before serving (CE auto-migrate — PRD Decision #36).
 
 Build locally from the repository root:
 
