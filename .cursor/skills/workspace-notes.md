@@ -1,5 +1,51 @@
 # PipeWatch workspace notes
 
+## 2026-06-29 — PW-234 orchestrator run (complete)
+
+**Lane:** S on `staging` · **Linear sync:** ON · **Base:** `268afeb`
+
+| Issue | Status | Commit |
+|---|---|---|
+| PW-234 Runs: GitHub-style pan/zoom viewport for job graph | Done | `4585959` |
+
+**Notes:**
+- Fixed intrinsic node size 124×52px (no stretch-to-fill); 220px bounded viewport with pan/wheel zoom
+- Toolbar: zoom in/out, fit-to-view, 100% reset; i18n aria-labels under `runs.jobGraph`
+- Compact node chrome (icon + name + duration); PW-233 log links preserved
+- New `job-graph-viewport.ts` + tests; Page Inventory B6 updated
+- Scoped verifier PASS; full `ci:gate` blocked by pre-existing admin integration flakes
+- `staging` 3 commits ahead of `origin/staging` (PW-231 + PW-234, not pushed)
+
+**Operator follow-up:**
+1. `pnpm bump:versions` for web before push
+2. Smoke B6 graph pan/zoom on staging-cloud (3-job and 8+ job workflows)
+
+**Next suggested:** push `staging` with version bumps
+
+## 2026-06-29 — PW-231 epic orchestrator run (complete)
+
+**Lane:** S serial · **Linear sync:** ON · **Base:** `0584b14`
+
+| Issue | Status | Commit |
+|---|---|---|
+| PW-232 Runs: persist pipeline_jobs.source_url | Done | `e38771a` |
+| PW-233 Runs: link B6 jobs/steps to GitHub logs | Done | `268afeb` |
+| PW-231 epic parent | Done | closes via PW-233 `fixes #253` |
+
+**Notes:**
+- Backend: `pipeline_jobs.source_url` column + migration `0005`; map GitHub `html_url` at integration boundary; worker upsert + jobs API
+- Frontend: external-link controls on JobGraph nodes, JobPanel headers, StepRow when `source_url` present; i18n + Page Inventory B6
+- Decision #6 unchanged — metadata + external links only; step rows use parent job URL
+- Legacy rows without URL hide link control
+- Scoped verifier PASS both tasks; full `ci:gate` has pre-existing unrelated flakes (OAuth bootstrap, admin schema)
+- `staging` 2 commits ahead of `origin/staging` (not pushed)
+
+**Operator follow-up:**
+1. `pnpm bump:versions` for api/worker/web before push
+2. Push `staging` to deploy; smoke B6 graph/panel/step log links on staging-cloud
+
+**Next suggested:** push `staging`; manual verify GitHub job log URLs on a run with ingested jobs
+
 ## 2026-06-29 — PW-224 epic orchestrator run (complete)
 
 **Lane:** S serial · **Linear sync:** ON · **Base:** pre-run staging HEAD
