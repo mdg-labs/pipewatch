@@ -24,7 +24,11 @@ case "$SERVICE" in
     FLY_CONFIG="${ROOT}/.github/infra/api/fly.toml"
     ;;
   worker)
-    FLY_CONFIG="${ROOT}/.github/infra/worker/fly.toml"
+    if [[ "$FLY_APP" == *-staging-* ]]; then
+      FLY_CONFIG="${ROOT}/.github/infra/worker/fly.staging.toml"
+    else
+      FLY_CONFIG="${ROOT}/.github/infra/worker/fly.toml"
+    fi
     ;;
   admin)
     FLY_CONFIG="${ROOT}/apps/admin/fly.toml"
