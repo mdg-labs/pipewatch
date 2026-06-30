@@ -33,7 +33,7 @@ export type IntegrationsSettingsViewProps = {
 };
 
 export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettingsViewProps) {
-  const { workspace, workspaceId } = useApi();
+  const { workspace, workspaceId, workspaceStatus } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
   const t = useTranslations("settings.integrations");
@@ -63,8 +63,10 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
 
   const loadData = useCallback(async () => {
     if (!workspace) {
-      setLoading(false);
-      setLoadError(true);
+      if (workspaceStatus === "unresolved") {
+        setLoading(false);
+        setLoadError(true);
+      }
       return;
     }
 
@@ -83,7 +85,7 @@ export function IntegrationsSettingsView({ githubAppSlug }: IntegrationsSettings
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, workspaceStatus]);
 
   useEffect(() => {
     void loadData();

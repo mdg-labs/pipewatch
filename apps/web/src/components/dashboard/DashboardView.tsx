@@ -49,7 +49,7 @@ export type DashboardViewProps = {
 
 export function DashboardView({ workspaceSlug }: DashboardViewProps) {
   const t = useTranslations("dashboard");
-  const { workspace, workspaceId } = useApi();
+  const { workspace, workspaceId, workspaceStatus } = useApi();
   const setLiveStreamOverride = useSetLiveStreamOverride();
   const { claimOverride, releaseOverride } = useLiveStreamOverrideClaim();
 
@@ -74,8 +74,12 @@ export function DashboardView({ workspaceSlug }: DashboardViewProps) {
 
   const loadDashboard = useCallback(async () => {
     if (!workspace) {
-      setLoading(false);
-      setLoadError(true);
+      // Wait while the session/workspace resolves (recovery in flight); only
+      // surface an error once recovery has definitively failed.
+      if (workspaceStatus === "unresolved") {
+        setLoading(false);
+        setLoadError(true);
+      }
       return;
     }
 
@@ -94,7 +98,7 @@ export function DashboardView({ workspaceSlug }: DashboardViewProps) {
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, workspaceStatus]);
 
   useEffect(() => {
     void loadDashboard();

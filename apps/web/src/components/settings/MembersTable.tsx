@@ -51,7 +51,7 @@ type ConfirmAction =
 /** B9 members settings — active members, pending invites, invite modal. */
 export function MembersTable() {
   const router = useRouter();
-  const { workspace, workspaceId, claims, workspaces } = useApi();
+  const { workspace, workspaceId, workspaceStatus, claims, workspaces } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
   const t = useTranslations("settings.members");
@@ -105,8 +105,10 @@ export function MembersTable() {
 
   const loadData = useCallback(async () => {
     if (!workspace) {
-      setLoading(false);
-      setLoadError(true);
+      if (workspaceStatus === "unresolved") {
+        setLoading(false);
+        setLoadError(true);
+      }
       return;
     }
 
@@ -132,7 +134,7 @@ export function MembersTable() {
     } finally {
       setLoading(false);
     }
-  }, [canMutate, workspaceId]);
+  }, [canMutate, workspaceId, workspaceStatus]);
 
   useEffect(() => {
     void loadData();

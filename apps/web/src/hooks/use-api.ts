@@ -1,6 +1,6 @@
 "use client";
 
-import type { WorkspaceListItem } from "@pipewatch/types";
+import type { AccessTokenClaims, WorkspaceListItem } from "@pipewatch/types";
 import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
@@ -9,6 +9,8 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
+  useState,
   type ReactNode,
 } from "react";
 
@@ -18,19 +20,20 @@ import {
   type WorkspaceScopedClient,
 } from "@/lib/api-client";
 import {
-  getAccessTokenClaims,
+  decodeAccessTokenClaims,
+  refreshAccessToken,
   resolveWorkspaceId,
   setAccessToken,
 } from "@/lib/auth";
 import { publicApiUrl } from "@/lib/env";
 
 type ApiAuthContextValue = {
-  initialAccessToken: string | null;
+  accessToken: string | null;
   workspaces: readonly WorkspaceListItem[];
 };
 
 const ApiAuthContext = createContext<ApiAuthContextValue>({
-  initialAccessToken: null,
+  accessToken: null,
   workspaces: [],
 });
 
@@ -40,21 +43,27 @@ export type ApiAuthProviderProps = {
   children: ReactNode;
 };
 
-/** Seeds in-memory JWT from the server and provides workspace context to `useApi`. */
+/**
+ * Seeds the in-memory JWT from the server-read cookie and provides workspace
+ * context to `useApi`. The token is exposed through context (not just the module
+ * store) so claim-based workspace resolution re-renders when the seeded token
+ * changes after `router.refresh()`.
+ */
 export function ApiAuthProvider({
   initialAccessToken = null,
   workspaces = [],
   children,
 }: ApiAuthProviderProps) {
-  useEffect(() => {
-    if (initialAccessToken) {
-      setAccessToken(initialAccessToken);
-    }
-  }, [initialAccessToken]);
+  // Mirror the cookie token into the in-memory api-client store synchronously so
+  // the first request is authenticated. Browser-only: the module store is a
+  // process global and must never be populated during server render.
+  if (typeof window !== "undefined") {
+    setAccessToken(initialAccessToken);
+  }
 
   const value = useMemo(
     () => ({
-      initialAccessToken,
+      accessToken: initialAccessToken,
       workspaces,
     }),
     [initialAccessToken, workspaces],
@@ -63,13 +72,21 @@ export function ApiAuthProvider({
   return createElement(ApiAuthContext.Provider, { value }, children);
 }
 
+/** Resolution state of the active workspace for the current route. */
+export type WorkspaceResolutionStatus = "ready" | "resolving" | "unresolved";
+
 export type UseApiResult = {
   api: ApiClient;
   workspaceSlug: string | null;
   workspaceId: string | null;
   workspace: WorkspaceScopedClient | null;
-  claims: ReturnType<typeof getAccessTokenClaims>;
+  claims: AccessTokenClaims | null;
   workspaces: readonly WorkspaceListItem[];
+  /**
+   * `ready` — workspace resolved; `resolving` — slug present but workspace not
+   * yet resolved (session recovery in flight); `unresolved` — recovery failed.
+   */
+  workspaceStatus: WorkspaceResolutionStatus;
 };
 
 function extractWorkspaceSlug(pathname: string): string | null {
@@ -81,7 +98,7 @@ function extractWorkspaceSlug(pathname: string): string | null {
 export function useApi(): UseApiResult {
   const pathname = usePathname() ?? "";
   const router = useRouter();
-  const { workspaces } = useContext(ApiAuthContext);
+  const { accessToken, workspaces } = useContext(ApiAuthContext);
 
   const onAuthRefreshed = useCallback(async () => {
     router.refresh();
@@ -97,13 +114,66 @@ export function useApi(): UseApiResult {
   );
 
   const workspaceSlug = extractWorkspaceSlug(pathname);
-  const workspaceId = resolveWorkspaceId(workspaceSlug, workspaces);
-  const claims = getAccessTokenClaims();
+
+  const claims = useMemo(
+    () => (accessToken ? decodeAccessTokenClaims(accessToken) : null),
+    [accessToken],
+  );
+
+  const workspaceId = useMemo(
+    () => resolveWorkspaceId(workspaceSlug, workspaces, claims),
+    [workspaceSlug, workspaces, claims],
+  );
 
   const workspace = useMemo(
     () => (workspaceId ? api.workspace(workspaceId) : null),
     [api, workspaceId],
   );
+
+  // Recover a transient session bootstrap failure: a workspace route is active
+  // but no workspace id resolves (empty SSR session + expired/missing access
+  // token). Refresh the session client-side once, then re-run the server render
+  // so the layout re-seeds workspaces and the access token (PRD §7.1, B3).
+  const recoveryAttempted = useRef(false);
+  const [recoveryFailed, setRecoveryFailed] = useState(false);
+
+  useEffect(() => {
+    if (workspaceId) {
+      recoveryAttempted.current = false;
+      setRecoveryFailed(false);
+      return;
+    }
+
+    if (!workspaceSlug || recoveryAttempted.current) {
+      return;
+    }
+
+    recoveryAttempted.current = true;
+    let active = true;
+
+    void (async () => {
+      const result = await refreshAccessToken({ apiUrl: publicApiUrl });
+      if (!active) {
+        return;
+      }
+
+      if (result.ok) {
+        router.refresh();
+      } else {
+        setRecoveryFailed(true);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [workspaceId, workspaceSlug, router]);
+
+  const workspaceStatus: WorkspaceResolutionStatus = workspaceId
+    ? "ready"
+    : workspaceSlug && !recoveryFailed
+      ? "resolving"
+      : "unresolved";
 
   return {
     api,
@@ -112,5 +182,6 @@ export function useApi(): UseApiResult {
     workspace,
     claims,
     workspaces,
+    workspaceStatus,
   };
 }

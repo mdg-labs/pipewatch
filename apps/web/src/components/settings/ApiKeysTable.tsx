@@ -124,7 +124,7 @@ function resolveCreatorLabel(
 
 /** B11 API keys settings — list, create, revoke, show revoked toggle. */
 export function ApiKeysTable() {
-  const { workspace, claims, workspaceId } = useApi();
+  const { workspace, claims, workspaceId, workspaceStatus } = useApi();
   const { canMutate, readOnly } = useWorkspaceRole();
   const { toast } = useToast();
   const t = useTranslations("settings.apiKeys");
@@ -153,8 +153,10 @@ export function ApiKeysTable() {
 
   const loadData = useCallback(async () => {
     if (!workspace) {
-      setLoading(false);
-      setLoadError(true);
+      if (workspaceStatus === "unresolved") {
+        setLoading(false);
+        setLoadError(true);
+      }
       return;
     }
 
@@ -178,7 +180,7 @@ export function ApiKeysTable() {
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, workspaceStatus]);
 
   useEffect(() => {
     void loadData();

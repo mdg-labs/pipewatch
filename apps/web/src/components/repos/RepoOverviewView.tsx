@@ -162,7 +162,7 @@ function OverviewRangeToggle({
 export function RepoOverviewView({ workspaceSlug, repoId }: RepoOverviewViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { workspace, workspaceId } = useApi();
+  const { workspace, workspaceId, workspaceStatus } = useApi();
   const { canMutate } = useWorkspaceRole();
   const { toast } = useToast();
   const setLiveStreamOverride = useSetLiveStreamOverride();
@@ -198,8 +198,10 @@ export function RepoOverviewView({ workspaceSlug, repoId }: RepoOverviewViewProp
 
   const loadData = useCallback(async () => {
     if (!workspace) {
-      setLoading(false);
-      setLoadError(true);
+      if (workspaceStatus === "unresolved") {
+        setLoading(false);
+        setLoadError(true);
+      }
       return;
     }
 
@@ -225,7 +227,7 @@ export function RepoOverviewView({ workspaceSlug, repoId }: RepoOverviewViewProp
     } finally {
       setLoading(false);
     }
-  }, [workspaceId, repoId, filters]);
+  }, [workspaceId, workspaceStatus, repoId, filters]);
 
   useEffect(() => {
     void loadData();

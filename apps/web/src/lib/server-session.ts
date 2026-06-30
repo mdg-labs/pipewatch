@@ -77,6 +77,7 @@ export async function fetchAppSession(
 
     if (!activeWorkspace) {
       return {
+        authenticated: true,
         user: mapUserProfile(profile),
         workspaces,
         activeWorkspaceSlug: "",
@@ -85,6 +86,7 @@ export async function fetchAppSession(
     }
 
     return {
+      authenticated: true,
       user: mapUserProfile(profile),
       workspaces,
       activeWorkspaceSlug: activeWorkspace.slug,

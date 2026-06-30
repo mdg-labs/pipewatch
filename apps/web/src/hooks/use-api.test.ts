@@ -8,7 +8,7 @@ import type { WorkspaceListItem } from "@pipewatch/types";
 
 import type { WorkspaceScopedClient } from "@/lib/api-client";
 
-import { ApiAuthProvider, useApi } from "./use-api";
+import { ApiAuthProvider, useApi, type WorkspaceResolutionStatus } from "./use-api";
 
 const WORKSPACE_ID = "22222222-2222-4222-8222-222222222222";
 const OTHER_WORKSPACE_ID = "33333333-3333-4333-8333-333333333333";
@@ -35,7 +35,10 @@ const workspaceIdState = vi.hoisted(() => ({
 
 const mockRouter = vi.hoisted(() => ({
   refresh: vi.fn(),
+  replace: vi.fn(),
 }));
+
+const refreshAccessTokenMock = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/workspaces/mdg-labs",
@@ -47,8 +50,9 @@ vi.mock("@/lib/env", () => ({
 }));
 
 vi.mock("@/lib/auth", () => ({
-  getAccessTokenClaims: () => null,
+  decodeAccessTokenClaims: () => null,
   resolveWorkspaceId: () => workspaceIdState.value,
+  refreshAccessToken: refreshAccessTokenMock,
   setAccessToken: vi.fn(),
 }));
 
@@ -58,6 +62,10 @@ describe("useApi", () => {
 
   beforeEach(() => {
     workspaceIdState.value = WORKSPACE_ID;
+    refreshAccessTokenMock.mockReset();
+    refreshAccessTokenMock.mockResolvedValue({ ok: true });
+    mockRouter.refresh.mockClear();
+    mockRouter.replace.mockClear();
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
@@ -151,5 +159,83 @@ describe("useApi", () => {
     expect(workspaceRefs[0]).not.toBeNull();
     expect(workspaceRefs.at(-1)).not.toBeNull();
     expect(workspaceRefs[0]).not.toBe(workspaceRefs.at(-1));
+  });
+
+  it("reports ready status and never recovers when the workspace resolves", async () => {
+    const statuses: WorkspaceResolutionStatus[] = [];
+
+    function Probe() {
+      const { workspaceStatus } = useApi();
+      statuses.push(workspaceStatus);
+      return null;
+    }
+
+    await act(async () => {
+      root.render(
+        createElement(ApiAuthProvider, {
+          workspaces: [mockWorkspaceListItem(WORKSPACE_ID, "mdg-labs", "MDG Labs")],
+          children: createElement(Probe),
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    expect(statuses.at(-1)).toBe("ready");
+    expect(refreshAccessTokenMock).not.toHaveBeenCalled();
+  });
+
+  it("recovers the session and refreshes the route when the workspace cannot be resolved", async () => {
+    workspaceIdState.value = null;
+    const statuses: WorkspaceResolutionStatus[] = [];
+
+    function Probe() {
+      const { workspaceStatus, workspace } = useApi();
+      statuses.push(workspaceStatus);
+      // No load error is surfaced while the session is still resolving.
+      expect(workspace).toBeNull();
+      return null;
+    }
+
+    await act(async () => {
+      root.render(
+        createElement(ApiAuthProvider, {
+          workspaces: [],
+          children: createElement(Probe),
+        }),
+      );
+      await Promise.resolve();
+    });
+
+    expect(refreshAccessTokenMock).toHaveBeenCalledTimes(1);
+    expect(mockRouter.refresh).toHaveBeenCalledTimes(1);
+    expect(statuses).toContain("resolving");
+    expect(statuses).not.toContain("unresolved");
+  });
+
+  it("marks the workspace unresolved when recovery fails", async () => {
+    workspaceIdState.value = null;
+    refreshAccessTokenMock.mockResolvedValue({ ok: false });
+    const statuses: WorkspaceResolutionStatus[] = [];
+
+    function Probe() {
+      const { workspaceStatus } = useApi();
+      statuses.push(workspaceStatus);
+      return null;
+    }
+
+    await act(async () => {
+      root.render(
+        createElement(ApiAuthProvider, {
+          workspaces: [],
+          children: createElement(Probe),
+        }),
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(refreshAccessTokenMock).toHaveBeenCalledTimes(1);
+    expect(mockRouter.refresh).not.toHaveBeenCalled();
+    expect(statuses.at(-1)).toBe("unresolved");
   });
 });

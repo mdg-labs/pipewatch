@@ -151,7 +151,7 @@ export function InsightsView({ workspaceSlug }: InsightsViewProps) {
   const { formatCount, formatMsAsDuration, formatPercent, emDash } = useInsightsFormatters();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { workspace, workspaceId } = useApi();
+  const { workspace, workspaceId, workspaceStatus } = useApi();
 
   const filters = useMemo(
     () => parseInsightsFilters(new URLSearchParams(searchParams.toString())),
@@ -173,8 +173,10 @@ export function InsightsView({ workspaceSlug }: InsightsViewProps) {
 
   const loadInsights = useCallback(async () => {
     if (!workspace) {
-      setLoading(false);
-      setLoadError(true);
+      if (workspaceStatus === "unresolved") {
+        setLoading(false);
+        setLoadError(true);
+      }
       return;
     }
 
@@ -194,7 +196,7 @@ export function InsightsView({ workspaceSlug }: InsightsViewProps) {
     } finally {
       setLoading(false);
     }
-  }, [workspaceId, filters]);
+  }, [workspaceId, workspaceStatus, filters]);
 
   useEffect(() => {
     void loadInsights();

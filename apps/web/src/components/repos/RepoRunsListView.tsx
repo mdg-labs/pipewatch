@@ -62,7 +62,7 @@ function collectDistinctValues(runs: PipelineRun[], key: "branch" | "trigger_typ
 export function RepoRunsListView({ workspaceSlug, repoId }: RepoRunsListViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { workspace, workspaceId } = useApi();
+  const { workspace, workspaceId, workspaceStatus } = useApi();
   const { canMutate } = useWorkspaceRole();
   const { toast } = useToast();
   const setLiveStreamOverride = useSetLiveStreamOverride();
@@ -94,8 +94,10 @@ export function RepoRunsListView({ workspaceSlug, repoId }: RepoRunsListViewProp
 
   const loadData = useCallback(async () => {
     if (!workspace) {
-      setLoading(false);
-      setLoadError(true);
+      if (workspaceStatus === "unresolved") {
+        setLoading(false);
+        setLoadError(true);
+      }
       return;
     }
 
@@ -123,7 +125,7 @@ export function RepoRunsListView({ workspaceSlug, repoId }: RepoRunsListViewProp
     } finally {
       setLoading(false);
     }
-  }, [workspaceId, repoId, filters]);
+  }, [workspaceId, workspaceStatus, repoId, filters]);
 
   useEffect(() => {
     void loadData();

@@ -46,7 +46,7 @@ export type RepoSettingsFormProps = {
 /** Repository settings form — sync mode, retention, disable/delete (B5). */
 export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
   const router = useRouter();
-  const { workspace, workspaceSlug } = useApi();
+  const { workspace, workspaceSlug, workspaceStatus } = useApi();
   const { canMutate } = useWorkspaceRole();
   const { toast } = useToast();
   const t = useTranslations("repos.settings");
@@ -77,8 +77,10 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
 
   const loadSettings = useCallback(async () => {
     if (!workspace) {
-      setLoading(false);
-      setLoadError(true);
+      if (workspaceStatus === "unresolved") {
+        setLoading(false);
+        setLoadError(true);
+      }
       return;
     }
 
@@ -98,7 +100,7 @@ export function RepoSettingsForm({ repoId }: RepoSettingsFormProps) {
     } finally {
       setLoading(false);
     }
-  }, [repoId, workspace]);
+  }, [repoId, workspace, workspaceStatus]);
 
   useEffect(() => {
     void loadSettings();

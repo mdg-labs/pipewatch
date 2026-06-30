@@ -72,7 +72,7 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
   const tBreadcrumb = useTranslations("runs.breadcrumb");
   const tAppBreadcrumbs = useTranslations("app.breadcrumbs");
   const { formatDuration, formatRelativeTime, emDash } = useTimeFormatters();
-  const { workspace, workspaceId } = useApi();
+  const { workspace, workspaceId, workspaceStatus } = useApi();
   const setLiveStreamOverride = useSetLiveStreamOverride();
   const { claimOverride, releaseOverride } = useLiveStreamOverrideClaim();
 
@@ -88,8 +88,10 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
 
   const loadData = useCallback(async () => {
     if (!workspace) {
-      setLoading(false);
-      setLoadError(true);
+      if (workspaceStatus === "unresolved") {
+        setLoading(false);
+        setLoadError(true);
+      }
       return;
     }
 
@@ -114,7 +116,7 @@ export function RunDetailView({ workspaceSlug, repoId, runId }: RunDetailViewPro
     } finally {
       setLoading(false);
     }
-  }, [workspaceId, repoId, runId]);
+  }, [workspaceId, workspaceStatus, repoId, runId]);
 
   useEffect(() => {
     void loadData();

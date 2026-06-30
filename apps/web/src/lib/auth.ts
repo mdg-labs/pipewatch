@@ -128,10 +128,14 @@ export type RefreshAccessTokenResult = {
 };
 
 /**
- * Rotate refresh token and issue a new access JWT via `POST /auth/refresh`.
- * Updates in-memory token when the response exposes `pw_access` (server/test fetch).
+ * Single-flight guard: the API rotates the refresh token on every refresh and
+ * treats reuse of a revoked token as account takeover (revokes ALL user tokens).
+ * Concurrent refreshes with the same cookie would trip that detection and log
+ * the user out, so all callers share one in-flight request (PRD §7.1).
  */
-export async function refreshAccessToken(
+let refreshInFlight: Promise<RefreshAccessTokenResult> | null = null;
+
+async function performRefresh(
   options: RefreshAccessTokenOptions,
 ): Promise<RefreshAccessTokenResult> {
   const fetchFn = options.fetchImpl ?? fetch;
@@ -154,12 +158,35 @@ export async function refreshAccessToken(
 }
 
 /**
- * Resolve workspace ID from route slug using JWT claims or a workspace list.
+ * Rotate refresh token and issue a new access JWT via `POST /auth/refresh`.
+ * Updates in-memory token when the response exposes `pw_access` (server/test fetch).
+ * Concurrent calls are de-duplicated to a single network request.
+ */
+export async function refreshAccessToken(
+  options: RefreshAccessTokenOptions,
+): Promise<RefreshAccessTokenResult> {
+  if (refreshInFlight) {
+    return refreshInFlight;
+  }
+
+  refreshInFlight = performRefresh(options).finally(() => {
+    refreshInFlight = null;
+  });
+
+  return refreshInFlight;
+}
+
+/**
+ * Resolve workspace ID from route slug using a workspace list or JWT claims.
  * Path routes use slugs; API routes use workspace IDs (PRD §7).
+ *
+ * Claims are passed in (not read from the module store) so resolution stays
+ * reactive to the seeded access token in React components.
  */
 export function resolveWorkspaceId(
   slug: string | null | undefined,
   workspaces?: readonly WorkspaceListItem[],
+  claims?: AccessTokenClaims | null,
 ): string | null {
   if (!slug) {
     return null;
@@ -170,12 +197,7 @@ export function resolveWorkspaceId(
     return fromList;
   }
 
-  const claims = getAccessTokenClaims();
-  if (claims?.workspaceId) {
-    return claims.workspaceId;
-  }
-
-  return null;
+  return claims?.workspaceId ?? null;
 }
 
 /** Cookie name for server-side bootstrap of the in-memory token. */

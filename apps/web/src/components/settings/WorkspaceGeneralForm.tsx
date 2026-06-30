@@ -62,7 +62,8 @@ function isPaidPlan(plan: WorkspacePlan): boolean {
 /** Workspace general settings form — name, slug, plan summary, retention, delete (B8). */
 export function WorkspaceGeneralForm() {
   const router = useRouter();
-  const { api, workspace, workspaceId, workspaceSlug, workspaces } = useApi();
+  const { api, workspace, workspaceId, workspaceStatus, workspaceSlug, workspaces } =
+    useApi();
   const { canMutate, meetsMinimum } = useWorkspaceRole();
   const { toast } = useToast();
   const t = useTranslations("settings.general");
@@ -84,8 +85,10 @@ export function WorkspaceGeneralForm() {
 
   const loadWorkspace = useCallback(async () => {
     if (!workspace) {
-      setLoading(false);
-      setLoadError(true);
+      if (workspaceStatus === "unresolved") {
+        setLoading(false);
+        setLoadError(true);
+      }
       return;
     }
 
@@ -105,7 +108,7 @@ export function WorkspaceGeneralForm() {
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, workspaceStatus]);
 
   useEffect(() => {
     void loadWorkspace();
